@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "resource.default.name"  . }}
+  namespace: {{ include "resource.default.namespace"  . }}
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "labels.selector" . | nindent 6 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "labels.common" . | nindent 8 }}
+      annotations:
+        releaseRevision: {{ .Release.Revision | quote }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  {{- include "labels.selector" . | nindent 18 }}
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      volumes:
+      - name: {{ include "name" . }}-configmap
+        configMap:
+          name: {{ include "resource.default.name"  . }}
+          items:
+          - key: config.yml
+            path: config.yml
+      serviceAccountName: {{ include "resource.default.name"  . }}
+      securityContext:
+        runAsUser: {{ .Values.pod.user.id }}
+        runAsGroup: {{ .Values.pod.group.id }}
+      containers:
+      - name: {{ include "name" . }}
+        image: "{{ .Values.Installation.V1.Registry.Domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
+        args:
+        - daemon
+        - --config.dirs=/var/run/{{ include "name" . }}/configmap/
+        - --config.files=config
+        volumeMounts:
+        - name: {{ include "name" . }}-configmap
+          mountPath: /var/run/{{ include "name" . }}/configmap/
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 30
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: 100m
+            memory: 220Mi
+          limits:
+            cpu: 100m
+            memory: 220Mi
+      imagePullSecrets:
+      - name: {{ include "resource.pullSecret.name" . }}

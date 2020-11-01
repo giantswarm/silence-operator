@@ -1,0 +1,28 @@
+# DO NOT EDIT. Generated with:
+#
+#    devctl gen dependabot
+#
+version: 2
+updates:
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "04:00"
+  target-branch: master
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "04:00"
+  target-branch: master
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "04:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: k8s.io/*
+    versions:
+    - ">=0.19.0"
