@@ -2,6 +2,6 @@ FROM alpine:3.12.1
 
 RUN apk add --no-cache ca-certificates
 
-ADD ./template-operator /template-operator
+ADD ./silence-operator /silence-operator
 
-ENTRYPOINT ["/template-operator"]
+ENTRYPOINT ["/silence-operator"]

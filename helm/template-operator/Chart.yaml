@@ -1,6 +1,0 @@
-apiVersion: "v1"
-appVersion: "[[ .AppVersion ]]"
-description: "Chart holding template-operator."
-home: "https://github.com/giantswarm/template-operator"
-name: "template-operator"
-version: "[[ .Version ]]"

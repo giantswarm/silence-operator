@@ -1,5 +1,5 @@
 image:
-  name: "giantswarm/template-operator"
+  name: "giantswarm/silence-operator"
   tag: "[[ .Version ]]"
 Installation:
   V1:
