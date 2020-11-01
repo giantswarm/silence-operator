@@ -34,7 +34,7 @@ type Service struct {
 	Version *version.Service
 
 	bootOnce          sync.Once
-	todoController    *controller.TODO
+	silenceController *controller.Silence
 	operatorCollector *collector.Set
 }
 
@@ -98,15 +98,16 @@ func New(config Config) (*Service, error) {
 		}
 	}
 
-	var todoController *controller.TODO
+	var silenceController *controller.Silence
 	{
 
-		c := controller.TODOConfig{
+		c := controller.SilenceConfig{
 			K8sClient: k8sClient,
 			Logger:    config.Logger,
+			Targets:   config.Viper.GetStringSlice(config.Flag.Service.Targets),
 		}
 
-		todoController, err = controller.NewTODO(c)
+		silenceController, err = controller.NewSilence(c)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
@@ -145,7 +146,7 @@ func New(config Config) (*Service, error) {
 		Version: versionService,
 
 		bootOnce:          sync.Once{},
-		todoController:    todoController,
+		silenceController: silenceController,
 		operatorCollector: operatorCollector,
 	}
 
@@ -156,6 +157,6 @@ func (s *Service) Boot(ctx context.Context) {
 	s.bootOnce.Do(func() {
 		go s.operatorCollector.Boot(ctx) // nolint:errcheck
 
-		go s.todoController.Boot(ctx)
+		go s.silenceController.Boot(ctx)
 	})
 }

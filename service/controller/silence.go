@@ -1,6 +1,7 @@
 package controller
 
 import (
+	monitoringv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/monitoring/v1alpha1"
 	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -8,26 +9,27 @@ import (
 	"github.com/giantswarm/operatorkit/v2/pkg/resource"
 	"github.com/giantswarm/operatorkit/v2/pkg/resource/wrapper/metricsresource"
 	"github.com/giantswarm/operatorkit/v2/pkg/resource/wrapper/retryresource"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/giantswarm/silence-operator/pkg/project"
-	"github.com/giantswarm/silence-operator/service/controller/resource/test"
+	"github.com/giantswarm/silence-operator/service/controller/resource/silence"
 )
 
-type TODOConfig struct {
+type SilenceConfig struct {
 	K8sClient k8sclient.Interface
 	Logger    micrologger.Logger
+
+	Targets []string
 }
 
-type TODO struct {
+type Silence struct {
 	*controller.Controller
 }
 
-func NewTODO(config TODOConfig) (*TODO, error) {
+func NewSilence(config SilenceConfig) (*Silence, error) {
 	var err error
 
-	resources, err := newTODOResources(config)
+	resources, err := newSilenceResources(config)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
@@ -38,13 +40,11 @@ func NewTODO(config TODOConfig) (*TODO, error) {
 			K8sClient: config.K8sClient,
 			Logger:    config.Logger,
 			NewRuntimeObjectFunc: func() runtime.Object {
-				return new(corev1.Pod)
+				return new(monitoringv1alpha1.Silence)
 			},
 			Resources: resources,
 
-			// Name is used to compute finalizer names. This here results in something
-			// like operatorkit.giantswarm.io/silence-operator-todo-controller.
-			Name: project.Name() + "-todo-controller",
+			Name: project.Name() + "-silence-controller",
 		}
 
 		operatorkitController, err = controller.New(c)
@@ -53,31 +53,32 @@ func NewTODO(config TODOConfig) (*TODO, error) {
 		}
 	}
 
-	c := &TODO{
+	c := &Silence{
 		Controller: operatorkitController,
 	}
 
 	return c, nil
 }
 
-func newTODOResources(config TODOConfig) ([]resource.Interface, error) {
+func newSilenceResources(config SilenceConfig) ([]resource.Interface, error) {
 	var err error
 
-	var testResource resource.Interface
+	var silenceResource resource.Interface
 	{
-		c := test.Config{
+		c := silence.Config{
 			K8sClient: config.K8sClient,
 			Logger:    config.Logger,
+			Targets:   config.Targets,
 		}
 
-		testResource, err = test.New(c)
+		silenceResource, err = silence.New(c)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
 	}
 
 	resources := []resource.Interface{
-		testResource,
+		silenceResource,
 	}
 
 	{
