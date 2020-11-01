@@ -8,15 +8,15 @@ workflows:
     jobs:
       - architect/go-build:
           name: go-build
-          binary: template-operator
+          binary: silence-operator
           filters:
             tags:
               only: /^v.*/
 
       - architect/push-to-docker:
           context: "architect"
-          name: push-template-operator-to-quay
-          image: "quay.io/giantswarm/template-operator"
+          name: push-silence-operator-to-quay
+          image: "quay.io/giantswarm/silence-operator"
           username_envar: "QUAY_USERNAME"
           password_envar: "QUAY_PASSWORD"
           requires:
@@ -28,8 +28,8 @@ workflows:
 
       - architect/push-to-docker:
           context: "architect"
-          name: push-template-operator-to-aliyun
-          image: "registry-intl.cn-shanghai.aliyuncs.com/giantswarm/template-operator"
+          name: push-silence-operator-to-aliyun
+          image: "registry-intl.cn-shanghai.aliyuncs.com/giantswarm/silence-operator"
           username_envar: "ALIYUN_USERNAME"
           password_envar: "ALIYUN_PASSWORD"
           requires:
@@ -42,12 +42,12 @@ workflows:
 
       - architect/push-to-app-catalog:
           context: "architect"
-          name: push-template-operator-to-app-catalog
+          name: push-silence-operator-to-app-catalog
           app_catalog: "control-plane-catalog"
           app_catalog_test: "control-plane-test-catalog"
-          chart: "template-operator"
+          chart: "silence-operator"
           requires:
-            - push-template-operator-to-quay
+            - push-silence-operator-to-quay
           # Needed to trigger job also on git tag.
           filters:
             tags:

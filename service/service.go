@@ -14,10 +14,12 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/client-go/rest"
 
-	"github.com/giantswarm/template-operator/flag"
-	"github.com/giantswarm/template-operator/pkg/project"
-	"github.com/giantswarm/template-operator/service/collector"
-	"github.com/giantswarm/template-operator/service/controller"
+	monitoringv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/monitoring/v1alpha1"
+
+	"github.com/giantswarm/silence-operator/flag"
+	"github.com/giantswarm/silence-operator/pkg/project"
+	"github.com/giantswarm/silence-operator/service/collector"
+	"github.com/giantswarm/silence-operator/service/controller"
 )
 
 // Config represents the configuration used to create a new service.
@@ -84,10 +86,9 @@ func New(config Config) (*Service, error) {
 	{
 		c := k8sclient.ClientsConfig{
 			Logger: config.Logger,
-			// TODO: If you are watching a new CRD, include here the AddToScheme function from apiextensions.
-			// SchemeBuilder: k8sclient.SchemeBuilder{
-			//     corev1alpha1.AddToScheme,
-			// },
+			SchemeBuilder: k8sclient.SchemeBuilder{
+				monitoringv1alpha1.AddToScheme,
+			},
 			RestConfig: restConfig,
 		}
 
