@@ -18,6 +18,8 @@ import (
 type SilenceConfig struct {
 	K8sClient k8sclient.Interface
 	Logger    micrologger.Logger
+
+	Targets []string
 }
 
 type Silence struct {
@@ -66,6 +68,7 @@ func newSilenceResources(config SilenceConfig) ([]resource.Interface, error) {
 		c := silence.Config{
 			K8sClient: config.K8sClient,
 			Logger:    config.Logger,
+			Targets:   config.Targets,
 		}
 
 		silenceResource, err = silence.New(c)
