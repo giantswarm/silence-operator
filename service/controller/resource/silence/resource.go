@@ -1,4 +1,4 @@
-package test
+package silence
 
 import (
 	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	Name = "todo"
+	Name = "silence"
 )
 
 type Config struct {
