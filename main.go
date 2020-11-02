@@ -109,7 +109,7 @@ func mainE(ctx context.Context) error {
 	daemonCommand.PersistentFlags().String(f.Service.Kubernetes.TLS.KeyFile, "", "Key file path to use to authenticate with Kubernetes.")
 
 	daemonCommand.PersistentFlags().String(f.Service.AlertManager.Address, "http://localhost:9093", "Alertmanager address used to create silences.")
-	daemonCommand.PersistentFlags().StringSlice(f.Service.Targets, []string{}, "Targets, matched by the running instance of silence-operator.")
+	daemonCommand.PersistentFlags().StringSlice(f.Service.Tags, []string{}, "Tags, matched by the running instance of silence-operator.")
 
 	err = newCommand.CobraCommand().Execute()
 	if err != nil {

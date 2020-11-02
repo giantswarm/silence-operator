@@ -2,27 +2,38 @@ package silence
 
 import (
 	"strings"
+	"time"
 
 	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
+	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 )
 
 const (
 	Name = "silence"
+
+	createdBy = "silence-operator"
+)
+
+var (
+	// used to create never-ending silence
+	eternity = time.Now().AddDate(1000, 0, 0)
 )
 
 type Config struct {
 	K8sClient k8sclient.Interface
 	Logger    micrologger.Logger
 
-	Targets []string
+	AMClient *alertmanager.AlertManager
+	Tags     []string
 }
 
 type Resource struct {
 	logger micrologger.Logger
 
-	targets map[string]string
+	amClient *alertmanager.AlertManager
+	tags     map[string]string
 }
 
 func New(config Config) (*Resource, error) {
@@ -30,22 +41,23 @@ func New(config Config) (*Resource, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	targets := make(map[string]string)
-	for _, target := range config.Targets {
-		targetObj := strings.Split(target, "=")
-		targetName := targetObj[0]
-		targetValue := ""
-		if len(targetObj) == 2 {
-			targetValue = targetObj[1]
+	tags := make(map[string]string)
+	for _, tag := range config.Tags {
+		tagObj := strings.Split(tag, "=")
+		tagName := tagObj[0]
+		tagValue := ""
+		if len(tagObj) == 2 {
+			tagValue = tagObj[1]
 		}
 
-		targets[targetName] = targetValue
+		tags[tagName] = tagValue
 	}
 
 	r := &Resource{
 		logger: config.Logger,
 
-		targets: targets,
+		amClient: config.AMClient,
+		tags:     tags,
 	}
 
 	return r, nil
