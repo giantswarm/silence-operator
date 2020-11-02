@@ -11,6 +11,7 @@ import (
 	"github.com/giantswarm/operatorkit/v2/pkg/resource/wrapper/retryresource"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/pkg/project"
 	"github.com/giantswarm/silence-operator/service/controller/resource/silence"
 )
@@ -19,7 +20,7 @@ type SilenceConfig struct {
 	K8sClient k8sclient.Interface
 	Logger    micrologger.Logger
 
-	Targets []string
+	AlertManagerAddress string
 }
 
 type Silence struct {
@@ -63,12 +64,25 @@ func NewSilence(config SilenceConfig) (*Silence, error) {
 func newSilenceResources(config SilenceConfig) ([]resource.Interface, error) {
 	var err error
 
+	var amClient *alertmanager.AlertManager
+	{
+		amConfig := alertmanager.Config{
+			Address: config.AlertManagerAddress,
+		}
+
+		amClient, err = alertmanager.New(amConfig)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+
 	var silenceResource resource.Interface
 	{
 		c := silence.Config{
 			K8sClient: config.K8sClient,
 			Logger:    config.Logger,
-			Targets:   config.Targets,
+
+			AMClient: amClient,
 		}
 
 		silenceResource, err = silence.New(c)

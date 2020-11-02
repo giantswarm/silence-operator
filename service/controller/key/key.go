@@ -5,6 +5,10 @@ import (
 	"github.com/giantswarm/microerror"
 )
 
+const (
+	CreatedBy = "silence-operator"
+)
+
 func ToSilence(v interface{}) (monitoringv1alpha1.Silence, error) {
 	if v == nil {
 		return monitoringv1alpha1.Silence{}, microerror.Maskf(wrongTypeError, "expected non-nil, got %#v", v)

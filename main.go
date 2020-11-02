@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/microkit/command"
 	microserver "github.com/giantswarm/microkit/server"
 	"github.com/giantswarm/micrologger"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/giantswarm/silence-operator/cmd/sync"
 	"github.com/giantswarm/silence-operator/flag"
 	"github.com/giantswarm/silence-operator/pkg/project"
 	"github.com/giantswarm/silence-operator/server"
@@ -99,6 +102,22 @@ func mainE(ctx context.Context) error {
 		}
 	}
 
+	var syncCmd *cobra.Command
+	{
+		c := sync.Config{
+			Logger: logger,
+			Stderr: os.Stderr,
+			Stdout: os.Stdout,
+		}
+
+		syncCmd, err = sync.New(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
+	newCommand.CobraCommand().AddCommand(syncCmd)
+
 	daemonCommand := newCommand.DaemonCommand().CobraCommand()
 
 	daemonCommand.PersistentFlags().String(f.Service.Kubernetes.Address, "http://127.0.0.1:6443", "Address used to connect to Kubernetes. When empty in-cluster config is created.")
@@ -109,7 +128,6 @@ func mainE(ctx context.Context) error {
 	daemonCommand.PersistentFlags().String(f.Service.Kubernetes.TLS.KeyFile, "", "Key file path to use to authenticate with Kubernetes.")
 
 	daemonCommand.PersistentFlags().String(f.Service.AlertManager.Address, "http://localhost:9093", "Alertmanager address used to create silences.")
-	daemonCommand.PersistentFlags().StringSlice(f.Service.Targets, []string{}, "Targets, matched by the running instance of silence-operator.")
 
 	err = newCommand.CobraCommand().Execute()
 	if err != nil {
