@@ -2,16 +2,13 @@ package main
 
 import (
 	"context"
-	"os"
 
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/microkit/command"
 	microserver "github.com/giantswarm/microkit/server"
 	"github.com/giantswarm/micrologger"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/giantswarm/silence-operator/cmd/sync"
 	"github.com/giantswarm/silence-operator/flag"
 	"github.com/giantswarm/silence-operator/pkg/project"
 	"github.com/giantswarm/silence-operator/server"
@@ -101,22 +98,6 @@ func mainE(ctx context.Context) error {
 			return microerror.Mask(err)
 		}
 	}
-
-	var syncCmd *cobra.Command
-	{
-		c := sync.Config{
-			Logger: logger,
-			Stderr: os.Stderr,
-			Stdout: os.Stdout,
-		}
-
-		syncCmd, err = sync.New(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	newCommand.CobraCommand().AddCommand(syncCmd)
 
 	daemonCommand := newCommand.DaemonCommand().CobraCommand()
 
