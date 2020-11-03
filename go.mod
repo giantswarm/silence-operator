@@ -3,16 +3,13 @@ module github.com/giantswarm/silence-operator
 go 1.14
 
 require (
-	github.com/ghodss/yaml v1.0.0
 	github.com/giantswarm/apiextensions/v3 v3.4.2-0.20201102101023-fa981930d96b
-	github.com/giantswarm/crsync v0.5.8
 	github.com/giantswarm/exporterkit v0.2.0
 	github.com/giantswarm/k8sclient/v4 v4.0.0
 	github.com/giantswarm/microendpoint v0.2.0
 	github.com/giantswarm/microerror v0.2.1
 	github.com/giantswarm/microkit v0.2.2
 	github.com/giantswarm/micrologger v0.3.3
-	github.com/giantswarm/operatorkit v1.2.0
 	github.com/giantswarm/operatorkit/v2 v2.0.2
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.2 // indirect
@@ -22,11 +19,10 @@ require (
 	github.com/pingcap/errors v0.11.4
 	github.com/prometheus/client_golang v1.8.0
 	github.com/spf13/afero v1.4.0 // indirect
-	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0 // indirect
 	golang.org/x/net v0.0.0-20201002202402-0a1ea396d57c // indirect
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	k8s.io/apimachinery v0.18.9
 	k8s.io/client-go v0.18.9
 	k8s.io/utils v0.0.0-20200912215256-4140de9c8800 // indirect
