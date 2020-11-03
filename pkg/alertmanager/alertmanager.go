@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/giantswarm/microerror"
+	"github.com/giantswarm/silence-operator/service/controller/key"
 )
 
 type Config struct {
@@ -68,16 +69,17 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	return nil
 }
 
-func (am *AlertManager) DeleteSilence(opts *DeleteOptions) error {
-	silences, err := am.ListSilences()
-	if err != nil {
-		return microerror.Mask(err)
-	}
+func (am *AlertManager) DeleteSilence(id string, opts *DeleteOptions) error {
 
-	var silenceID string
-	{
+	silenceID := id
+	if opts != nil {
+		silences, err := am.ListSilences()
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
 		for _, s := range silences {
-			if s.Comment == opts.Comment {
+			if s.Comment == opts.Comment && s.CreatedBy == key.CreatedBy {
 				silenceID = s.ID
 				break
 			}

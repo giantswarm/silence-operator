@@ -9,5 +9,4 @@ import (
 type Service struct {
 	AlertManager alertmanager.AlertManager
 	Kubernetes   kubernetes.Kubernetes
-	Tags         string
 }

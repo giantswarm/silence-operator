@@ -1,7 +1,6 @@
 package silence
 
 import (
-	"strings"
 	"time"
 
 	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
@@ -12,8 +11,6 @@ import (
 
 const (
 	Name = "silence"
-
-	createdBy = "silence-operator"
 )
 
 var (
@@ -26,14 +23,12 @@ type Config struct {
 	Logger    micrologger.Logger
 
 	AMClient *alertmanager.AlertManager
-	Tags     []string
 }
 
 type Resource struct {
 	logger micrologger.Logger
 
 	amClient *alertmanager.AlertManager
-	tags     map[string]string
 }
 
 func New(config Config) (*Resource, error) {
@@ -41,23 +36,10 @@ func New(config Config) (*Resource, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	tags := make(map[string]string)
-	for _, tag := range config.Tags {
-		tagObj := strings.Split(tag, "=")
-		tagName := tagObj[0]
-		tagValue := ""
-		if len(tagObj) == 2 {
-			tagValue = tagObj[1]
-		}
-
-		tags[tagName] = tagValue
-	}
-
 	r := &Resource{
 		logger: config.Logger,
 
 		amClient: config.AMClient,
-		tags:     tags,
 	}
 
 	return r, nil

@@ -106,7 +106,6 @@ func New(config Config) (*Service, error) {
 			Logger:    config.Logger,
 
 			AlertManagerAddress: config.Viper.GetString(config.Flag.Service.AlertManager.Address),
-			Tags:                config.Viper.GetStringSlice(config.Flag.Service.Tags),
 		}
 
 		silenceController, err = controller.NewSilence(c)

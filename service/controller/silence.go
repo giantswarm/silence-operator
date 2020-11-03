@@ -21,7 +21,6 @@ type SilenceConfig struct {
 	Logger    micrologger.Logger
 
 	AlertManagerAddress string
-	Tags                []string
 }
 
 type Silence struct {
@@ -84,7 +83,6 @@ func newSilenceResources(config SilenceConfig) ([]resource.Interface, error) {
 			Logger:    config.Logger,
 
 			AMClient: amClient,
-			Tags:     config.Tags,
 		}
 
 		silenceResource, err = silence.New(c)
