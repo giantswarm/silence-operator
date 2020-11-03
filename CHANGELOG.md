@@ -7,4 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Add `silence` controller.
+
 [Unreleased]: https://github.com/giantswarm/silence-operator/tree/master
