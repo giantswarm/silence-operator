@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/giantswarm/microerror"
+
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/service/controller/key"
 )

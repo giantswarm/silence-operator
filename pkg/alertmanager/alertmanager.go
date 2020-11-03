@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/giantswarm/microerror"
+
 	"github.com/giantswarm/silence-operator/service/controller/key"
 )
 
