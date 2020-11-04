@@ -163,6 +163,8 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
+	// cleanup alertmanager silences, created by silence-operator, but which don't have silence CR
+
 	return nil
 }
 
