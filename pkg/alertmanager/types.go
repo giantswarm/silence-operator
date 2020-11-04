@@ -21,11 +21,3 @@ type Matcher struct {
 type Status struct {
 	State string `json:"state"`
 }
-
-type GetOptions struct {
-	Comment string
-}
-
-type DeleteOptions struct {
-	Comment string
-}

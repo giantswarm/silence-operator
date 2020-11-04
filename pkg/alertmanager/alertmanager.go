@@ -35,19 +35,19 @@ func New(config Config) (*AlertManager, error) {
 	}, nil
 }
 
-func (am *AlertManager) GetSilence(opts *GetOptions) (*Silence, error) {
+func (am *AlertManager) GetSilenceByComment(comment string) (*Silence, error) {
 	silences, err := am.ListSilences()
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
 
 	for _, s := range silences {
-		if s.Comment == opts.Comment {
+		if s.Comment == comment {
 			return &s, nil
 		}
 	}
 
-	return nil, microerror.Maskf(notFoundError, opts.Comment)
+	return nil, microerror.Maskf(notFoundError, "failed to get silence with comment %#q", comment)
 }
 
 func (am *AlertManager) CreateSilence(s *Silence) error {
@@ -70,28 +70,9 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	return nil
 }
 
-func (am *AlertManager) DeleteSilence(id string, opts *DeleteOptions) error {
+func (am *AlertManager) DeleteSilenceByID(id string) error {
 
-	silenceID := id
-	if opts != nil {
-		silences, err := am.ListSilences()
-		if err != nil {
-			return microerror.Mask(err)
-		}
-
-		for _, s := range silences {
-			if s.Comment == opts.Comment && s.CreatedBy == key.CreatedBy {
-				silenceID = s.ID
-				break
-			}
-		}
-	}
-
-	if silenceID == "" {
-		return nil
-	}
-
-	endpoint := fmt.Sprintf("%s/api/v2/silence/%s", am.address, silenceID)
+	endpoint := fmt.Sprintf("%s/api/v2/silence/%s", am.address, id)
 
 	req, err := http.NewRequest("DELETE", endpoint, nil)
 	if err != nil {
@@ -106,10 +87,25 @@ func (am *AlertManager) DeleteSilence(id string, opts *DeleteOptions) error {
 	}
 
 	if resp.StatusCode != 200 {
-		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to create silence %#q, expected code 200, got %d", opts.Comment, resp.StatusCode))
+		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode))
 	}
 
 	return nil
+}
+
+func (am *AlertManager) DeleteSilenceByComment(comment string) error {
+	silences, err := am.ListSilences()
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	for _, s := range silences {
+		if s.Comment == comment && s.CreatedBy == key.CreatedBy {
+			return am.DeleteSilenceByID(s.ID)
+		}
+	}
+
+	return microerror.Maskf(notFoundError, fmt.Sprintf("failed to delete silence by comment %#q", comment))
 }
 
 func (am *AlertManager) ListSilences() ([]Silence, error) {

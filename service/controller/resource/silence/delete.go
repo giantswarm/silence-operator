@@ -5,7 +5,6 @@ import (
 
 	"github.com/giantswarm/microerror"
 
-	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/service/controller/key"
 )
 
@@ -17,12 +16,7 @@ func (r *Resource) EnsureDeleted(ctx context.Context, obj interface{}) error {
 
 	r.logger.LogCtx(ctx, "level", "debug", "message", "deleting silence")
 
-	deleteOpts := &alertmanager.DeleteOptions{
-		Comment: silence.Name,
-	}
-
-	silenceID := ""
-	err = r.amClient.DeleteSilence(silenceID, deleteOpts)
+	err = r.amClient.DeleteSilenceByComment(silence.Name)
 	if err != nil {
 		return microerror.Mask(err)
 	}
