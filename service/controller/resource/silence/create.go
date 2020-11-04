@@ -16,8 +16,8 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 		return microerror.Mask(err)
 	}
 
-	desiredSilence, err := r.amClient.GetSilenceByComment(silence.Name)
-	if desiredSilence == nil {
+	_, err = r.amClient.GetSilenceByComment(silence.Name)
+	if alertmanager.IsNotFound(err) {
 		r.logger.LogCtx(ctx, "level", "debug", "message", "creating silence")
 
 		var matchers []alertmanager.Matcher

@@ -2,7 +2,6 @@ package alertmanager
 
 import (
 	"github.com/giantswarm/microerror"
-	"github.com/pingcap/errors"
 )
 
 var executionFailedError = &microerror.Error{
@@ -24,6 +23,5 @@ var notFoundError = &microerror.Error{
 
 // IsNotFound asserts notFoundError.
 func IsNotFound(err error) bool {
-	c := microerror.Cause(err)
-	return c == notFoundError || errors.IsNotFound(c)
+	return microerror.Cause(err) == notFoundError
 }
