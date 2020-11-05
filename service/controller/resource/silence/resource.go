@@ -1,22 +1,35 @@
-package test
+package silence
 
 import (
+	"time"
+
 	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
+
+	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 )
 
 const (
-	Name = "todo"
+	Name = "silence"
+)
+
+var (
+	// used to create never-ending silence
+	eternity = time.Now().AddDate(1000, 0, 0)
 )
 
 type Config struct {
 	K8sClient k8sclient.Interface
 	Logger    micrologger.Logger
+
+	AMClient *alertmanager.AlertManager
 }
 
 type Resource struct {
 	logger micrologger.Logger
+
+	amClient *alertmanager.AlertManager
 }
 
 func New(config Config) (*Resource, error) {
@@ -26,6 +39,8 @@ func New(config Config) (*Resource, error) {
 
 	r := &Resource{
 		logger: config.Logger,
+
+		amClient: config.AMClient,
 	}
 
 	return r, nil

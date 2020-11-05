@@ -1,4 +1,4 @@
-package test
+package silence
 
 import (
 	"github.com/giantswarm/microerror"
