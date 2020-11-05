@@ -34,7 +34,7 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 		}
 
 		newSilence := &alertmanager.Silence{
-			Comment:   silence.Name,
+			Comment:   key.SilenceComment(silence),
 			CreatedBy: key.CreatedBy,
 			EndsAt:    eternity,
 			Matchers:  matchers,

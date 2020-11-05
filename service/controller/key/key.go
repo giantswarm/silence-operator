@@ -1,6 +1,8 @@
 package key
 
 import (
+	"fmt"
+
 	monitoringv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/monitoring/v1alpha1"
 	"github.com/giantswarm/microerror"
 )
@@ -22,4 +24,8 @@ func ToSilence(v interface{}) (monitoringv1alpha1.Silence, error) {
 	c := p.DeepCopy()
 
 	return *c, nil
+}
+
+func SilenceComment(silence monitoringv1alpha1.Silence) string {
+	return fmt.Sprintf("%s-%s", CreatedBy, silence.Name)
 }

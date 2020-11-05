@@ -16,7 +16,7 @@ func (r *Resource) EnsureDeleted(ctx context.Context, obj interface{}) error {
 
 	r.logger.LogCtx(ctx, "level", "debug", "message", "deleting silence")
 
-	err = r.amClient.DeleteSilenceByComment(silence.Name)
+	err = r.amClient.DeleteSilenceByComment(key.SilenceComment(silence))
 	if err != nil {
 		return microerror.Mask(err)
 	}
