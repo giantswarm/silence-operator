@@ -94,7 +94,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 					return microerror.Mask(err)
 				}
 
-				currentTag, _ := tags[envTag.Name]
+				currentTag := tags[envTag.Name]
 				if !matcher.MatchString(currentTag) {
 					r.logger.LogCtx(ctx, "level", "debug",
 						"message", fmt.Sprintf("silence %#q does not match environment by %#q key [regexp: %#q, value: %#q]",
