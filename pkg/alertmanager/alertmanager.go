@@ -70,29 +70,6 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	return nil
 }
 
-func (am *AlertManager) DeleteSilenceByID(id string) error {
-
-	endpoint := fmt.Sprintf("%s/api/v2/silence/%s", am.address, id)
-
-	req, err := http.NewRequest("DELETE", endpoint, nil)
-	if err != nil {
-		return microerror.Mask(err)
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-
-	resp, err := am.httpClient.Do(req)
-	if err != nil {
-		return microerror.Mask(err)
-	}
-
-	if resp.StatusCode != 200 {
-		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode))
-	}
-
-	return nil
-}
-
 func (am *AlertManager) DeleteSilenceByComment(comment string) error {
 	silences, err := am.ListSilences()
 	if err != nil {
@@ -101,7 +78,7 @@ func (am *AlertManager) DeleteSilenceByComment(comment string) error {
 
 	for _, s := range silences {
 		if s.Comment == comment && s.CreatedBy == key.CreatedBy {
-			return am.DeleteSilenceByID(s.ID)
+			return am.deleteSilenceByID(s.ID)
 		}
 	}
 
@@ -144,4 +121,27 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 	}
 
 	return filteredSilences, nil
+}
+
+func (am *AlertManager) deleteSilenceByID(id string) error {
+
+	endpoint := fmt.Sprintf("%s/api/v2/silence/%s", am.address, id)
+
+	req, err := http.NewRequest("DELETE", endpoint, nil)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := am.httpClient.Do(req)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	if resp.StatusCode != 200 {
+		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode))
+	}
+
+	return nil
 }
