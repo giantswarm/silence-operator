@@ -87,9 +87,8 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			}
 
 			// filter target tags
-			var validSilence bool
+			validSilence := true
 			for _, envTag := range desiredSilence.Spec.TargetTags {
-				validSilence = false
 				matcher, err := regexp.Compile(envTag.Value)
 				if err != nil {
 					return microerror.Mask(err)
@@ -100,9 +99,9 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 					r.logger.LogCtx(ctx, "level", "debug",
 						"message", fmt.Sprintf("silence %#q does not match environment by %#q key [regexp: %#q, value: %#q]",
 							desiredSilence.Name, envTag.Name, envTag.Value, currentTag))
-					continue
+					validSilence = false
+					break
 				}
-				validSilence = true
 			}
 
 			if validSilence {
