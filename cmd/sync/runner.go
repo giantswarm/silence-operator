@@ -89,6 +89,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			// filter target tags
 			var validSilence bool
 			for _, envTag := range desiredSilence.Spec.TargetTags {
+				validSilence = false
 				matcher, err := regexp.Compile(envTag.Value)
 				if err != nil {
 					return microerror.Mask(err)
