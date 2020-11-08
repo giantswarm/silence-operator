@@ -61,7 +61,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	tags := make(map[string]string)
 	{
 		for _, tag := range r.flag.Tags {
-			tagObj := strings.Split(tag, "=")
+			tagObj := strings.SplitN(tag, "=", 1)
 			tagName := tagObj[0]
 			tagValue := ""
 			if len(tagObj) == 2 {
@@ -72,7 +72,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
-	var desiredSilences []monitoringv1alpha1.Silence
+	var filteredSilences []monitoringv1alpha1.Silence
 	{
 		for _, silenceFile := range silenceFiles {
 			data, err := ioutil.ReadFile(silenceFile)
@@ -80,15 +80,15 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 				return microerror.Mask(err)
 			}
 
-			var desiredSilence monitoringv1alpha1.Silence
-			err = yaml.Unmarshal(data, &desiredSilence)
+			var silence monitoringv1alpha1.Silence
+			err = yaml.Unmarshal(data, &silence)
 			if err != nil {
 				return microerror.Mask(err)
 			}
 
 			// filter target tags
 			validSilence := true
-			for _, envTag := range desiredSilence.Spec.TargetTags {
+			for _, envTag := range silence.Spec.TargetTags {
 				matcher, err := regexp.Compile(envTag.Value)
 				if err != nil {
 					return microerror.Mask(err)
@@ -98,14 +98,14 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 				if !matcher.MatchString(currentTag) {
 					r.logger.LogCtx(ctx, "level", "debug",
 						"message", fmt.Sprintf("silence %#q does not match environment by %#q key [regexp: %#q, value: %#q]",
-							desiredSilence.Name, envTag.Name, envTag.Value, currentTag))
+							silence.Name, envTag.Name, envTag.Value, currentTag))
 					validSilence = false
 					break
 				}
 			}
 
 			if validSilence {
-				desiredSilences = append(desiredSilences, desiredSilence)
+				filteredSilences = append(filteredSilences, silence)
 			}
 		}
 	}
@@ -137,7 +137,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 
 	// delete expired silences
 	for _, currentSilence := range currentSilences.Items {
-		if !silenceInList(currentSilence, desiredSilences) {
+		if !silenceInList(currentSilence, filteredSilences) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("deleting expired silence CR %#q", currentSilence.Name))
 
 			err = k8sClient.Silences().Delete(ctx, currentSilence.Name, metav1.DeleteOptions{})
@@ -150,16 +150,16 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	}
 
 	// create desired silences
-	for _, desiredSilence := range desiredSilences {
-		if !silenceInList(desiredSilence, currentSilences.Items) {
-			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("creating desired silence CR %#q", desiredSilence.Name))
+	for _, silence := range filteredSilences {
+		if !silenceInList(silence, currentSilences.Items) {
+			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("creating desired silence CR %#q", silence.Name))
 
-			_, err = k8sClient.Silences().Create(ctx, &desiredSilence, metav1.CreateOptions{})
+			_, err = k8sClient.Silences().Create(ctx, &silence, metav1.CreateOptions{})
 			if err != nil {
 				return microerror.Mask(err)
 			}
 
-			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("desired silence CR %#q has been created", desiredSilence.Name))
+			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("desired silence CR %#q has been created", silence.Name))
 		}
 	}
 
@@ -175,11 +175,7 @@ func findYamls(dir string) ([]string, error) {
 	}
 
 	for _, file := range files {
-		matched, err := filepath.Match("*.yaml", filepath.Base(file.Name()))
-		if err != nil {
-			return nil, microerror.Mask(err)
-		}
-		if matched {
+		if strings.HasSuffix(file.Name(), ".yaml") {
 			result = append(result, filepath.Join(dir, file.Name()))
 		}
 	}
