@@ -41,13 +41,13 @@ spec:
 
 - `targetTags` field defines a list of tags, which `sync` command uses to match CRs towards a specific environment.
 
-For example, to ensure CR above, run:
+For example, to ensure raw CR, stored at `/folder/cr.yaml`, run:
 
 ```bash
-silence-operator sync --tags installation=kind --tags provider=local --dir .`
+silence-operator sync --tag installation=kind --tag provider=local --dir /folder`
 ```
 
-- `matchers` field corresponds to the Alertmanager alert matchers.
+- `matchers` field corresponds to the Alertmanager alert `matchers`.
 
 
 ## Getting the Project
@@ -73,7 +73,7 @@ go build github.com/giantswarm/silence-operator
 
 - Mailing list: [giantswarm](https://groups.google.com/forum/!forum/giantswarm)
 - IRC: #[giantswarm](irc://irc.freenode.org:6667/#giantswarm) on freenode.org
-- Bugs: [issues](https://github.com/giantswarm/aws-operator/issues)
+- Bugs: [issues](https://github.com/giantswarm/silence-operator/issues)
 
 ## Contributing & Reporting Bugs
 
@@ -85,7 +85,7 @@ For security issues, please see [the security policy](SECURITY.md).
 
 ## License
 
-aws-operator is under the Apache 2.0 license. See the [LICENSE](LICENSE) file
+silence-operator is under the Apache 2.0 license. See the [LICENSE](LICENSE) file
 for details.
 
 
