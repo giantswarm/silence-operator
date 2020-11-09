@@ -46,6 +46,31 @@ func (r *runner) Run(cmd *cobra.Command, args []string) error {
 func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) error {
 	var err error
 
+	var restConfig *rest.Config
+	{
+		c := k8srestconfig.Config{
+			Logger: r.logger,
+
+			InCluster:  r.flag.KubernetesInCluster,
+			KubeConfig: r.flag.KubernetesKubeconfig,
+		}
+
+		restConfig, err = k8srestconfig.New(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+
+	k8sClient, err := monitoringv1alpha1client.NewForConfig(restConfig)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	currentSilences, err := k8sClient.Silences().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
 	// find yamls with CRs
 	var silenceFiles []string
 	{
@@ -61,7 +86,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	tags := make(map[string]string)
 	{
 		for _, tag := range r.flag.Tags {
-			tagObj := strings.SplitN(tag, "=", 1)
+			tagObj := strings.SplitN(tag, "=", 2)
 			tagName := tagObj[0]
 			tagValue := ""
 			if len(tagObj) == 2 {
@@ -86,6 +111,11 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 				return microerror.Mask(err)
 			}
 
+			if silenceInList(silence, filteredSilences) {
+				r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("skip duplicated silence %#q", silence.Name))
+				continue
+			}
+
 			// filter target tags
 			validSilence := true
 			for _, envTag := range silence.Spec.TargetTags {
@@ -102,37 +132,13 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 					validSilence = false
 					break
 				}
+
 			}
 
 			if validSilence {
 				filteredSilences = append(filteredSilences, silence)
 			}
 		}
-	}
-
-	var restConfig *rest.Config
-	{
-		c := k8srestconfig.Config{
-			Logger: r.logger,
-
-			InCluster:  r.flag.KubernetesInCluster,
-			KubeConfig: r.flag.KubernetesKubeconfig,
-		}
-
-		restConfig, err = k8srestconfig.New(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
-	k8sClient, err := monitoringv1alpha1client.NewForConfig(restConfig)
-	if err != nil {
-		return microerror.Mask(err)
-	}
-
-	currentSilences, err := k8sClient.Silences().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return microerror.Mask(err)
 	}
 
 	// delete expired silences
