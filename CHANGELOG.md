@@ -9,5 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `silence` controller.
 - Add `sync` command.
+- Push `silence-operator` to app-collections.
 
 [Unreleased]: https://github.com/giantswarm/silence-operator/tree/master

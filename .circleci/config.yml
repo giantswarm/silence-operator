@@ -52,3 +52,45 @@ workflows:
           filters:
             tags:
               only: /^v.*/
+
+      - architect/push-to-app-collection:
+          name: push-silence-operator-to-aws-app-collection
+          context: architect
+          app_name: "silence-operator"
+          app_collection_repo: "aws-app-collection"
+          unique: "true"
+          requires:
+            - push-silence-operator-to-app-catalog
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
+
+      - architect/push-to-app-collection:
+          name: push-silence-operator-to-azure-app-collection
+          context: architect
+          app_name: "silence-operator"
+          app_collection_repo: "azure-app-collection"
+          unique: "true"
+          requires:
+            - push-silence-operator-to-app-catalog
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
+
+      - architect/push-to-app-collection:
+          name: push-silence-operator-to-kvm-app-collection
+          context: architect
+          app_name: "silence-operator"
+          app_collection_repo: "kvm-app-collection"
+          unique: "true"
+          requires:
+            - push-silence-operator-to-app-catalog
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
