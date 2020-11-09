@@ -67,4 +67,3 @@ spec:
   schedule: "0 * * * *"
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
-
