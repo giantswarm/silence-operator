@@ -19,6 +19,7 @@ func (r *Resource) EnsureDeleted(ctx context.Context, obj interface{}) error {
 
 	err = r.amClient.DeleteSilenceByComment(key.SilenceComment(silence))
 	if alertmanager.IsNotFound(err) {
+		r.logger.LogCtx(ctx, "level", "debug", "message", "silence does not exist")
 		return nil
 	}
 	if err != nil {
