@@ -3,7 +3,8 @@ module github.com/giantswarm/silence-operator
 go 1.14
 
 require (
-	github.com/giantswarm/apiextensions/v3 v3.4.2-0.20201102101023-fa981930d96b
+	github.com/ghodss/yaml v1.0.0
+	github.com/giantswarm/apiextensions/v3 v3.7.0
 	github.com/giantswarm/exporterkit v0.2.0
 	github.com/giantswarm/k8sclient/v4 v4.0.0
 	github.com/giantswarm/microendpoint v0.2.0
@@ -18,6 +19,7 @@ require (
 	github.com/pelletier/go-toml v1.7.0 // indirect
 	github.com/prometheus/client_golang v1.8.0
 	github.com/spf13/afero v1.4.0 // indirect
+	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0 // indirect
 	golang.org/x/net v0.0.0-20201002202402-0a1ea396d57c // indirect

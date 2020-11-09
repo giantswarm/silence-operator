@@ -3,28 +3,93 @@
 
 # silence-operator
 
-This is a template repository containing files for a giantswarm
-operator repository.
+The silence-operator manages [alertmanager](https://github.com/prometheus/alertmanager) alerts.
 
-To use it just hit `Use this template` button or [this
-link][generate].
+## Overview
 
-1. Run`devctl replace -i "silence-operator" "$(basename $(git rev-parse
-   --show-toplevel))" --ignore '.git/**' '**'`.
-2. Run `devctl replace -i "silence-operator" "$(basename $(git rev-parse
-   --show-toplevel))" --ignore '.git/**' '**'`.
-3. Go to https://github.com/giantswarm/silence-operator/settings and make sure `Allow
-   merge commits` box is unchecked and `Automatically delete head branches` box
-   is checked.
-4. Go to https://github.com/giantswarm/silence-operator/settings/access and add
-   `giantswarm/bots` with `Write` access and `giantswarm/employees` with
-   `Admin` access.
-5. Add this repository to https://github.com/giantswarm/github.
-6. Create quay.io docker repository if needed.
-7. Add the project to the CircleCI:
-   https://circleci.com/setup-project/gh/giantswarm/silence-operator
-8. Change the badge (with style=shield):
-   https://circleci.com/gh/giantswarm/silence-operator.svg?style=shield&circle-token=TOKEN_FOR_PRIVATE_REPO
-   If this is a private repository token with scope `status` will be needed.
+### CustomResourceDefinition
 
-[generate]: https://github.com/giantswarm/silence-operator/generate
+The silence-operator monitors the Kubernetes API server for changes
+to `Silence` objects and ensures that the current Alertmanager alerts match these objects.
+The Operator reconciles the `Silence` [Custom Resource Definition (CRD)][crd] which
+can be found [here][silence-crd].
+
+[crd]: https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/
+[silence-crd]: https://github.com/giantswarm/apiextensions/blob/master/pkg/apis/monitoring/v1alpha1/silence_types.go
+
+### How does it work
+
+1. Deployment runs the Kubernetes controller, which reconciles `Silence` CRs.
+2. Cronjob runs the synchronization of raw CRs definition from the specified folder by matching tags.
+
+Sample CR:
+
+```yaml
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: test-silence1
+spec:
+  targetTags:
+  - name: installation
+    value: kind
+  - name: provider
+    value: local
+  matchers:
+  - name: cluster
+    value: test
+    isRegex: false
+```
+
+- `targetTags` field defines a list of tags, which `sync` command uses to match CRs towards a specific environment.
+
+For example, to ensure raw CR, stored at `/folder/cr.yaml`, run:
+
+```bash
+silence-operator sync --tag installation=kind --tag provider=local --dir /folder
+```
+
+- `matchers` field corresponds to the Alertmanager alert `matchers`.
+
+
+## Getting the Project
+
+Download the latest release:
+https://github.com/giantswarm/silence-operator/releases/latest
+
+Clone the git repository: https://github.com/giantswarm/silence-operator.git
+
+Download the latest docker image from here:
+https://quay.io/repository/giantswarm/silence-operator
+
+
+### How to build
+
+Build the standard way.
+
+```
+go build github.com/giantswarm/silence-operator
+```
+
+## Contact
+
+- Mailing list: [giantswarm](https://groups.google.com/forum/!forum/giantswarm)
+- Bugs: [issues](https://github.com/giantswarm/silence-operator/issues)
+
+## Contributing & Reporting Bugs
+
+See [CONTRIBUTING](CONTRIBUTING.md) for details on submitting patches, the
+contribution workflow as well as reporting bugs.
+
+For security issues, please see [the security policy](SECURITY.md).
+
+
+## License
+
+silence-operator is under the Apache 2.0 license. See the [LICENSE](LICENSE) file
+for details.
+
+
+## Credit
+- https://golang.org
+- https://github.com/giantswarm/microkit
