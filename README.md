@@ -11,9 +11,11 @@ The silence-operator manages [alertmanager](https://github.com/prometheus/alertm
 
 The silence-operator monitors the Kubernetes API server for changes
 to `Silence` objects and ensures that the current Alertmanager alerts match these objects.
-The Operator acts on the following [custom resource definitions (CRDs)](https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/):
+The Operator reconciles the `Silence` [Custom Resource Definition (CRD)][crd] which
+can be found [here][silence-crd].
 
-`Silence` CRD definition can be found [here](https://github.com/giantswarm/apiextensions/blob/master/pkg/apis/monitoring/v1alpha1/silence_types.go).
+[crd]: https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/
+[silence-crd]: https://github.com/giantswarm/apiextensions/blob/master/pkg/apis/monitoring/v1alpha1/silence_types.go
 
 ### How does it work
 
