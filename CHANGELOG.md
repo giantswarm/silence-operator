@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Handle gracefully `Silence` CR deletion if Alertmanager alert doesn't exist.
+
 ## [0.1.1] - 2020-11-09
 
 ### Changed
