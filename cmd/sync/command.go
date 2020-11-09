@@ -11,7 +11,11 @@ import (
 
 const (
 	name        = "sync"
-	description = "Synchronize CRs from local directory into Kubernetes API."
+	description = `
+Synchronize CRs from local directory into Kubernetes API.
+
+silence-operator sync --tag installation=kind --tag provider=local --dir /folder
+`
 )
 
 type Config struct {
