@@ -1,7 +1,8 @@
 Installation:
   V1:
     Name: ""
-    Provider: ""
+    Provider:
+      Kind: ""
     Registry:
       Domain: quay.io
     Secret:
