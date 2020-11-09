@@ -1,0 +1,67 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ include "resource.default.name"  . }}-sync
+  namespace: {{ include "resource.default.namespace"  . }}
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+spec:
+  concurrencyPolicy: Allow
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "labels.common" . | nindent 8 }}
+      annotations:
+        releaseRevision: {{ .Release.Revision | quote }}
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "labels.common" . | nindent 12 }}
+          annotations:
+            releaseRevision: {{ .Release.Revision | quote }}
+        spec:
+          initContainers:
+          - name: {{ include "resource.default.name"  . }}-pull-silences
+            image: "{{ .Values.Installation.V1.Registry.Domain }}/{{ .Values.initContainer.name }}:{{ .Values.initContainer.tag }}"
+            args:
+            - clone
+            - https://silence-operator:$(GITHUB_PULL_TOKEN)@{{ .Values.sync.repository }}
+            - /data/silences
+            env:
+            - name: GITHUB_PULL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: github-pull-token
+                  name: {{ include "resource.default.name"  . }}
+            volumeMounts:
+            - mountPath: /data
+              name: silences
+              readOnly: false
+          containers:
+          - name: {{ include "resource.default.name"  . }}-sync-silences
+            image: "{{ .Values.Installation.V1.Registry.Domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
+            args:
+            - sync
+            - --dir=/data/silences
+            - --kubernetes.incluster=true
+            - --tag=installation={{ .Values.Installation.V1.Name }}
+            - --tag=provider={{ .Values.Installation.V1.Provider.Kind }}
+            imagePullPolicy: Always
+            volumeMounts:
+            - mountPath: /data
+              name: silences
+              readOnly: true
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          serviceAccountName: {{ include "resource.default.name"  . }}
+          securityContext:
+            runAsUser: {{ .Values.pod.user.id }}
+            runAsGroup: {{ .Values.pod.group.id }}
+          volumes:
+          - name: silences
+            emptyDir: {}
+  schedule: "0 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3

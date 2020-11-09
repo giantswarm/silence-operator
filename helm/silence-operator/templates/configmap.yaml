@@ -14,6 +14,8 @@ data:
       listen:
         address: 'http://0.0.0.0:8000'
     service:
+      alertmanager:
+        address: http://alertmanager.monitoring:9093
       kubernetes:
         address: ''
         inCluster: true
