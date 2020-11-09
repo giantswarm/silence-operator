@@ -59,8 +59,3 @@ spec:
           requests:
             cpu: 100m
             memory: 220Mi
-          limits:
-            cpu: 100m
-            memory: 220Mi
-      imagePullSecrets:
-      - name: {{ include "resource.pullSecret.name" . }}

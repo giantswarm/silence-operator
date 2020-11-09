@@ -23,8 +23,9 @@ spec:
   supplementalGroups:
     rule: RunAsAny
   volumes:
-    - 'secret'
     - 'configMap'
+    - 'emptyDir'
+    - 'secret'
   allowPrivilegeEscalation: false
   hostNetwork: false
   hostIPC: false

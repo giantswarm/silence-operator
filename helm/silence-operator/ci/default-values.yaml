@@ -1,0 +1,10 @@
+Installation:
+  V1:
+    Name: ""
+    Provider: ""
+    Registry:
+      Domain: quay.io
+    Secret:
+      SilenceOperator:
+        Github:
+          Token: ""
