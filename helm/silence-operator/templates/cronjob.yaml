@@ -48,7 +48,7 @@ spec:
             - --dir=/data/silences
             - --kubernetes.incluster=true
             - --tag=installation={{ .Values.Installation.V1.Name }}
-            - --tag=provider={{ .Values.Installation.V1.Provider }}
+            - --tag=provider={{ .Values.Installation.V1.Provider.Kind }}
             imagePullPolicy: Always
             volumeMounts:
             - mountPath: /data
