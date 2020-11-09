@@ -57,6 +57,7 @@ workflows:
           name: push-silence-operator-to-aws-app-collection
           context: architect
           app_name: "silence-operator"
+          app_namespace: "monitoring"
           app_collection_repo: "aws-app-collection"
           unique: "true"
           requires:
@@ -71,6 +72,7 @@ workflows:
           name: push-silence-operator-to-azure-app-collection
           context: architect
           app_name: "silence-operator"
+          app_namespace: "monitoring"
           app_collection_repo: "azure-app-collection"
           unique: "true"
           requires:
@@ -85,6 +87,7 @@ workflows:
           name: push-silence-operator-to-kvm-app-collection
           context: architect
           app_name: "silence-operator"
+          app_namespace: "monitoring"
           app_collection_repo: "kvm-app-collection"
           unique: "true"
           requires:
