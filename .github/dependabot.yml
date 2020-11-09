@@ -10,18 +10,24 @@ updates:
     interval: weekly
     time: "04:00"
   target-branch: master
+  reviewers:
+  - giantswarm/team-biscuit
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
     interval: weekly
     time: "04:00"
   target-branch: master
+  reviewers:
+  - giantswarm/team-biscuit
 - package-ecosystem: gomod
   directory: "/"
   schedule:
     interval: weekly
     time: "04:00"
   open-pull-requests-limit: 10
+  reviewers:
+  - giantswarm/team-biscuit
   ignore:
   - dependency-name: k8s.io/*
     versions:
