@@ -46,7 +46,7 @@ spec:
 For example, to ensure raw CR, stored at `/folder/cr.yaml`, run:
 
 ```bash
-silence-operator sync --tag installation=kind --tag provider=local --dir /folder`
+silence-operator sync --tag installation=kind --tag provider=local --dir /folder
 ```
 
 - `matchers` field corresponds to the Alertmanager alert `matchers`.
