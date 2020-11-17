@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2020-11-17
+
 ### Changed
 
 - Run synchronization job every 5min.
@@ -29,7 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/giantswarm/silence-operator/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/giantswarm/silence-operator/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/giantswarm/silence-operator/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/giantswarm/silence-operator/releases/tag/v0.1.0
