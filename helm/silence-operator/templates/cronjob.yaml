@@ -62,6 +62,6 @@ spec:
           volumes:
           - name: silences
             emptyDir: {}
-  schedule: "0 * * * *"
+  schedule: "*/5 * * * *"
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
