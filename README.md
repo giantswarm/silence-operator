@@ -41,7 +41,11 @@ spec:
     isRegex: false
 ```
 
-- `targetTags` field defines a list of tags, which `sync` command uses to match CRs towards a specific environment.
+- `targetTags` field:
+  - defines a list of tags, which `sync` command uses to match CRs towards a specific environment
+  - each _target tag_ consists of `name` and `value` which is a regexp matched against corresponding `name` tag given on the command line
+  - if a `Silence` doesn't specify any `targetTags` it is assumed to match any environment and is synced
+  - otherwise for a `Silence` to be synced, all tags defined in its `targetTags` must match all tags given on the `sync` command line
 
 For example, to ensure raw CR, stored at `/folder/cr.yaml`, run:
 
@@ -49,8 +53,10 @@ For example, to ensure raw CR, stored at `/folder/cr.yaml`, run:
 silence-operator sync --tag installation=kind --tag provider=local --dir /folder
 ```
 
-- `matchers` field corresponds to the Alertmanager alert `matchers`.
-
+- `matchers` field corresponds to the Alertmanager silence `matchers` each of which consists of:
+  - `name` - name of tag on an alert to match
+  - `value` - fixed string or expression to match against the value of the tag named by `name` above on an alert
+  - `isRegex` - a boolean specifying wheter to treat `value` as a regex or a fixed string
 
 ## Getting the Project
 
