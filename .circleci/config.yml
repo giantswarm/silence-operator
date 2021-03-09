@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  architect: giantswarm/architect@0.10.2
+  architect: giantswarm/architect@2.1.0
 
 workflows:
   build:
@@ -59,7 +59,6 @@ workflows:
           app_name: "silence-operator"
           app_namespace: "monitoring"
           app_collection_repo: "aws-app-collection"
-          unique: "true"
           requires:
             - push-silence-operator-to-app-catalog
           filters:
@@ -74,7 +73,6 @@ workflows:
           app_name: "silence-operator"
           app_namespace: "monitoring"
           app_collection_repo: "azure-app-collection"
-          unique: "true"
           requires:
             - push-silence-operator-to-app-catalog
           filters:
@@ -89,7 +87,6 @@ workflows:
           app_name: "silence-operator"
           app_namespace: "monitoring"
           app_collection_repo: "kvm-app-collection"
-          unique: "true"
           requires:
             - push-silence-operator-to-app-catalog
           filters:
