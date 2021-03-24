@@ -156,11 +156,11 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	}
 
 	// create desired silences
-	for _, silence := range filteredSilences {
+	for i, silence := range filteredSilences {
 		if !silenceInList(silence, currentSilences.Items) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("creating desired silence CR %#q", silence.Name))
 
-			_, err = k8sClient.Silences().Create(ctx, &silence, metav1.CreateOptions{})
+			_, err = k8sClient.Silences().Create(ctx, &filteredSilences[i], metav1.CreateOptions{})
 			if err != nil {
 				return microerror.Mask(err)
 			}
