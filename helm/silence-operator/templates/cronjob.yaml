@@ -53,7 +53,7 @@ spec:
               name: silences
               readOnly: true
           dnsPolicy: ClusterFirst
-          restartPolicy: Never
+          restartPolicy: OnFailure
           schedulerName: default-scheduler
           serviceAccountName: {{ include "resource.default.name"  . }}
           securityContext:
