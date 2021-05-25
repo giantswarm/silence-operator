@@ -4,3 +4,5 @@ description: "Chart holding silence-operator."
 home: "https://github.com/giantswarm/silence-operator"
 name: "silence-operator"
 version: "[[ .Version ]]"
+annotations:
+  config.giantswarm.io/version: 1.x.x
