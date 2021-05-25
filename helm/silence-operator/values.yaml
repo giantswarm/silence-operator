@@ -12,7 +12,18 @@ project:
 
 sync:
   repository: github.com/giantswarm/silences
+  github:
+    token: ""
 
 initContainer:
   name: "giantswarm/alpinegit"
   tag: "v2.26.2-giantswarm"
+
+
+cluster:
+  name: ""
+  provider:
+    kind: ""
+
+registry:
+  domain: docker.io
