@@ -1,6 +1,9 @@
 package alertmanager
 
-import "time"
+import (
+	"regexp"
+	"time"
+)
 
 type Silence struct {
 	Comment   string    `json:"comment"`
@@ -12,10 +15,54 @@ type Silence struct {
 	Status    *Status   `json:"status"`
 }
 
+// MatchType is an enum for label matching types.
+type MatchType int
+
+// Possible MatchTypes.
+const (
+	MatchEqual MatchType = iota
+	MatchNotEqual
+	MatchRegexp
+	MatchNotRegexp
+)
+
+func (m MatchType) String() string {
+	typeToStr := map[MatchType]string{
+		MatchEqual:     "=",
+		MatchNotEqual:  "!=",
+		MatchRegexp:    "=~",
+		MatchNotRegexp: "!~",
+	}
+	if str, ok := typeToStr[m]; ok {
+		return str
+	}
+	panic("unknown match type")
+}
+
+// Matcher models the matching of a label.
 type Matcher struct {
-	IsRegex bool   `json:"isRegex"`
-	Name    string `json:"name"`
-	Value   string `json:"value"`
+	Type  MatchType
+	Name  string
+	Value string
+
+	re *regexp.Regexp
+}
+
+// NewMatcher returns a matcher object.
+func NewMatcher(t MatchType, n, v string) (*Matcher, error) {
+	m := &Matcher{
+		Type:  t,
+		Name:  n,
+		Value: v,
+	}
+	if t == MatchRegexp || t == MatchNotRegexp {
+		re, err := regexp.Compile("^(?:" + v + ")$")
+		if err != nil {
+			return nil, err
+		}
+		m.re = re
+	}
+	return m, nil
 }
 
 type Status struct {

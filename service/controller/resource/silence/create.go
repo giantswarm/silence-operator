@@ -23,14 +23,23 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 		var matchers []alertmanager.Matcher
 		{
 			for _, matcher := range silence.Spec.Matchers {
-				newMatcher := alertmanager.Matcher{
-					IsRegex: matcher.IsRegex,
-					Name:    matcher.Name,
-					Value:   matcher.Value,
+				matchType := alertmanager.MatchEqual
+				if matcher.IsRegex {
+					matchType = alertmanager.MatchRegexp
+				}
+				newMatcher, err := alertmanager.NewMatcher(matchType, matcher.Name, matcher.Value)
+				if err != nil {
+					return microerror.Mask(err)
 				}
 
-				matchers = append(matchers, newMatcher)
+				matchers = append(matchers, *newMatcher)
 			}
+
+			newMatcher, err := alertmanager.NewMatcher(alertmanager.MatchNotEqual, "alertname", "Heartbeat")
+			if err != nil {
+				return microerror.Mask(err)
+			}
+			matchers = append(matchers, *newMatcher)
 		}
 
 		newSilence := &alertmanager.Silence{
