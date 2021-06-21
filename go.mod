@@ -17,7 +17,7 @@ require (
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/pelletier/go-toml v1.7.0 // indirect
-	github.com/prometheus/client_golang v1.10.0
+	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/afero v1.4.0 // indirect
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
