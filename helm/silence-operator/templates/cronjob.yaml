@@ -26,6 +26,7 @@ spec:
             image: "{{ .Values.registry.domain }}/{{ .Values.initContainer.name }}:{{ .Values.initContainer.tag }}"
             args:
             - clone
+            - --depth=1
             - https://silence-operator:$(GITHUB_PULL_TOKEN)@{{ .Values.sync.repository }}
             - /data/silences
             env:
