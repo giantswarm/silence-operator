@@ -29,7 +29,7 @@ updates:
       time: "04:00"
     open-pull-requests-limit: 10
     reviewers:
-      - giantswarm/team-biscuit
+      - giantswarm/team-atlas
     ignore:
       - dependency-name: k8s.io/*
         versions:
