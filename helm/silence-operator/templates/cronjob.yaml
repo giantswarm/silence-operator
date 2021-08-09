@@ -23,9 +23,10 @@ spec:
         spec:
           initContainers:
           - name: {{ include "resource.default.name"  . }}-pull-silences
-            image: "{{ .Values.Installation.V1.Registry.Domain }}/{{ .Values.initContainer.name }}:{{ .Values.initContainer.tag }}"
+            image: "{{ .Values.registry.domain }}/{{ .Values.initContainer.name }}:{{ .Values.initContainer.tag }}"
             args:
             - clone
+            - --depth=1
             - https://silence-operator:$(GITHUB_PULL_TOKEN)@{{ .Values.sync.repository }}
             - /data/silences
             env:
@@ -40,13 +41,13 @@ spec:
               readOnly: false
           containers:
           - name: {{ include "resource.default.name"  . }}-sync-silences
-            image: "{{ .Values.Installation.V1.Registry.Domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
+            image: "{{ .Values.registry.domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
             args:
             - sync
             - --dir=/data/silences
             - --kubernetes.incluster=true
-            - --tag=installation={{ .Values.Installation.V1.Name }}
-            - --tag=provider={{ .Values.Installation.V1.Provider.Kind }}
+            - --tag=installation={{ .Values.cluster.name }}
+            - --tag=provider={{ .Values.cluster.provider.kind }}
             imagePullPolicy: Always
             volumeMounts:
             - mountPath: /data
