@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/ghodss/yaml v1.0.0
-	github.com/giantswarm/apiextensions/v3 v3.26.0
+	github.com/giantswarm/apiextensions/v3 v3.31.0
 	github.com/giantswarm/exporterkit v0.2.1
 	github.com/giantswarm/k8sclient/v4 v4.1.0
 	github.com/giantswarm/microendpoint v0.2.0
@@ -27,6 +27,7 @@ require (
 
 replace (
 	github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible => github.com/golang-jwt/jwt v3.2.1+incompatible
 	github.com/gogo/protobuf v1.3.1 => github.com/gogo/protobuf v1.3.2
 	sigs.k8s.io/cluster-api => github.com/giantswarm/cluster-api v0.3.10-gs
 )
