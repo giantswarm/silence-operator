@@ -24,11 +24,11 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 		{
 			for _, matcher := range silence.Spec.Matchers {
 				newMatcher := alertmanager.Matcher{
+					IsEqual: matcher.IsEqual,
 					IsRegex: matcher.IsRegex,
 					Name:    matcher.Name,
 					Value:   matcher.Value,
 				}
-
 				matchers = append(matchers, newMatcher)
 			}
 		}

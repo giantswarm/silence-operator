@@ -1,6 +1,8 @@
 package alertmanager
 
-import "time"
+import (
+	"time"
+)
 
 type Silence struct {
 	Comment   string    `json:"comment"`
@@ -14,6 +16,7 @@ type Silence struct {
 
 type Matcher struct {
 	IsRegex bool   `json:"isRegex"`
+	IsEqual bool   `json:"isEqual"`
 	Name    string `json:"name"`
 	Value   string `json:"value"`
 }
