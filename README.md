@@ -56,7 +56,8 @@ silence-operator sync --tag installation=kind --tag provider=local --dir /folder
 - `matchers` field corresponds to the Alertmanager silence `matchers` each of which consists of:
   - `name` - name of tag on an alert to match
   - `value` - fixed string or expression to match against the value of the tag named by `name` above on an alert
-  - `isRegex` - a boolean specifying wheter to treat `value` as a regex or a fixed string
+  - `isRegex` - a boolean specifying whether to treat `value` as a regex (`=~`) or a fixed string (`=`)
+  - `isEqual` - a boolean specifying whether to use equal signs (`=` or `=~`) or to negate the matcher (`!=` or `!~`)
 
 ## Getting the Project
 
