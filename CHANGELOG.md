@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2021-08-13
+
 ### Changed
 
 - Add support for the negative silence matchers.
@@ -60,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/giantswarm/silence-operator/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/giantswarm/silence-operator/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/giantswarm/silence-operator/compare/v0.1.5...v0.2.0
 [0.1.5]: https://github.com/giantswarm/silence-operator/compare/v0.1.4...v0.1.5
