@@ -11,10 +11,10 @@ import (
 	"github.com/giantswarm/microendpoint/service/version"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/rest"
 
+	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/flag"
 	"github.com/giantswarm/silence-operator/pkg/project"
 	"github.com/giantswarm/silence-operator/service/collector"
