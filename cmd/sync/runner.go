@@ -10,14 +10,14 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	monitoringv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/monitoring/v1alpha1"
-	monitoringv1alpha1client "github.com/giantswarm/apiextensions/v3/pkg/clientset/versioned/typed/monitoring/v1alpha1"
-	"github.com/giantswarm/k8sclient/v4/pkg/k8srestconfig"
+	"github.com/giantswarm/k8sclient/v5/pkg/k8srestconfig"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/giantswarm/silence-operator/api/v1alpha1"
 )
 
 type runner struct {
@@ -61,12 +61,13 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
-	k8sClient, err := monitoringv1alpha1client.NewForConfig(restConfig)
+	k8sClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	currentSilences, err := k8sClient.Silences().List(ctx, metav1.ListOptions{})
+	var currentSilences v1alpha1.SilenceList
+	err = k8sClient.List(ctx, &currentSilences)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -97,7 +98,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
-	var filteredSilences []monitoringv1alpha1.Silence
+	var filteredSilences []v1alpha1.Silence
 	{
 		for _, silenceFile := range silenceFiles {
 			data, err := ioutil.ReadFile(silenceFile)
@@ -105,7 +106,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 				return microerror.Mask(err)
 			}
 
-			var silence monitoringv1alpha1.Silence
+			var silence v1alpha1.Silence
 			err = yaml.Unmarshal(data, &silence)
 			if err != nil {
 				return microerror.Mask(err)
@@ -132,7 +133,6 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 					validSilence = false
 					break
 				}
-
 			}
 
 			if validSilence {
@@ -146,7 +146,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		if !silenceInList(currentSilence, filteredSilences) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("deleting expired silence CR %#q", currentSilence.Name))
 
-			err = k8sClient.Silences().Delete(ctx, currentSilence.Name, metav1.DeleteOptions{})
+			err = k8sClient.Delete(ctx, &currentSilence)
 			if err != nil {
 				return microerror.Mask(err)
 			}
@@ -160,7 +160,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		if !silenceInList(silence, currentSilences.Items) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("creating desired silence CR %#q", silence.Name))
 
-			_, err = k8sClient.Silences().Create(ctx, &filteredSilences[i], metav1.CreateOptions{})
+			err = k8sClient.Create(ctx, &filteredSilences[i])
 			if err != nil {
 				return microerror.Mask(err)
 			}
@@ -189,7 +189,7 @@ func findYamls(dir string) ([]string, error) {
 	return result, nil
 }
 
-func silenceInList(silence monitoringv1alpha1.Silence, silences []monitoringv1alpha1.Silence) bool {
+func silenceInList(silence v1alpha1.Silence, silences []v1alpha1.Silence) bool {
 	for _, item := range silences {
 		if item.Name == silence.Name {
 			return true

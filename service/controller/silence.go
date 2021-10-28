@@ -1,15 +1,16 @@
 package controller
 
 import (
-	monitoringv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/monitoring/v1alpha1"
-	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
+	"github.com/giantswarm/k8sclient/v5/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"github.com/giantswarm/operatorkit/v2/pkg/controller"
-	"github.com/giantswarm/operatorkit/v2/pkg/resource"
-	"github.com/giantswarm/operatorkit/v2/pkg/resource/wrapper/metricsresource"
-	"github.com/giantswarm/operatorkit/v2/pkg/resource/wrapper/retryresource"
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/giantswarm/operatorkit/v5/pkg/controller"
+	"github.com/giantswarm/operatorkit/v5/pkg/resource"
+	"github.com/giantswarm/operatorkit/v5/pkg/resource/wrapper/metricsresource"
+	"github.com/giantswarm/operatorkit/v5/pkg/resource/wrapper/retryresource"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/giantswarm/silence-operator/api/v1alpha1"
 
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/pkg/project"
@@ -40,8 +41,8 @@ func NewSilence(config SilenceConfig) (*Silence, error) {
 		c := controller.Config{
 			K8sClient: config.K8sClient,
 			Logger:    config.Logger,
-			NewRuntimeObjectFunc: func() runtime.Object {
-				return new(monitoringv1alpha1.Silence)
+			NewRuntimeObjectFunc: func() client.Object {
+				return new(v1alpha1.Silence)
 			},
 			Resources: resources,
 
