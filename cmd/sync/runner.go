@@ -146,7 +146,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		if !silenceInList(currentSilence, filteredSilences) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("deleting expired silence CR %#q", currentSilence.Name))
 
-			err = k8sClient.Delete(ctx, &currentSilence)
+			err = k8sClient.Delete(ctx, &currentSilence) //nolint:gosec
 			if err != nil {
 				return microerror.Mask(err)
 			}
