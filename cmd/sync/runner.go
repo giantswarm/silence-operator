@@ -13,6 +13,7 @@ import (
 	monitoringv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/monitoring/v1alpha1"
 	monitoringv1alpha1client "github.com/giantswarm/apiextensions/v3/pkg/clientset/versioned/typed/monitoring/v1alpha1"
 	"github.com/giantswarm/k8sclient/v4/pkg/k8srestconfig"
+	"github.com/giantswarm/k8smetadata/pkg/annotation"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/spf13/cobra"
@@ -143,7 +144,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 
 	// delete expired silences
 	for _, currentSilence := range currentSilences.Items {
-		if !silenceInList(currentSilence, filteredSilences) {
+		if !silenceInList(currentSilence, filteredSilences) && !hasKeepAnnotation(currentSilence) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("deleting expired silence CR %#q", currentSilence.Name))
 
 			err = k8sClient.Silences().Delete(ctx, currentSilence.Name, metav1.DeleteOptions{})
@@ -197,4 +198,9 @@ func silenceInList(silence monitoringv1alpha1.Silence, silences []monitoringv1al
 	}
 
 	return false
+}
+
+func hasKeepAnnotation(silence monitoringv1alpha1.Silence) bool {
+	keep, ok := silence.ObjectMeta.Annotations[annotation.Keep]
+	return ok && keep == "true"
 }
