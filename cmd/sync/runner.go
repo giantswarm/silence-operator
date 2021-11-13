@@ -11,7 +11,6 @@ import (
 
 	"github.com/ghodss/yaml"
 	monitoringv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/monitoring/v1alpha1"
-	monitoringv1alpha1client "github.com/giantswarm/apiextensions/v3/pkg/clientset/versioned/typed/monitoring/v1alpha1"
 	"github.com/giantswarm/k8sclient/v6/pkg/k8srestconfig"
 	"github.com/giantswarm/k8smetadata/pkg/annotation"
 	"github.com/giantswarm/microerror"
