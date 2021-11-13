@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	monitoringv1alpha1 "github.com/giantswarm/apiextensions/v3/pkg/apis/monitoring/v1alpha1"
 	"github.com/giantswarm/k8sclient/v6/pkg/k8srestconfig"
 	"github.com/giantswarm/k8smetadata/pkg/annotation"
 	"github.com/giantswarm/microerror"
@@ -19,7 +18,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/giantswarm/silence-operator/api/v1alpha1"
+	monitoringv1alpha1 "github.com/giantswarm/silence-operator/api/v1alpha1"
 )
 
 type runner struct {
@@ -68,7 +67,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		return microerror.Mask(err)
 	}
 
-	var currentSilences v1alpha1.SilenceList
+	var currentSilences monitoringv1alpha1.SilenceList
 	err = k8sClient.List(ctx, &currentSilences)
 	if err != nil {
 		return microerror.Mask(err)
@@ -100,7 +99,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
-	var filteredSilences []v1alpha1.Silence
+	var filteredSilences []monitoringv1alpha1.Silence
 	{
 		for _, silenceFile := range silenceFiles {
 			data, err := ioutil.ReadFile(silenceFile)
@@ -108,7 +107,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 				return microerror.Mask(err)
 			}
 
-			var silence v1alpha1.Silence
+			var silence monitoringv1alpha1.Silence
 			err = yaml.Unmarshal(data, &silence)
 			if err != nil {
 				return microerror.Mask(err)
@@ -191,7 +190,7 @@ func findYamls(dir string) ([]string, error) {
 	return result, nil
 }
 
-func silenceInList(silence v1alpha1.Silence, silences []v1alpha1.Silence) bool {
+func silenceInList(silence monitoringv1alpha1.Silence, silences []monitoringv1alpha1.Silence) bool {
 	for _, item := range silences {
 		if item.Name == silence.Name {
 			return true
