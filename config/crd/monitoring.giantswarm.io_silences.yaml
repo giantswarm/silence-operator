@@ -1,0 +1,86 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.7.0
+  creationTimestamp: null
+  name: silences.monitoring.giantswarm.io
+spec:
+  group: monitoring.giantswarm.io
+  names:
+    categories:
+    - common
+    - giantswarm
+    kind: Silence
+    listKind: SilenceList
+    plural: silences
+    singular: silence
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Silence represents schema for managed silences in Alertmanager.
+          Reconciled by silence-operator.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              matchers:
+                items:
+                  properties:
+                    isEqual:
+                      type: boolean
+                    isRegex:
+                      type: boolean
+                    name:
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - isRegex
+                  - name
+                  - value
+                  type: object
+                type: array
+              targetTags:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - name
+                  - value
+                  type: object
+                type: array
+            required:
+            - matchers
+            - targetTags
+            type: object
+        required:
+        - metadata
+        - spec
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

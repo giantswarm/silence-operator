@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update `operatorkit` to v6.
+- Update `k8sclient` to v6.
+- Move Silence API from `apiextensions` to this repository.
+
 ## [0.3.0] - 2021-11-11
 
 ### Added
