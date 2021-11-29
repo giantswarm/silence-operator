@@ -66,10 +66,11 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	var ctrlClient client.Client
 	{
 		c := k8sclient.ClientsConfig{
+			Logger:     r.logger,
+			RestConfig: restConfig,
 			SchemeBuilder: k8sclient.SchemeBuilder{
 				monitoringv1alpha1.AddToScheme,
 			},
-			RestConfig: restConfig,
 		}
 
 		k8sClients, err := k8sclient.NewClients(c)
