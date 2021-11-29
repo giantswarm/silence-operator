@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	"github.com/giantswarm/k8sclient/v6/pkg/k8sclient"
 	"github.com/giantswarm/k8sclient/v6/pkg/k8srestconfig"
 	"github.com/giantswarm/k8smetadata/pkg/annotation"
 	"github.com/giantswarm/microerror"
@@ -62,13 +63,25 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
-	k8sClient, err := client.New(restConfig, client.Options{})
-	if err != nil {
-		return microerror.Mask(err)
+	var ctrlClient client.Client
+	{
+		c := k8sclient.ClientsConfig{
+			SchemeBuilder: k8sclient.SchemeBuilder{
+				monitoringv1alpha1.AddToScheme,
+			},
+			RestConfig: restConfig,
+		}
+
+		k8sClients, err := k8sclient.NewClients(c)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		ctrlClient = k8sClients.CtrlClient()
 	}
 
 	var currentSilences monitoringv1alpha1.SilenceList
-	err = k8sClient.List(ctx, &currentSilences)
+	err = ctrlClient.List(ctx, &currentSilences)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -147,7 +160,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		if !silenceInList(currentSilence, filteredSilences) && !hasKeepAnnotation(currentSilence) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("deleting expired silence CR %#q", currentSilence.Name))
 
-			err = k8sClient.Delete(ctx, &currentSilence) //nolint:gosec
+			err = ctrlClient.Delete(ctx, &currentSilence) //nolint:gosec
 			if err != nil {
 				return microerror.Mask(err)
 			}
@@ -161,7 +174,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		if !silenceInList(silence, currentSilences.Items) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("creating desired silence CR %#q", silence.Name))
 
-			err = k8sClient.Create(ctx, &filteredSilences[i])
+			err = ctrlClient.Create(ctx, &filteredSilences[i])
 			if err != nil {
 				return microerror.Mask(err)
 			}
