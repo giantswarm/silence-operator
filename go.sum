@@ -179,8 +179,9 @@ github.com/giantswarm/backoff v0.2.0 h1:kdfAf83pZ/l8X0KiA2dJ2Wq19nS9hISijVn7ZRdF
 github.com/giantswarm/backoff v0.2.0/go.mod h1:Z3WRsFilSJ5H5VlFa4XhraoPr+9pmZgYasoY2OSfNOk=
 github.com/giantswarm/exporterkit v0.2.1 h1:M/Avqdg6O+NdyGtY+LSy5cCpJzhG15WRHQRkhOY/dKs=
 github.com/giantswarm/exporterkit v0.2.1/go.mod h1:LkZNK+2qTcbHspbizA6JBBXpQW99u7u7UisUaWrSoVY=
-github.com/giantswarm/k8sclient/v6 v6.0.0 h1:jVrB8/q12/yPDv/tv8cwj4Z11hFGvGuNO2n9O1s+xGo=
 github.com/giantswarm/k8sclient/v6 v6.0.0/go.mod h1:mF0FgQHqCrAhk5EGiyN7RfgMMsz7CP3GoaFsfZ5KHps=
+github.com/giantswarm/k8sclient/v6 v6.1.0 h1:UdIh2P4LeFz+PDxprwNbV7Nic2q7YAAAtKdv4Ov+v1s=
+github.com/giantswarm/k8sclient/v6 v6.1.0/go.mod h1:mF0FgQHqCrAhk5EGiyN7RfgMMsz7CP3GoaFsfZ5KHps=
 github.com/giantswarm/k8smetadata v0.6.0 h1:L3opjzcNzetPacI4zOcYxDAvp6ssM/QLfuXZTQ5Otyo=
 github.com/giantswarm/k8smetadata v0.6.0/go.mod h1:k3DYCMdspxhk7efLkQdX1b8UZ71ijOCG3ZoIU8+5xgw=
 github.com/giantswarm/microendpoint v0.2.0 h1:xCAqAVRjTw/4ifEuBeNavALdbQsLk6+k/ukzdy0GWZE=
