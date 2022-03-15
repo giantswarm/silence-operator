@@ -24,6 +24,13 @@ type Silence struct {
 type SilenceSpec struct {
 	TargetTags []TargetTag `json:"targetTags"`
 	Matchers   []Matcher   `json:"matchers"`
+
+	// Owner is GitHub username of a person who created and/or owns the silence.
+	Owner *string `json:"owner"`
+
+	// PostmortemURL is a link to a postmortem document for the problem the silence
+	// was created for.
+	PostmortemURL *string `json:"postmortem_url"`
 }
 
 type TargetTag struct {
