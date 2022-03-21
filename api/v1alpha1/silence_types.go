@@ -28,8 +28,7 @@ type SilenceSpec struct {
 	// Owner is GitHub username of a person who created and/or owns the silence.
 	Owner *string `json:"owner"`
 
-	// PostmortemURL is a link to a postmortem document for the problem the silence
-	// was created for.
+	// PostmortemURL is a link to a document describing the problem.
 	PostmortemURL *string `json:"postmortem_url"`
 }
 
