@@ -61,7 +61,8 @@ spec:
                   owns the silence.
                 type: string
               postmortem_url:
-                description: PostmortemURL is a link to a document describing the problem.
+                description: PostmortemURL is a link to a document describing the
+                  problem.
                 type: string
               targetTags:
                 items:
