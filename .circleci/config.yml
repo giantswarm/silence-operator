@@ -124,11 +124,11 @@ workflows:
               only: /^v.*/
 
       - architect/push-to-app-collection:
-          name: push-silence-operator-to-vmware-app-collection
+          name: push-silence-operator-to-vsphere-app-collection
           context: architect
           app_name: "silence-operator"
           app_namespace: "monitoring"
-          app_collection_repo: "vmware-app-collection"
+          app_collection_repo: "vsphere-app-collection"
           requires:
             - push-silence-operator-to-app-catalog
           filters:
