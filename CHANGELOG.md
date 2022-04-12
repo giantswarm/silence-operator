@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add silence owner (GitHub username).
 - Add postmortem URL.
 
+## [0.5.0] - 2022-03-28
+
+### Changed
+
+- Wire to new alertmanager.
+
 ## [0.4.0] - 2021-11-29
 
 ### Changed
@@ -81,7 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/giantswarm/silence-operator/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/giantswarm/silence-operator/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/giantswarm/silence-operator/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/giantswarm/silence-operator/compare/v0.2.1...v0.2.2
