@@ -56,6 +56,14 @@ spec:
                   - value
                   type: object
                 type: array
+              owner:
+                description: Owner is GitHub username of a person who created and/or
+                  owns the silence.
+                type: string
+              postmortem_url:
+                description: PostmortemURL is a link to a document describing the
+                  problem.
+                type: string
               targetTags:
                 items:
                   properties:
@@ -70,6 +78,8 @@ spec:
                 type: array
             required:
             - matchers
+            - owner
+            - postmortem_url
             - targetTags
             type: object
         required:

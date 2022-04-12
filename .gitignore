@@ -1,4 +1,6 @@
 *.swp
 TODO
 /silence-operator
+/silence-operator-v*-*-linux-*
+/silence-operator-v*-*-darwin-*
 !vendor/**
