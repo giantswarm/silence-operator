@@ -78,8 +78,6 @@ spec:
                 type: array
             required:
             - matchers
-            - owner
-            - postmortem_url
             - targetTags
             type: object
         required:

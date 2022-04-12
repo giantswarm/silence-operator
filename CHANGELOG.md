@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Push `silence-operator` to gcp-app-collection.
 
+### Fixed
+
+- Make optional fields really optional.
+
 ## [0.6.0] - 2022-04-12
 
 ### Added
