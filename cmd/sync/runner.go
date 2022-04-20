@@ -48,6 +48,7 @@ func (r *runner) Run(cmd *cobra.Command, args []string) error {
 func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) error {
 	var err error
 
+	// Create kubernetes client.
 	var ctrlClient client.Client
 	{
 		ctrlClient, err = r.getCtrlClient()
@@ -56,6 +57,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
+	// Load current silences from kubernetes.
 	var currentSilences monitoringv1alpha1.SilenceList
 	{
 		err = ctrlClient.List(ctx, &currentSilences)
@@ -79,6 +81,7 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
+	// Load desired silences from files.
 	var filteredSilences []monitoringv1alpha1.Silence
 	{
 		filteredSilences, err = r.loadSilences(ctx, tags)
@@ -153,7 +156,7 @@ func (r *runner) getCtrlClient() (ctrlClient client.Client, err error) {
 }
 
 func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]monitoringv1alpha1.Silence, error) {
-	// find yamls with CRs
+	// Find yaml files.
 	var silenceFiles []string
 	{
 		for _, dir := range r.flag.Dirs {
@@ -165,6 +168,7 @@ func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]mo
 		}
 	}
 
+	// Load silences CRs from yaml files.
 	var filteredSilences []monitoringv1alpha1.Silence
 	for _, silenceFile := range silenceFiles {
 		data, err := ioutil.ReadFile(silenceFile)
@@ -178,12 +182,13 @@ func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]mo
 			return nil, microerror.Mask(err)
 		}
 
+		// Check for duplicate silences.
 		if silenceInList(silence, filteredSilences) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("skip duplicated silence %#q", silence.Name))
 			continue
 		}
 
-		// filter target tags
+		// Filter silence by target tags.
 		validSilence, err := r.isValidSilence(ctx, silence, tags)
 		if err != nil {
 			return nil, microerror.Mask(err)
