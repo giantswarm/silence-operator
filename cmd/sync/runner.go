@@ -16,7 +16,6 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	monitoringv1alpha1 "github.com/giantswarm/silence-operator/api/v1alpha1"
@@ -48,7 +47,7 @@ func (r *runner) Run(cmd *cobra.Command, args []string) error {
 func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) error {
 	var err error
 
-	var restConfig *rest.Config
+	var ctrlClient client.Client
 	{
 		c := k8srestconfig.Config{
 			Logger: r.logger,
@@ -56,30 +55,13 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			InCluster:  r.flag.KubernetesInCluster,
 			KubeConfig: r.flag.KubernetesKubeconfig,
 		}
-
-		restConfig, err = k8srestconfig.New(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
+		ctrlClient, err = getCtrlClient(c)
 	}
 
-	var ctrlClient client.Client
 	{
-		c := k8sclient.ClientsConfig{
-			Logger:     r.logger,
-			RestConfig: restConfig,
-			SchemeBuilder: k8sclient.SchemeBuilder{
-				monitoringv1alpha1.AddToScheme,
-			},
-		}
-
-		k8sClients, err := k8sclient.NewClients(c)
 		if err != nil {
 			return microerror.Mask(err)
 		}
-
-		ctrlClient = k8sClients.CtrlClient()
-	}
 
 	var currentSilences monitoringv1alpha1.SilenceList
 	err = ctrlClient.List(ctx, &currentSilences)
@@ -185,6 +167,28 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	}
 
 	return nil
+}
+
+func getCtrlClient(config k8srestconfig.Config) (client.Client, error) {
+	restConfig, err := k8srestconfig.New(config)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+
+	c := k8sclient.ClientsConfig{
+		Logger:     config.Logger,
+		RestConfig: restConfig,
+		SchemeBuilder: k8sclient.SchemeBuilder{
+			monitoringv1alpha1.AddToScheme,
+		},
+	}
+
+	k8sClients, err := k8sclient.NewClients(c)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+
+	return k8sClients.CtrlClient(), nil
 }
 
 func findYamls(dir string) ([]string, error) {
