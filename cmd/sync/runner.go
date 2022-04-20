@@ -184,21 +184,9 @@ func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]mo
 		}
 
 		// filter target tags
-		validSilence := true
-		for _, envTag := range silence.Spec.TargetTags {
-			matcher, err := regexp.Compile(envTag.Value)
-			if err != nil {
-				return nil, microerror.Mask(err)
-			}
-
-			currentTag := tags[envTag.Name]
-			if !matcher.MatchString(currentTag) {
-				r.logger.LogCtx(ctx, "level", "debug",
-					"message", fmt.Sprintf("silence %#q does not match environment by %#q key [regexp: %#q, value: %#q]",
-						silence.Name, envTag.Name, envTag.Value, currentTag))
-				validSilence = false
-				break
-			}
+		validSilence, err := r.isValidSilence(ctx, silence, tags)
+		if err != nil {
+			return nil, microerror.Mask(err)
 		}
 
 		if validSilence {
@@ -207,6 +195,25 @@ func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]mo
 	}
 
 	return filteredSilences, nil
+}
+
+func (r *runner) isValidSilence(ctx context.Context, silence monitoringv1alpha1.Silence, tags map[string]string) (bool, error) {
+	for _, envTag := range silence.Spec.TargetTags {
+		matcher, err := regexp.Compile(envTag.Value)
+		if err != nil {
+			return false, microerror.Mask(err)
+		}
+
+		currentTag := tags[envTag.Name]
+		if !matcher.MatchString(currentTag) {
+			r.logger.LogCtx(ctx, "level", "debug",
+				"message", fmt.Sprintf("silence %#q does not match environment by %#q key [regexp: %#q, value: %#q]",
+					silence.Name, envTag.Name, envTag.Value, currentTag))
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 func findYamls(dir string) ([]string, error) {
