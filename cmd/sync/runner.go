@@ -58,15 +58,12 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		ctrlClient, err = getCtrlClient(c)
 	}
 
+	var currentSilences monitoringv1alpha1.SilenceList
 	{
+		err = ctrlClient.List(ctx, &currentSilences)
 		if err != nil {
 			return microerror.Mask(err)
 		}
-
-	var currentSilences monitoringv1alpha1.SilenceList
-	err = ctrlClient.List(ctx, &currentSilences)
-	if err != nil {
-		return microerror.Mask(err)
 	}
 
 	// find yamls with CRs
