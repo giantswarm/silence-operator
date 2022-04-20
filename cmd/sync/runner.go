@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -16,6 +15,8 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -66,25 +67,15 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
-	// Load silence filtering tags.
-	var tags = make(map[string]string)
-	{
-		for _, tag := range r.flag.Tags {
-			tagObj := strings.SplitN(tag, "=", 2)
-			tagName := tagObj[0]
-			tagValue := ""
-			if len(tagObj) == 2 {
-				tagValue = tagObj[1]
-			}
-
-			tags[tagName] = tagValue
-		}
-	}
-
 	// Load desired silences from files.
 	var filteredSilences []monitoringv1alpha1.Silence
 	{
-		filteredSilences, err = r.loadSilences(ctx, tags)
+		labelSelector, err := r.loadTags()
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		filteredSilences, err = r.loadSilences(ctx, labelSelector)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -155,7 +146,18 @@ func (r *runner) getCtrlClient() (ctrlClient client.Client, err error) {
 	return k8sClients.CtrlClient(), nil
 }
 
-func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]monitoringv1alpha1.Silence, error) {
+func (r *runner) loadTags() (labels.Set, error) {
+	selector := strings.Join(r.flag.Tags, ",")
+
+	labelsMap, err := labels.ConvertSelectorToLabelsMap(selector)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+
+	return labelsMap, nil
+}
+
+func (r *runner) loadSilences(ctx context.Context, labelSelector labels.Set) ([]monitoringv1alpha1.Silence, error) {
 	// Find yaml files.
 	var silenceFiles []string
 	{
@@ -188,13 +190,12 @@ func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]mo
 			continue
 		}
 
-		// Filter silence by target tags.
-		validSilence, err := r.isValidSilence(ctx, silence, tags)
+		// Filter silence by labels.
+		valid, err := r.isValidSilence(ctx, silence, labelSelector)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
-
-		if validSilence {
+		if valid {
 			filteredSilences = append(filteredSilences, silence)
 		}
 	}
@@ -202,20 +203,26 @@ func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]mo
 	return filteredSilences, nil
 }
 
-func (r *runner) isValidSilence(ctx context.Context, silence monitoringv1alpha1.Silence, tags map[string]string) (bool, error) {
-	for _, envTag := range silence.Spec.TargetTags {
-		matcher, err := regexp.Compile(envTag.Value)
-		if err != nil {
-			return false, microerror.Mask(err)
-		}
+func (r *runner) isValidSilence(ctx context.Context, silence monitoringv1alpha1.Silence, labelsMap labels.Set) (bool, error) {
 
-		currentTag := tags[envTag.Name]
-		if !matcher.MatchString(currentTag) {
-			r.logger.LogCtx(ctx, "level", "debug",
-				"message", fmt.Sprintf("silence %#q does not match environment by %#q key [regexp: %#q, value: %#q]",
-					silence.Name, envTag.Name, envTag.Value, currentTag))
-			return false, nil
-		}
+	silenceLabels := silence.Spec.TargetTags
+	if silenceLabels == nil {
+		// This is required otherwise a nil value lead to matching nothing, while an empty value matches everyting.
+		silenceLabels = &metav1.LabelSelector{}
+	}
+
+	selector, err := metav1.LabelSelectorAsSelector(silenceLabels)
+	if err != nil {
+		return false, microerror.Mask(err)
+	}
+
+	valid := selector.Matches(labelsMap)
+
+	if !valid {
+		r.logger.LogCtx(ctx, "level", "debug",
+			"message", fmt.Sprintf("silence %#q with labels %#q does not match %#q selector",
+				silence.Name, selector.String(), labelsMap.String()))
+		return false, nil
 	}
 
 	return true, nil
