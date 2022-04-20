@@ -66,19 +66,8 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
-	// find yamls with CRs
-	var silenceFiles []string
-	{
-		for _, dir := range r.flag.Dirs {
-			files, err := findYamls(dir)
-			if err != nil {
-				return microerror.Mask(err)
-			}
-			silenceFiles = append(silenceFiles, files...)
-		}
-	}
-
-	tags := make(map[string]string)
+	// Load silence filtering tags.
+	var tags = make(map[string]string)
 	{
 		for _, tag := range r.flag.Tags {
 			tagObj := strings.SplitN(tag, "=", 2)
@@ -89,6 +78,18 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			}
 
 			tags[tagName] = tagValue
+		}
+	}
+
+	// find yamls with CRs
+	var silenceFiles []string
+	{
+		for _, dir := range r.flag.Dirs {
+			files, err := findYamls(dir)
+			if err != nil {
+				return microerror.Mask(err)
+			}
+			silenceFiles = append(silenceFiles, files...)
 		}
 	}
 
