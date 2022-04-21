@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/giantswarm/micrologger"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
 )
 
@@ -34,10 +36,9 @@ func Test_isValidSilence(t *testing.T) {
 			"silence with tags against same tags is valid",
 			v1alpha1.Silence{
 				Spec: v1alpha1.SilenceSpec{
-					TargetTags: []v1alpha1.TargetTag{
-						{
-							Name:  "foo",
-							Value: "bar",
+					TargetTags: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"foo": "bar",
 						},
 					},
 				},
@@ -51,10 +52,9 @@ func Test_isValidSilence(t *testing.T) {
 			"silence with tags against different tags is invalid",
 			v1alpha1.Silence{
 				Spec: v1alpha1.SilenceSpec{
-					TargetTags: []v1alpha1.TargetTag{
-						{
-							Name:  "foo",
-							Value: "bar",
+					TargetTags: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"foo": "bar",
 						},
 					},
 				},
@@ -68,10 +68,9 @@ func Test_isValidSilence(t *testing.T) {
 			"silence with tags against no tags is invalid",
 			v1alpha1.Silence{
 				Spec: v1alpha1.SilenceSpec{
-					TargetTags: []v1alpha1.TargetTag{
-						{
-							Name:  "foo",
-							Value: "bar",
+					TargetTags: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"foo": "bar",
 						},
 					},
 				},
@@ -83,14 +82,10 @@ func Test_isValidSilence(t *testing.T) {
 			"silence with multiple tags against same tags is valid",
 			v1alpha1.Silence{
 				Spec: v1alpha1.SilenceSpec{
-					TargetTags: []v1alpha1.TargetTag{
-						{
-							Name:  "foo",
-							Value: "bar",
-						},
-						{
-							Name:  "one",
-							Value: "two",
+					TargetTags: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"foo": "bar",
+							"one": "two",
 						},
 					},
 				},
@@ -105,14 +100,10 @@ func Test_isValidSilence(t *testing.T) {
 			"silence with multiple unordered tags against same tags is valid",
 			v1alpha1.Silence{
 				Spec: v1alpha1.SilenceSpec{
-					TargetTags: []v1alpha1.TargetTag{
-						{
-							Name:  "one",
-							Value: "two",
-						},
-						{
-							Name:  "foo",
-							Value: "bar",
+					TargetTags: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"one": "two",
+							"foo": "bar",
 						},
 					},
 				},
@@ -127,14 +118,10 @@ func Test_isValidSilence(t *testing.T) {
 			"silence with multiple tags against unordered same tags is valid",
 			v1alpha1.Silence{
 				Spec: v1alpha1.SilenceSpec{
-					TargetTags: []v1alpha1.TargetTag{
-						{
-							Name:  "foo",
-							Value: "bar",
-						},
-						{
-							Name:  "one",
-							Value: "two",
+					TargetTags: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"foo": "bar",
+							"one": "two",
 						},
 					},
 				},
@@ -149,14 +136,10 @@ func Test_isValidSilence(t *testing.T) {
 			"silence with multiple tags against one tag is invalid",
 			v1alpha1.Silence{
 				Spec: v1alpha1.SilenceSpec{
-					TargetTags: []v1alpha1.TargetTag{
-						{
-							Name:  "foo",
-							Value: "bar",
-						},
-						{
-							Name:  "one",
-							Value: "two",
+					TargetTags: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"foo": "bar",
+							"one": "two",
 						},
 					},
 				},
@@ -170,10 +153,9 @@ func Test_isValidSilence(t *testing.T) {
 			"silence with one tag against multiple tags is valid",
 			v1alpha1.Silence{
 				Spec: v1alpha1.SilenceSpec{
-					TargetTags: []v1alpha1.TargetTag{
-						{
-							Name:  "one",
-							Value: "two",
+					TargetTags: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"one": "two",
 						},
 					},
 				},
