@@ -166,23 +166,6 @@ func Test_isValidSilence(t *testing.T) {
 			},
 			true,
 		},
-		{
-			"silence weird",
-			v1alpha1.Silence{
-				Spec: v1alpha1.SilenceSpec{
-					TargetTags: []v1alpha1.TargetTag{
-						{
-							Name:  "one",
-							Value: "",
-						},
-					},
-				},
-			},
-			[]string{
-				"foo=bar",
-			},
-			true,
-		},
 	}
 
 	logger, err := micrologger.New(micrologger.Config{IOWriter: io.Discard})
