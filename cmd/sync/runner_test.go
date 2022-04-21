@@ -183,12 +183,16 @@ func Test_isValidSilence(t *testing.T) {
 				},
 			}
 
-			tags := runner.loadTags()
+			tags, err := runner.loadTags()
+			if err != nil {
+				t.Error(err)
+			}
 
 			isValid, err := runner.isValidSilence(context.Background(), test.Silence, tags)
 			if err != nil {
 				t.Error(err)
 			}
+
 			if isValid != test.IsValid {
 				t.Errorf("failure: expected isValid=%t, got isValid=%t with silence.spec.targetTags %v matched with tags %v\n", test.IsValid, isValid, test.Silence.Spec.TargetTags, test.Tags)
 			}
