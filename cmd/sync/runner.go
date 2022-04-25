@@ -48,58 +48,26 @@ func (r *runner) Run(cmd *cobra.Command, args []string) error {
 func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) error {
 	var err error
 
-	var restConfig *rest.Config
-	{
-		c := k8srestconfig.Config{
-			Logger: r.logger,
-
-			InCluster:  r.flag.KubernetesInCluster,
-			KubeConfig: r.flag.KubernetesKubeconfig,
-		}
-
-		restConfig, err = k8srestconfig.New(c)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-
+	// Create kubernetes client.
 	var ctrlClient client.Client
 	{
-		c := k8sclient.ClientsConfig{
-			Logger:     r.logger,
-			RestConfig: restConfig,
-			SchemeBuilder: k8sclient.SchemeBuilder{
-				monitoringv1alpha1.AddToScheme,
-			},
-		}
-
-		k8sClients, err := k8sclient.NewClients(c)
+		ctrlClient, err = r.getCtrlClient()
 		if err != nil {
 			return microerror.Mask(err)
 		}
-
-		ctrlClient = k8sClients.CtrlClient()
 	}
 
+	// Load current silences from kubernetes.
 	var currentSilences monitoringv1alpha1.SilenceList
-	err = ctrlClient.List(ctx, &currentSilences)
-	if err != nil {
-		return microerror.Mask(err)
-	}
-
-	// find yamls with CRs
-	var silenceFiles []string
 	{
-		for _, dir := range r.flag.Dirs {
-			files, err := findYamls(dir)
-			if err != nil {
-				return microerror.Mask(err)
-			}
-			silenceFiles = append(silenceFiles, files...)
+		err = ctrlClient.List(ctx, &currentSilences)
+		if err != nil {
+			return microerror.Mask(err)
 		}
 	}
 
-	tags := make(map[string]string)
+	// Load silence filtering tags.
+	var tags = make(map[string]string)
 	{
 		for _, tag := range r.flag.Tags {
 			tagObj := strings.SplitN(tag, "=", 2)
@@ -113,46 +81,12 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
+	// Load desired silences from files.
 	var filteredSilences []monitoringv1alpha1.Silence
 	{
-		for _, silenceFile := range silenceFiles {
-			data, err := ioutil.ReadFile(silenceFile)
-			if err != nil {
-				return microerror.Mask(err)
-			}
-
-			var silence monitoringv1alpha1.Silence
-			err = yaml.Unmarshal(data, &silence)
-			if err != nil {
-				return microerror.Mask(err)
-			}
-
-			if silenceInList(silence, filteredSilences) {
-				r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("skip duplicated silence %#q", silence.Name))
-				continue
-			}
-
-			// filter target tags
-			validSilence := true
-			for _, envTag := range silence.Spec.TargetTags {
-				matcher, err := regexp.Compile(envTag.Value)
-				if err != nil {
-					return microerror.Mask(err)
-				}
-
-				currentTag := tags[envTag.Name]
-				if !matcher.MatchString(currentTag) {
-					r.logger.LogCtx(ctx, "level", "debug",
-						"message", fmt.Sprintf("silence %#q does not match environment by %#q key [regexp: %#q, value: %#q]",
-							silence.Name, envTag.Name, envTag.Value, currentTag))
-					validSilence = false
-					break
-				}
-			}
-
-			if validSilence {
-				filteredSilences = append(filteredSilences, silence)
-			}
+		filteredSilences, err = r.loadSilences(ctx, tags)
+		if err != nil {
+			return microerror.Mask(err)
 		}
 	}
 
@@ -185,6 +119,106 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	}
 
 	return nil
+}
+
+func (r *runner) getCtrlClient() (ctrlClient client.Client, err error) {
+	var restConfig *rest.Config
+	{
+		c := k8srestconfig.Config{
+			Logger: r.logger,
+
+			InCluster:  r.flag.KubernetesInCluster,
+			KubeConfig: r.flag.KubernetesKubeconfig,
+		}
+		restConfig, err = k8srestconfig.New(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+
+	var k8sClients *k8sclient.Clients
+	{
+		c := k8sclient.ClientsConfig{
+			Logger:     r.logger,
+			RestConfig: restConfig,
+			SchemeBuilder: k8sclient.SchemeBuilder{
+				monitoringv1alpha1.AddToScheme,
+			},
+		}
+
+		k8sClients, err = k8sclient.NewClients(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+
+	return k8sClients.CtrlClient(), nil
+}
+
+func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]monitoringv1alpha1.Silence, error) {
+	// Find yaml files.
+	var silenceFiles []string
+	{
+		for _, dir := range r.flag.Dirs {
+			files, err := findYamls(dir)
+			if err != nil {
+				return nil, microerror.Mask(err)
+			}
+			silenceFiles = append(silenceFiles, files...)
+		}
+	}
+
+	// Load silences CRs from yaml files.
+	var filteredSilences []monitoringv1alpha1.Silence
+	for _, silenceFile := range silenceFiles {
+		data, err := ioutil.ReadFile(silenceFile)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		var silence monitoringv1alpha1.Silence
+		err = yaml.Unmarshal(data, &silence)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		// Check for duplicate silences.
+		if silenceInList(silence, filteredSilences) {
+			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("skip duplicated silence %#q", silence.Name))
+			continue
+		}
+
+		// Filter silence by target tags.
+		validSilence, err := r.isValidSilence(ctx, silence, tags)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		if validSilence {
+			filteredSilences = append(filteredSilences, silence)
+		}
+	}
+
+	return filteredSilences, nil
+}
+
+func (r *runner) isValidSilence(ctx context.Context, silence monitoringv1alpha1.Silence, tags map[string]string) (bool, error) {
+	for _, envTag := range silence.Spec.TargetTags {
+		matcher, err := regexp.Compile(envTag.Value)
+		if err != nil {
+			return false, microerror.Mask(err)
+		}
+
+		currentTag := tags[envTag.Name]
+		if !matcher.MatchString(currentTag) {
+			r.logger.LogCtx(ctx, "level", "debug",
+				"message", fmt.Sprintf("silence %#q does not match environment by %#q key [regexp: %#q, value: %#q]",
+					silence.Name, envTag.Name, envTag.Value, currentTag))
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 func findYamls(dir string) ([]string, error) {
