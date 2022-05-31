@@ -79,3 +79,9 @@ sonatype-2021-1485 until=2022-08-01
 # imported from:
 # - github.com/giantswarm/operatorkit/v6@v6.1.0
 CVE-2022-21221 until=2022-08-01
+
+# pkg:golang/github.com/nats-io/nats-server/v2@v2.5.0
+# imported from:
+# - github.com/go-kit/kit@v0.12.0
+CVE-2022-26652 until=2022-08-01
+CVE-2022-28357 until=2022-08-01
