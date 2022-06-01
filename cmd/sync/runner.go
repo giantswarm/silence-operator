@@ -16,6 +16,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -104,8 +105,8 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
-	// create desired silences
 	for i, silence := range filteredSilences {
+		// create desired silences
 		if !silenceInList(silence, currentSilences.Items) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("creating desired silence CR %#q", silence.Name))
 
@@ -115,6 +116,26 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			}
 
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("desired silence CR %#q has been created", silence.Name))
+		} else { // update desired silences
+			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("updating desired silence CR %#q", silence.Name))
+
+			silence := filteredSilences[i]
+			objectKey := client.ObjectKey{Namespace: silence.GetNamespace(), Name: silence.GetName()}
+
+			var existingSilence monitoringv1alpha1.Silence
+			err = ctrlClient.Get(ctx, objectKey, &existingSilence)
+			if err != nil {
+				return microerror.Mask(err)
+			}
+
+			updateMeta(&existingSilence, &silence)
+
+			err = ctrlClient.Update(ctx, &silence)
+			if err != nil {
+				return microerror.Mask(err)
+			}
+
+			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("desired silence CR %#q has been updated", silence.Name))
 		}
 	}
 
@@ -153,6 +174,23 @@ func (r *runner) getCtrlClient() (ctrlClient client.Client, err error) {
 	}
 
 	return k8sClients.CtrlClient(), nil
+}
+
+func updateMeta(c, d metav1.Object) {
+	d.SetGenerateName(c.GetGenerateName())
+	d.SetUID(c.GetUID())
+	d.SetResourceVersion(c.GetResourceVersion())
+	d.SetGeneration(c.GetGeneration())
+	d.SetSelfLink(c.GetSelfLink())
+	d.SetCreationTimestamp(c.GetCreationTimestamp())
+	d.SetDeletionTimestamp(c.GetDeletionTimestamp())
+	d.SetDeletionGracePeriodSeconds(c.GetDeletionGracePeriodSeconds())
+	d.SetLabels(c.GetLabels())
+	d.SetAnnotations(c.GetAnnotations())
+	d.SetFinalizers(c.GetFinalizers())
+	d.SetOwnerReferences(c.GetOwnerReferences())
+	d.SetClusterName(c.GetClusterName())
+	d.SetManagedFields(c.GetManagedFields())
 }
 
 func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]monitoringv1alpha1.Silence, error) {
