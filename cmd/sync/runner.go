@@ -118,19 +118,9 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("desired silence CR %#q has been created", silence.Name))
 		} else { // update desired silences
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("updating desired silence CR %#q", silence.Name))
-
-			silence := filteredSilences[i]
-			objectKey := client.ObjectKey{Namespace: silence.GetNamespace(), Name: silence.GetName()}
-
-			var existingSilence monitoringv1alpha1.Silence
-			err = ctrlClient.Get(ctx, objectKey, &existingSilence)
-			if err != nil {
-				return microerror.Mask(err)
-			}
-
-			updateMeta(&existingSilence, &silence)
-
-			err = ctrlClient.Update(ctx, &silence)
+			existingSilence := getSilenceInList(silence, currentSilences.Items)
+			updateMeta(existingSilence, &filteredSilences[i])
+			err = ctrlClient.Update(ctx, &filteredSilences[i])
 			if err != nil {
 				return microerror.Mask(err)
 			}
@@ -277,13 +267,17 @@ func findYamls(dir string) ([]string, error) {
 }
 
 func silenceInList(silence monitoringv1alpha1.Silence, silences []monitoringv1alpha1.Silence) bool {
+	return getSilenceInList(silence, silences) != nil
+}
+
+func getSilenceInList(silence monitoringv1alpha1.Silence, silences []monitoringv1alpha1.Silence) *monitoringv1alpha1.Silence {
 	for _, item := range silences {
 		if item.Name == silence.Name {
-			return true
+			return &item
 		}
 	}
 
-	return false
+	return nil
 }
 
 func hasKeepAnnotation(silence monitoringv1alpha1.Silence) bool {
