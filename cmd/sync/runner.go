@@ -106,8 +106,8 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	}
 
 	for i, silence := range filteredSilences {
-		// create desired silences
 		if !silenceInList(silence, currentSilences.Items) {
+			// create desired silences
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("creating desired silence CR %#q", silence.Name))
 
 			err = ctrlClient.Create(ctx, &filteredSilences[i])
