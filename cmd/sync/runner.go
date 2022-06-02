@@ -116,7 +116,8 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			}
 
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("desired silence CR %#q has been created", silence.Name))
-		} else { // update desired silences
+		} else {
+			// update desired silences
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("updating desired silence CR %#q", silence.Name))
 			existingSilence := getSilenceInList(silence, currentSilences.Items)
 			updateMeta(existingSilence, &filteredSilences[i])
