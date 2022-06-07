@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support update of silences.
+
+### Changed
+
+- Dependencies updates, solves some of Nancy security alerts
+
 ## [0.6.1] - 2022-04-12
 
 ### Added

@@ -16,6 +16,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -104,9 +105,9 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 		}
 	}
 
-	// create desired silences
 	for i, silence := range filteredSilences {
 		if !silenceInList(silence, currentSilences.Items) {
+			// create desired silences
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("creating desired silence CR %#q", silence.Name))
 
 			err = ctrlClient.Create(ctx, &filteredSilences[i])
@@ -115,6 +116,17 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 			}
 
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("desired silence CR %#q has been created", silence.Name))
+		} else {
+			// update desired silences
+			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("updating desired silence CR %#q", silence.Name))
+			existingSilence := getSilenceInList(silence, currentSilences.Items)
+			updateMeta(existingSilence, &filteredSilences[i])
+			err = ctrlClient.Update(ctx, &filteredSilences[i])
+			if err != nil {
+				return microerror.Mask(err)
+			}
+
+			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("desired silence CR %#q has been updated", silence.Name))
 		}
 	}
 
@@ -153,6 +165,23 @@ func (r *runner) getCtrlClient() (ctrlClient client.Client, err error) {
 	}
 
 	return k8sClients.CtrlClient(), nil
+}
+
+func updateMeta(c, d metav1.Object) {
+	d.SetGenerateName(c.GetGenerateName())
+	d.SetUID(c.GetUID())
+	d.SetResourceVersion(c.GetResourceVersion())
+	d.SetGeneration(c.GetGeneration())
+	d.SetSelfLink(c.GetSelfLink())
+	d.SetCreationTimestamp(c.GetCreationTimestamp())
+	d.SetDeletionTimestamp(c.GetDeletionTimestamp())
+	d.SetDeletionGracePeriodSeconds(c.GetDeletionGracePeriodSeconds())
+	d.SetLabels(c.GetLabels())
+	d.SetAnnotations(c.GetAnnotations())
+	d.SetFinalizers(c.GetFinalizers())
+	d.SetOwnerReferences(c.GetOwnerReferences())
+	d.SetClusterName(c.GetClusterName())
+	d.SetManagedFields(c.GetManagedFields())
 }
 
 func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]monitoringv1alpha1.Silence, error) {
@@ -239,13 +268,17 @@ func findYamls(dir string) ([]string, error) {
 }
 
 func silenceInList(silence monitoringv1alpha1.Silence, silences []monitoringv1alpha1.Silence) bool {
+	return getSilenceInList(silence, silences) != nil
+}
+
+func getSilenceInList(silence monitoringv1alpha1.Silence, silences []monitoringv1alpha1.Silence) *monitoringv1alpha1.Silence {
 	for _, item := range silences {
 		if item.Name == silence.Name {
-			return true
+			return &item
 		}
 	}
 
-	return false
+	return nil
 }
 
 func hasKeepAnnotation(silence monitoringv1alpha1.Silence) bool {
