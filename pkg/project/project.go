@@ -5,7 +5,7 @@ var (
 	gitSHA      = "n/a"
 	name        = "silence-operator"
 	source      = "https://github.com/giantswarm/silence-operator"
-	version     = "0.6.2-dev"
+	version     = "0.7.0"
 )
 
 func Description() string {
