@@ -6,6 +6,7 @@ metadata:
   labels:
     {{- include "labels.common" . | nindent 4 }}
 spec:
+  startingDeadlineSeconds: 240
   concurrencyPolicy: Allow
   jobTemplate:
     metadata:
