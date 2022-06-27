@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bump github.com/spf13/cobra from 1.4.0 to 1.5.0.
+
 ## [0.7.0] - 2022-06-13
 
 ### Added
