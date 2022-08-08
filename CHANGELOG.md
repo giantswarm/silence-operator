@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump github.com/spf13/cobra from 1.4.0 to 1.5.0.
 - Bump sigs.k8s.io/controller-runtime from 0.12.2 to 0.12.3
 - Bump alpine from 3.16.0 to 3.16.1
+- Bump github.com/prometheus/client_golang from 1.12.2 to 1.13.0
 
 ## [0.7.0] - 2022-06-13
 
