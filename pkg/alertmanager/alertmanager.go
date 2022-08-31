@@ -64,10 +64,17 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	}
 
 	if resp.StatusCode != 200 {
-		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to create silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode))
+		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode))
 	}
 
 	return nil
+}
+
+func (am *AlertManager) UpdateSilence(s *Silence) error {
+	if s.ID == "" {
+		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to update silence %#q, missing ID", s.Comment))
+	}
+	return am.CreateSilence(s)
 }
 
 func (am *AlertManager) DeleteSilenceByComment(comment string) error {
