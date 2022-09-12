@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump github.com/prometheus/client_golang from 1.12.2 to 1.13.0
 - Bump github.com/giantswarm/k8smetadata from 0.11.1 to 0.12.0
 - Bump sigs.k8s.io/controller-runtime from 0.12.3 to 0.13.0
+- Reconcile API if Silence CR gets updated
 
 ## [0.7.0] - 2022-06-13
 
