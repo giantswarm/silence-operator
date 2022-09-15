@@ -77,7 +77,7 @@ jobs:
         echo "Team board URL: ${BOARD}"
 
         echo "BOARD=${BOARD}" >> $GITHUB_ENV
-    - name: Add issue to personal board
+    - name: Add issue to team board
       if: ${{ env.BOARD != 'null' && env.BOARD != '' }}
       uses: actions/add-to-project@main
       with:
