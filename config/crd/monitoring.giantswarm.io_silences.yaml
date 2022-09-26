@@ -17,7 +17,7 @@ spec:
     listKind: SilenceList
     plural: silences
     singular: silence
-  scope: Cluster
+  scope: Namespaced
   versions:
   - name: v1alpha1
     schema:

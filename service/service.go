@@ -32,9 +32,9 @@ type Config struct {
 type Service struct {
 	Version *version.Service
 
-	bootOnce          sync.Once
-	silenceController *controller.Silence
-	operatorCollector *collector.Set
+	bootOnce           sync.Once
+	silenceControllers []*controller.Silence
+	operatorCollector  *collector.Set
 }
 
 // New creates a new configured service object.
@@ -97,20 +97,23 @@ func New(config Config) (*Service, error) {
 		}
 	}
 
-	var silenceController *controller.Silence
-	{
-
+	watchNamespaces := config.Viper.GetStringSlice(config.Flag.Service.WatchNamespaces)
+	var silenceControllers []*controller.Silence
+	for _, watchNamespace := range watchNamespaces {
 		c := controller.SilenceConfig{
 			K8sClient: k8sClient,
 			Logger:    config.Logger,
 
 			AlertManagerAddress: config.Viper.GetString(config.Flag.Service.AlertManager.Address),
+			Namespace:           watchNamespace,
 		}
 
+		var silenceController *controller.Silence
 		silenceController, err = controller.NewSilence(c)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
+		silenceControllers = append(silenceControllers, silenceController)
 	}
 
 	var operatorCollector *collector.Set
@@ -145,9 +148,9 @@ func New(config Config) (*Service, error) {
 	s := &Service{
 		Version: versionService,
 
-		bootOnce:          sync.Once{},
-		silenceController: silenceController,
-		operatorCollector: operatorCollector,
+		bootOnce:           sync.Once{},
+		silenceControllers: silenceControllers,
+		operatorCollector:  operatorCollector,
 	}
 
 	return s, nil
@@ -157,6 +160,8 @@ func (s *Service) Boot(ctx context.Context) {
 	s.bootOnce.Do(func() {
 		go s.operatorCollector.Boot(ctx) // nolint:errcheck
 
-		go s.silenceController.Boot(ctx)
+		for _, silenceController := range s.silenceControllers {
+			go silenceController.Boot(ctx)
+		}
 	})
 }
