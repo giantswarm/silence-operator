@@ -42,6 +42,7 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 	if err != nil {
 		return microerror.Mask(err)
 	}
+	newSilence := r.getSilenceFromCR(silence)
 
 	var existingSilence *alertmanager.Silence
 	existingSilence, err = r.amClient.GetSilenceByComment(key.SilenceComment(silence))
@@ -49,17 +50,14 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 	if notFound {
 		r.logger.LogCtx(ctx, "level", "debug", "message", "creating silence")
 
-		newSilence := r.getSilenceFromCR(silence)
-
 		err = r.amClient.CreateSilence(newSilence)
 		if err != nil {
 			return microerror.Mask(err)
 		}
 		r.logger.LogCtx(ctx, "level", "debug", "message", "silence created")
-	} else if !cmp.Equal(existingSilence.Matchers, silence.Spec.Matchers) {
+	} else if !cmp.Equal(existingSilence.Matchers, newSilence.Matchers) {
 		r.logger.LogCtx(ctx, "level", "debug", "message", "updating silence")
 
-		newSilence := r.getSilenceFromCR(silence)
 		newSilence.ID = existingSilence.ID
 		err = r.amClient.UpdateSilence(newSilence)
 		if err != nil {

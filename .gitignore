@@ -3,4 +3,5 @@ TODO
 /silence-operator
 /silence-operator-v*-*-linux-*
 /silence-operator-v*-*-darwin-*
+/silence-operator-v*-*-amd64-*
 !vendor/**
