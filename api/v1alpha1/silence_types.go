@@ -29,11 +29,11 @@ type SilenceSpec struct {
 	Owner string `json:"owner,omitempty"`
 
 	// PostmortemURL is a link to a document describing the problem.
-    // Deprecated: Use IssueURL instead.
+	// Deprecated: Use IssueURL instead.
 	PostmortemURL *string `json:"postmortem_url,omitempty"`
 
-    // IssueURL is a link to a GitHub issue describing the problem.
-    IssueURL string `json:"issue_url,omitempty"`
+	// IssueURL is a link to a GitHub issue describing the problem.
+	IssueURL string `json:"issue_url,omitempty"`
 }
 
 type TargetTag struct {
