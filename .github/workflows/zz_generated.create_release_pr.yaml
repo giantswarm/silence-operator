@@ -1,6 +1,6 @@
 # DO NOT EDIT. Generated with:
 #
-#    devctl@5.9.0
+#    devctl@5.10.0
 #
 name: Create Release PR
 on:
@@ -95,7 +95,9 @@ jobs:
             version_major=$(echo "${version}" | cut -d "." -f 1)
             version_minor=$(echo "${version}" | cut -d "." -f 2)
             version_patch=$(echo "${version}" | cut -d "." -f 3)
-            if [[ $version_minor = 0 && $version_patch = 0 ]]; then
+            # This will help us detect versions with suffixes as majors, i.e 3.0.0-alpha1.
+            # Even though it's a pre-release, it's still a major.
+            if [[ $version_minor = 0 && $version_patch =~ ^0.* ]]; then
               echo "::set-output name=is_major::true"
             fi
           fi
