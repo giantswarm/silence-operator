@@ -2,7 +2,9 @@ name: Add Issue to Project when assigned
 
 on:
   issues:
-    types: [assigned]
+    types:
+    - assigned
+    - labeled
 
 jobs:
   build_user_list:
@@ -12,7 +14,7 @@ jobs:
     - name: Get user-mapping
       run: |
         mkdir -p artifacts
-        wget --header "Authorization: token ${{ github.token }}" \
+        wget --header "Authorization: token ${{ secrets.ISSUE_AUTOMATION }}" \
           -O artifacts/users.yaml \
           https://raw.githubusercontent.com/giantswarm/github/master/tools/issue-automation/user-mapping.yaml
     - name: Upload Artifact
@@ -24,7 +26,7 @@ jobs:
     - name: Get label-mapping
       run: |
         mkdir -p artifacts
-        wget --header "Authorization: token ${{ github.token }}" \
+        wget --header "Authorization: token ${{ secrets.ISSUE_AUTOMATION }}" \
           -O artifacts/labels.yaml \
           https://raw.githubusercontent.com/giantswarm/github/master/tools/issue-automation/label-mapping.yaml
     - name: Upload Artifact
@@ -38,6 +40,7 @@ jobs:
     name: Add issue to personal board
     runs-on: ubuntu-latest
     needs: build_user_list
+    if: github.event.action == 'assigned'
     steps:
     - uses: actions/download-artifact@v3
       id: download-users
@@ -60,9 +63,10 @@ jobs:
         github-token: ${{ secrets.ISSUE_AUTOMATION }}
 
   add_to_team_board:
-    name: Add issue to personal board
+    name: Add issue to team board
     runs-on: ubuntu-latest
     needs: build_user_list
+    if: github.event.action == 'labeled'
     steps:
     - uses: actions/download-artifact@v3
       id: download-labels
@@ -70,10 +74,10 @@ jobs:
         name: labels
     - name: Find team board based on label
       run: |
-        event_label=$(cat $GITHUB_EVENT_PATH | jq -r .label | tr '[:upper:]' '[:lower:]')
+        event_label=$(cat $GITHUB_EVENT_PATH | jq -r .label.name | tr '[:upper:]' '[:lower:]')
         echo "Issue labelled with: ${event_label}"
 
-        BOARD=($(cat ${{steps.download-users.outputs.download-path}}/labels.yaml | tr '[:upper:]' '[:lower:]' | yq ".${event_label}.projectBoard"))
+        BOARD=($(cat ${{steps.download-labels.outputs.download-path}}/labels.yaml | tr '[:upper:]' '[:lower:]' | yq ".${event_label}.projectboard"))
         echo "Team board URL: ${BOARD}"
 
         echo "BOARD=${BOARD}" >> $GITHUB_ENV

@@ -1,4 +1,4 @@
-name: Add Issue to Project when assigned
+name: Add appropriate labels to issue
 
 on:
   issues:
@@ -9,10 +9,10 @@ jobs:
     name: Get yaml config of GS users
     runs-on: ubuntu-latest
     steps:
-    - name: Fetch issue templates
+    - name: Get user-mapping
       run: |
         mkdir -p artifacts
-        wget --header "Authorization: token ${{ github.token }}" \
+        wget --header "Authorization: token ${{ secrets.ISSUE_AUTOMATION }}" \
           -O artifacts/users.yaml \
           https://raw.githubusercontent.com/giantswarm/github/master/tools/issue-automation/user-mapping.yaml
     - name: Upload Artifact
@@ -48,6 +48,6 @@ jobs:
       if: ${{ env.LABEL != '' }}
       uses: actions-ecosystem/action-add-labels@v1
       with:
-        github-token: ${{ secrets.ISSUE_AUTOMATION }}
+        github_token: ${{ secrets.ISSUE_AUTOMATION }}
         labels: |
           ${{ env.LABEL }}
