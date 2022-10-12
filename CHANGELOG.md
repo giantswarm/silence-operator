@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add IssueURL field to Silence CRD.
+
 ### Changed
 
 - Bump github.com/spf13/cobra from 1.4.0 to 1.5.0.
@@ -17,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump github.com/giantswarm/k8smetadata from 0.11.1 to 0.13.0
 - Bump sigs.k8s.io/controller-runtime from 0.12.3 to 0.13.0
 - Reconcile API if Silence CR gets updated
+- Deprecate PostmortemURL field in favour of IssueURL.
+- Make Silence Owner field a string instead of string pointer.
 
 ## [0.7.0] - 2022-06-13
 
