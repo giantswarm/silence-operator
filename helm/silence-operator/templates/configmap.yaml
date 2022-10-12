@@ -15,7 +15,7 @@ data:
         address: 'http://0.0.0.0:8000'
     service:
       alertmanager:
-        address: http://alertmanager-operated.monitoring:9093
+        address: http://alertmanager-operated.monitoring.svc:9093
       kubernetes:
         address: ''
         inCluster: true
