@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -199,7 +199,7 @@ func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]mo
 	// Load silences CRs from yaml files.
 	var filteredSilences []monitoringv1alpha1.Silence
 	for _, silenceFile := range silenceFiles {
-		data, err := ioutil.ReadFile(silenceFile)
+		data, err := os.ReadFile(silenceFile)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
@@ -252,7 +252,7 @@ func (r *runner) isValidSilence(ctx context.Context, silence monitoringv1alpha1.
 func findYamls(dir string) ([]string, error) {
 	var result []string
 
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
