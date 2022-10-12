@@ -111,11 +111,6 @@ func (in *SilenceSpec) DeepCopyInto(out *SilenceSpec) {
 		*out = make([]Matcher, len(*in))
 		copy(*out, *in)
 	}
-	if in.Owner != nil {
-		in, out := &in.Owner, &out.Owner
-		*out = new(string)
-		**out = **in
-	}
 	if in.PostmortemURL != nil {
 		in, out := &in.PostmortemURL, &out.PostmortemURL
 		*out = new(string)
