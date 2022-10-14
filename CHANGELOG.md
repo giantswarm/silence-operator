@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reconcile API if Silence CR gets updated
 - Deprecate PostmortemURL field in favour of IssueURL.
 - Make Silence Owner field a string instead of string pointer.
+- Bump github.com/getsentry/sentry-go from v0.11.0 to v0.14.0
 
 ## [0.7.0] - 2022-06-13
 
