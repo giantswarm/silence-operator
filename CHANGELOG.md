@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reconcile API if Silence CR gets updated
 - Deprecate PostmortemURL field in favour of IssueURL.
 - Make Silence Owner field a string instead of string pointer.
+- Bump golang.org/x/text from v0.3.7 to v0.3.8
 - Bump github.com/nats-io/nats-server from v2.5.0 to v2.9.3
 
 ## [0.7.0] - 2022-06-13
