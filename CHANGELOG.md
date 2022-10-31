@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `.svc` suffix to the alertmanager address to make silence operator work behind a corporate proxy.
 - Upgrade to go 1.19
 - Bump github.com/spf13/cobra from 1.4.0 to 1.5.0.
+- Bump github.com/spf13/cobra from 1.6.0 to 1.6.1
 - Bump sigs.k8s.io/controller-runtime from 0.12.2 to 0.12.3
 - Bump alpine from 3.16.0 to 3.16.1
 - Bump alpine from 3.16.1 to 3.16.2
