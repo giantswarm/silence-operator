@@ -1,11 +1,15 @@
 image:
   name: "giantswarm/silence-operator"
   tag: "[[ .Version ]]"
+
+alertmanagerAddress: http://alertmanager-oeprated.monitoring.svc:9093
+
 pod:
   user:
     id: 1000
   group:
     id: 1000
+
 project:
   branch: "[[ .Branch ]]"
   commit: "[[ .SHA ]]"

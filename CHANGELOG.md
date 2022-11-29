@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add IssueURL field to Silence CRD.
 - Make Helm chart CronJob optional
+- Make Helm chart AlertManager address configurable
 
 ### Changed
 
