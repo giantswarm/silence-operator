@@ -2,7 +2,7 @@ image:
   name: "giantswarm/silence-operator"
   tag: "[[ .Version ]]"
 
-alertmanagerAddress: http://alertmanager-oeprated.monitoring.svc:9093
+alertmanagerAddress: http://alertmanager-operated.monitoring.svc:9093
 
 pod:
   user:
