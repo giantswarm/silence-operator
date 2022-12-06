@@ -77,7 +77,7 @@ jobs:
         event_label=$(cat $GITHUB_EVENT_PATH | jq -r .label.name | tr '[:upper:]' '[:lower:]')
         echo "Issue labelled with: ${event_label}"
 
-        BOARD=($(cat ${{steps.download-labels.outputs.download-path}}/labels.yaml | tr '[:upper:]' '[:lower:]' | yq ".${event_label}.projectboard"))
+        BOARD=($(cat ${{steps.download-labels.outputs.download-path}}/labels.yaml | tr '[:upper:]' '[:lower:]' | yq ".\"${event_label}\".projectboard"))
         echo "Team board URL: ${BOARD}"
 
         echo "BOARD=${BOARD}" >> $GITHUB_ENV
