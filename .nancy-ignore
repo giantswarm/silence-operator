@@ -1,9 +1,3 @@
-# pkg:golang/github.com/gin-gonic/gin@v1.4.0
-# imported from:
-# - github.com/giantswarm/operatorkit/v6@v6.1.0
-sonatype-2020-0921 until=2022-12-01
-CVE-2020-28483 until=2022-12-01
-
 # pkg:golang/github.com/hashicorp/consul/api@v1.10.1
 # imported from:
 # - github.com/spf13/viper@v1.12.0
@@ -14,23 +8,8 @@ CVE-2020-28483 until=2022-12-01
 # - github.com/giantswarm/operatorkit/v6@v6.1.0
 # - github.com/giantswarm/microendpoint@v0.2.0
 # - github.com/giantswarm/microkit@v0.2.2
-CVE-2022-29153 until=2022-12-01
-CVE-2022-24687 until=2022-12-01
-
-# pkg:golang/github.com/kataras/iris/v12@v12.1.8
-# imported from:
-# - github.com/giantswarm/operatorkit/v6@v6.1.0
-CVE-2021-23772 until=2022-12-01
-
-# pkg:golang/github.com/labstack/echo/v4@v4.1.11
-# imported from:
-# - github.com/giantswarm/operatorkit/v6@v6.1.0
-sonatype-2020-1258 until=2022-12-01
-
-# pkg:golang/github.com/microcosm-cc/bluemonday@v1.0.2
-# imported from:
-# - github.com/giantswarm/operatorkit/v6@v6.1.0
-CVE-2021-42576 until=2022-12-01
+CVE-2022-29153 until=2023-03-01
+CVE-2022-24687 until=2023-03-01
 
 # pkg:golang/github.com/nats-io/jwt@v0.3.2
 # imported from:
@@ -38,35 +17,15 @@ CVE-2021-42576 until=2022-12-01
 # - github.com/giantswarm/exporterkit@vv0.2.1
 # - github.com/giantswarm/microendpoint@v0.2.0
 # - github.com/giantswarm/microkit@v0.2.2
-CVE-2020-26892 until=2022-12-01
-CVE-2021-3127 until=2022-12-01
-
-# pkg:golang/github.com/nats-io/nats-server/v2@v2.1.2
-# imported from:
-# - github.com/giantswarm/operatorkit/v6@v6.1.0
-# - github.com/giantswarm/exporterkit@vv0.2.1
-# - github.com/giantswarm/microendpoint@v0.2.0
-# - github.com/giantswarm/microkit@v0.2.2
-CVE-2022-24450 until=2022-12-01
-CVE-2022-29946 until=2022-12-01
+CVE-2020-26892 until=2023-03-01
+CVE-2021-3127 until=2023-03-01
 
 # pkg:golang/github.com/urfave/negroni@v1.0.0
 # imported from:
 # - github.com/giantswarm/operatorkit/v6@v6.1.0
-sonatype-2021-1485 until=2022-12-01
-
-# pkg:golang/github.com/valyala/fasthttp@v1.6.0
-# imported from:
-# - github.com/giantswarm/operatorkit/v6@v6.1.0
-CVE-2022-21221 until=2022-12-01
-
-# pkg:golang/github.com/nats-io/nats-server/v2@v2.5.0
-# imported from:
-# - github.com/go-kit/kit@v0.12.0
-CVE-2022-26652 until=2022-12-01
-CVE-2022-28357 until=2022-12-01
+sonatype-2021-1485 until=2023-03-01
 
 # pkg:golang/github.com/hashicorp/consul/api@v1.10.1
 # pkg:golang/github.com/hashicorp/consul/sdk@v0.8.0
-CVE-2021-41803 until=2022-12-01
+CVE-2021-41803 until=2023-03-01
 
