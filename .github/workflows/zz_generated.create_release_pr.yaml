@@ -1,6 +1,6 @@
 # DO NOT EDIT. Generated with:
 #
-#    devctl@5.14.0
+#    devctl@5.15.0
 #
 name: Create Release PR
 on:
@@ -66,7 +66,19 @@ jobs:
           version="$(echo $head | awk -F# '{print $NF}')"
           if [[ $version =~ ^major|minor|patch$ ]]; then
             gh auth login --with-token <<<$(echo -n ${{ secrets.GITHUB_TOKEN }})
-            version_parts=($(gh api "repos/${{ github.repository }}/releases/latest" --jq '.tag_name[1:] | split(".") | .[0], .[1], .[2]'))
+            gh_api_get_latest_release_version()
+            {
+              if ! version="$(gh api "repos/$1/releases/latest" --jq '.tag_name[1:] | split(".") | .[0], .[1], .[2]')"
+              then
+                case "$version" in
+                  *Not\ Found*) echo Assuming v0.0.0, hooray first release! >&2 ; version="0 0 0" ;;
+                  *) version="" ; return 1 ;;
+                esac
+              fi
+              echo "$version"
+            }
+
+            version_parts=($(gh_api_get_latest_release_version "${{ github.repository }}"))
             version_major=${version_parts[0]}
             version_minor=${version_parts[1]}
             version_patch=${version_parts[2]}
