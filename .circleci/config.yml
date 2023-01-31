@@ -29,7 +29,7 @@ workflows:
       - architect/push-to-docker:
           context: "architect"
           name: push-silence-operator-to-aliyun
-          image: "registry-intl.cn-shanghai.aliyuncs.com/giantswarm/silence-operator"
+          image: "giantswarm-registry.cn-shanghai.cr.aliyuncs.com/giantswarm/silence-operator"
           username_envar: "ALIYUN_USERNAME"
           password_envar: "ALIYUN_PASSWORD"
           requires:
