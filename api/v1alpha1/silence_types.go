@@ -22,7 +22,7 @@ type Silence struct {
 
 // +k8s:openapi-gen=true
 type SilenceSpec struct {
-	TargetTags []TargetTag `json:"targetTags"`
+	TargetTags []TargetTag `json:"targetTags,omitempty"`
 	Matchers   []Matcher   `json:"matchers"`
 
 	// Owner is GitHub username of a person who created and/or owns the silence.
