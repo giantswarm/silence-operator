@@ -125,6 +125,19 @@
                 }
             }
         },
+        "securityContext": {
+            "type": "object",
+            "properties": {
+                "seccompProfile": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "sync": {
             "type": "object",
             "properties": {

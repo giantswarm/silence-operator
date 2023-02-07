@@ -47,3 +47,13 @@ rbac:
   create: true
   # The PSP will only be deployed when Kubernetes supports it (<1.25)
   pspEnabled: true
+
+# Add seccomp to pod security context
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+# Add seccomp to container security context
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault

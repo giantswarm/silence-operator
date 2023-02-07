@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Only install Helm chart sync secret when sync is enabled
 - Only install PodSecurityPolicy on supported Kubernetes versions
 - Make Helm chart RBAC deployment optional
+- Added the use of runtime/default seccomp profile.
 
 ## [0.8.0] - 2022-11-08
 
