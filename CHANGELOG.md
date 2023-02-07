@@ -7,15 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Make Helm chart CronJob optional
+- Make Helm chart AlertManager address configurable
+- Make target tags field optional for when sync is disabled
+- Only install Helm chart sync secret when sync is enabled
+
 ## [0.8.0] - 2022-11-08
 
 ### Added
 
 - Add IssueURL field to Silence CRD.
-- Make Helm chart CronJob optional
-- Make Helm chart AlertManager address configurable
-- Make target tags field optional for when sync is disabled
-- Only install Helm chart sync secret when sync is enabled
 
 ### Changed
 
