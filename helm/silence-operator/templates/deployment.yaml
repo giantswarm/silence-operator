@@ -39,6 +39,9 @@ spec:
       securityContext:
         runAsUser: {{ .Values.pod.user.id }}
         runAsGroup: {{ .Values.pod.group.id }}
+        {{- with .Values.podSecurityContext }}
+          {{- . | toYaml | nindent 8 }}
+        {{- end }}
       containers:
       - name: {{ include "name" . }}
         image: "{{ .Values.registry.domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
@@ -55,6 +58,10 @@ spec:
             port: 8000
           initialDelaySeconds: 30
           timeoutSeconds: 1
+        securityContext:
+          {{- with .Values.securityContext }}
+            {{- . | toYaml | nindent 10 }}
+          {{- end }}
         resources:
           requests:
             cpu: 100m
