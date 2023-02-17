@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update alpine Docker tag from v3.17.1 to v3.17.2
+
 ### Added
 
 - Make Helm chart CronJob optional
