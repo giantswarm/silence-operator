@@ -1,6 +1,6 @@
 # DO NOT EDIT. Generated with:
 #
-#    devctl@5.18.2
+#    devctl@5.19.0
 #
 
 ##@ App
@@ -9,7 +9,7 @@ YQ=docker run --rm -u $$(id -u) -v $${PWD}:/workdir mikefarah/yq:4.29.2
 HELM_DOCS=docker run --rm -u $$(id -u) -v $${PWD}:/helm-docs jnorwood/helm-docs:v1.11.0
 
 ifdef APPLICATION
-DEPS := $(shell find $(APPLICATION)/charts -name "Chart.yaml" -printf "%h\n")
+DEPS := $(shell find $(APPLICATION)/charts -maxdepth 2 -name "Chart.yaml" -printf "%h\n")
 endif
 
 .PHONY: lint-chart check-env update-chart helm-docs update-deps $(DEPS)
