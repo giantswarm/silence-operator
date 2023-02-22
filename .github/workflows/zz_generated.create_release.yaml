@@ -1,6 +1,6 @@
 # DO NOT EDIT. Generated with:
 #
-#    devctl@5.18.2
+#    devctl@5.19.0
 #
 name: Create Release
 on:
@@ -93,7 +93,7 @@ jobs:
         uses: giantswarm/install-binary-action@v1.1.0
         with:
           binary: "architect"
-          version: "6.1.0"
+          version: "6.10.0"
       - name: Install semver
         uses: giantswarm/install-binary-action@v1.1.0
         with:
