@@ -64,7 +64,7 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 			return microerror.Mask(err)
 		}
 		r.logger.LogCtx(ctx, "level", "debug", "message", "silence created")
-	} else if !cmp.Equal(existingSilence.Matchers, newSilence.Matchers) {
+	} else if updateNeeded(existingSilence, newSilence) {
 		r.logger.LogCtx(ctx, "level", "debug", "message", "updating silence")
 
 		newSilence.ID = existingSilence.ID
@@ -78,4 +78,10 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 	}
 
 	return nil
+}
+
+// updateNeeded return true when silence need to be updated.
+func updateNeeded(existingSilence, newSilence *alertmanager.Silence) bool {
+	return !cmp.Equal(existingSilence.Matchers, newSilence.Matchers) ||
+		!cmp.Equal(existingSilence.EndsAt, newSilence.EndsAt)
 }
