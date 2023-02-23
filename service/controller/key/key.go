@@ -40,22 +40,22 @@ func SilenceComment(silence v1alpha1.Silence) string {
 }
 
 // SilenceValidUntil gets the expiry date for a given silence.
-// The expiry date is retrived from the valid-until annotation.
-// The expected format is 2006-01-02
+// The expiry date is retrived from the annotation name configured by ValidUntilAnnotationName.
+// The expected format is defined by DateOnlyLayout.
 // It returns a invalidValidUntilDateError in case the date format is invalid.
 func SilenceValidUntil(silence v1alpha1.Silence) (time.Time, error) {
 	annotations := silence.GetAnnotations()
 
-	// Check if the annotation exist otherwise return a date 1000 years in the future.
+	// Check if the annotation exist otherwise return a date 100 years in the future.
 	value, ok := annotations[ValidUntilAnnotationName]
 	if !ok {
 		return defaultEndDate, nil
 	}
 
 	// Parse the date found in the annotation.
-	validUntilTime, err := time.Parse(ValidDateLayout, value)
+	validUntilTime, err := time.Parse(DateOnlyLayout, value)
 	if err != nil {
-		return time.Time{}, microerror.Maskf(invalidValidUntilDateError, "%s date %q does not match expected format %q: %v", ValidUntilAnnotationName, value, ValidDateLayout, err)
+		return time.Time{}, microerror.Maskf(invalidValidUntilDateError, "%s date %q does not match expected format %q: %v", ValidUntilAnnotationName, value, DateOnlyLayout, err)
 	}
 
 	return validUntilTime, nil
