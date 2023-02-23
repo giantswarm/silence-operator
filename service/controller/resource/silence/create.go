@@ -59,14 +59,18 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 	var existingSilence *alertmanager.Silence
 	existingSilence, err = r.amClient.GetSilenceByComment(key.SilenceComment(silence))
 	notFound := alertmanager.IsNotFound(err)
-	if notFound && newSilence.EndsAt.After(now) {
-		r.logger.LogCtx(ctx, "level", "debug", "message", "creating silence")
+	if notFound {
+		if newSilence.EndsAt.After(now) {
+			r.logger.LogCtx(ctx, "level", "debug", "message", "creating silence")
 
-		err = r.amClient.CreateSilence(newSilence)
-		if err != nil {
-			return microerror.Mask(err)
+			err = r.amClient.CreateSilence(newSilence)
+			if err != nil {
+				return microerror.Mask(err)
+			}
+			r.logger.LogCtx(ctx, "level", "debug", "message", "created silence")
+		} else {
+			r.logger.LogCtx(ctx, "level", "debug", "message", "skipped creation : silence is expired")
 		}
-		r.logger.LogCtx(ctx, "level", "debug", "message", "silence created")
 	} else if updateNeeded(existingSilence, newSilence) {
 		if newSilence.EndsAt.Before(now) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", "deleting silence")
@@ -76,7 +80,7 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 			if err != nil {
 				return microerror.Mask(err)
 			}
-			r.logger.LogCtx(ctx, "level", "debug", "message", "silence deleted")
+			r.logger.LogCtx(ctx, "level", "debug", "message", "deleted silence")
 		} else {
 			newSilence.ID = existingSilence.ID
 			r.logger.LogCtx(ctx, "level", "debug", "message", "updating silence")
@@ -86,10 +90,10 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 			if err != nil {
 				return microerror.Mask(err)
 			}
-			r.logger.LogCtx(ctx, "level", "debug", "message", "silence updated")
+			r.logger.LogCtx(ctx, "level", "debug", "message", "updated silence")
 		}
 	} else {
-		r.logger.LogCtx(ctx, "level", "debug", "message", "silence already exists")
+		r.logger.LogCtx(ctx, "level", "debug", "message", "skipped update : silence unchanged")
 	}
 
 	return nil
