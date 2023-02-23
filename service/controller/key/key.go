@@ -18,8 +18,7 @@ const (
 
 var (
 	// used to create never-ending silence
-	defaultEndDate   = time.Now().AddDate(100, 0, 0)
-	defaultStartDate = time.Now().AddDate(-100, 0, 0)
+	defaultEndDate = time.Now().AddDate(100, 0, 0)
 )
 
 func ToSilence(v interface{}) (v1alpha1.Silence, error) {
