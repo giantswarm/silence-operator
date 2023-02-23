@@ -54,10 +54,12 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 		return microerror.Mask(err)
 	}
 
+	now := time.Now()
+
 	var existingSilence *alertmanager.Silence
 	existingSilence, err = r.amClient.GetSilenceByComment(key.SilenceComment(silence))
 	notFound := alertmanager.IsNotFound(err)
-	if notFound {
+	if notFound && newSilence.EndsAt.After(now) {
 		r.logger.LogCtx(ctx, "level", "debug", "message", "creating silence")
 
 		err = r.amClient.CreateSilence(newSilence)
@@ -66,7 +68,7 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 		}
 		r.logger.LogCtx(ctx, "level", "debug", "message", "silence created")
 	} else if updateNeeded(existingSilence, newSilence) {
-		if newSilence.EndsAt.Before(time.Now()) {
+		if newSilence.EndsAt.Before(now) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", "deleting silence")
 
 			r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("%+#v", newSilence))
@@ -98,6 +100,5 @@ func updateNeeded(existingSilence, newSilence *alertmanager.Silence) bool {
 	oneDay := 24 * time.Hour
 
 	return !cmp.Equal(existingSilence.Matchers, newSilence.Matchers) ||
-		!existingSilence.StartsAt.Truncate(oneDay).Equal(newSilence.StartsAt.Truncate(oneDay)) ||
 		!existingSilence.EndsAt.Truncate(oneDay).Equal(newSilence.EndsAt.Truncate(oneDay))
 }
