@@ -12,7 +12,7 @@ import (
 	"github.com/giantswarm/silence-operator/service/controller/key"
 )
 
-func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) *alertmanager.Silence {
+func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
 	{
 		for _, matcher := range silence.Spec.Matchers {
@@ -26,15 +26,20 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) *alertmanager.Sile
 		}
 	}
 
+	validUntil, err := key.SilenceValidUntil(silence)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+
 	newSilence := &alertmanager.Silence{
 		Comment:   key.SilenceComment(silence),
 		CreatedBy: key.CreatedBy,
-		EndsAt:    eternity,
+		EndsAt:    validUntil,
 		Matchers:  matchers,
 		StartsAt:  time.Now(),
 	}
 
-	return newSilence
+	return newSilence, nil
 }
 
 func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
@@ -42,7 +47,11 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 	if err != nil {
 		return microerror.Mask(err)
 	}
-	newSilence := r.getSilenceFromCR(silence)
+
+	newSilence, err := r.getSilenceFromCR(silence)
+	if err != nil {
+		return microerror.Mask(err)
+	}
 
 	var existingSilence *alertmanager.Silence
 	existingSilence, err = r.amClient.GetSilenceByComment(key.SilenceComment(silence))
