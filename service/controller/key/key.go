@@ -12,7 +12,8 @@ import (
 const (
 	CreatedBy = "silence-operator"
 
-	ValidUntilLabelName = "valid-until"
+	ValidUntilLabelName  = "valid-until"
+	ValidUntilDateLayout = "2006-01-02"
 )
 
 var (
@@ -53,9 +54,9 @@ func SilenceValidUntil(silence v1alpha1.Silence) (time.Time, error) {
 	}
 
 	// Parse the date found in the label.
-	validUntilTime, err := time.Parse(time.DateOnly, value)
+	validUntilTime, err := time.Parse(ValidUntilDateLayout, value)
 	if err != nil {
-		return time.Time{}, microerror.Maskf(invalidValidUntilDateError, "valid-until date %q does not match expected format %q: %v", value, time.DateOnly, err)
+		return time.Time{}, microerror.Maskf(invalidValidUntilDateError, "valid-until date %q does not match expected format %q: %v", value, ValidUntilDateLayout, err)
 	}
 
 	return validUntilTime, nil
