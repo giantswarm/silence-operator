@@ -2,6 +2,7 @@ package silence
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/giantswarm/microerror"
@@ -73,6 +74,7 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 		r.logger.LogCtx(ctx, "level", "debug", "message", "updating silence")
 
 		newSilence.ID = existingSilence.ID
+		r.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("%+#v", newSilence))
 		err = r.amClient.UpdateSilence(newSilence)
 		if err != nil {
 			return microerror.Mask(err)
