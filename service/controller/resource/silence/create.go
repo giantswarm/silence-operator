@@ -27,11 +27,6 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Sil
 		}
 	}
 
-	validSince, err := key.SilenceValidSince(silence)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
 	validUntil, err := key.SilenceValidUntil(silence)
 	if err != nil {
 		return nil, microerror.Mask(err)
@@ -40,7 +35,7 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Sil
 	newSilence := &alertmanager.Silence{
 		Comment:   key.SilenceComment(silence),
 		CreatedBy: key.CreatedBy,
-		StartsAt:  validSince,
+		StartsAt:  time.Now(),
 		EndsAt:    validUntil,
 		Matchers:  matchers,
 	}

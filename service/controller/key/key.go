@@ -12,7 +12,6 @@ import (
 const (
 	CreatedBy = "silence-operator"
 
-	ValidSinceAnnotationName = "valid-since"
 	ValidUntilAnnotationName = "valid-until"
 	ValidDateLayout          = "2006-01-02"
 )
@@ -40,28 +39,6 @@ func ToSilence(v interface{}) (v1alpha1.Silence, error) {
 
 func SilenceComment(silence v1alpha1.Silence) string {
 	return fmt.Sprintf("%s-%s", CreatedBy, silence.Name)
-}
-
-// SilenceValidSince gets the start date for a given silence.
-// The start date is retrived from the silence CR creation date.
-// The expected format is 2006-01-02
-// It returns a invalidValidUntilDateError in case the date format is invalid.
-func SilenceValidSince(silence v1alpha1.Silence) (time.Time, error) {
-	annotations := silence.GetAnnotations()
-
-	// Check if the annotation exist otherwise return a date 100 years in the past.
-	value, ok := annotations[ValidSinceAnnotationName]
-	if !ok {
-		return defaultStartDate, nil
-	}
-
-	// Parse the date found in the annotation.
-	validSinceTime, err := time.Parse(ValidDateLayout, value)
-	if err != nil {
-		return time.Time{}, microerror.Maskf(invalidValidUntilDateError, "%s date %q does not match expected format %q: %v", ValidSinceAnnotationName, value, ValidDateLayout, err)
-	}
-
-	return validSinceTime, nil
 }
 
 // SilenceValidUntil gets the expiry date for a given silence.
