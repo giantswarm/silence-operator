@@ -12,13 +12,15 @@ import (
 const (
 	CreatedBy = "silence-operator"
 
+	ValidSinceAnnotationName = "valid-since"
 	ValidUntilAnnotationName = "valid-until"
-	ValidUntilDateLayout     = "2006-01-02"
+	ValidDateLayout          = "2006-01-02"
 )
 
 var (
 	// used to create never-ending silence
-	eternity = time.Now().AddDate(1000, 0, 0)
+	defaultEndDate   = time.Now().AddDate(100, 0, 0)
+	defaultStartDate = time.Now().AddDate(-100, 0, 0)
 )
 
 func ToSilence(v interface{}) (v1alpha1.Silence, error) {
@@ -40,6 +42,28 @@ func SilenceComment(silence v1alpha1.Silence) string {
 	return fmt.Sprintf("%s-%s", CreatedBy, silence.Name)
 }
 
+// SilenceValidSince gets the start date for a given silence.
+// The start date is retrived from the silence CR creation date.
+// The expected format is 2006-01-02
+// It returns a invalidValidUntilDateError in case the date format is invalid.
+func SilenceValidSince(silence v1alpha1.Silence) (time.Time, error) {
+	annotations := silence.GetAnnotations()
+
+	// Check if the annotation exist otherwise return a date 100 years in the past.
+	value, ok := annotations[ValidSinceAnnotationName]
+	if !ok {
+		return defaultStartDate, nil
+	}
+
+	// Parse the date found in the annotation.
+	validSinceTime, err := time.Parse(ValidDateLayout, value)
+	if err != nil {
+		return time.Time{}, microerror.Maskf(invalidValidUntilDateError, "%s date %q does not match expected format %q: %v", ValidSinceAnnotationName, value, ValidDateLayout, err)
+	}
+
+	return validSinceTime, nil
+}
+
 // SilenceValidUntil gets the expiry date for a given silence.
 // The expiry date is retrived from the valid-until annotation.
 // The expected format is 2006-01-02
@@ -50,13 +74,13 @@ func SilenceValidUntil(silence v1alpha1.Silence) (time.Time, error) {
 	// Check if the annotation exist otherwise return a date 1000 years in the future.
 	value, ok := annotations[ValidUntilAnnotationName]
 	if !ok {
-		return eternity, nil
+		return defaultEndDate, nil
 	}
 
 	// Parse the date found in the annotation.
-	validUntilTime, err := time.Parse(ValidUntilDateLayout, value)
+	validUntilTime, err := time.Parse(ValidDateLayout, value)
 	if err != nil {
-		return time.Time{}, microerror.Maskf(invalidValidUntilDateError, "valid-until date %q does not match expected format %q: %v", value, ValidUntilDateLayout, err)
+		return time.Time{}, microerror.Maskf(invalidValidUntilDateError, "%s date %q does not match expected format %q: %v", ValidUntilAnnotationName, value, ValidDateLayout, err)
 	}
 
 	return validUntilTime, nil
