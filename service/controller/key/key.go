@@ -12,8 +12,8 @@ import (
 const (
 	CreatedBy = "silence-operator"
 
-	ValidUntilLabelName  = "valid-until"
-	ValidUntilDateLayout = "2006-01-02"
+	ValidUntilAnnotationName = "valid-until"
+	ValidUntilDateLayout     = "2006-01-02"
 )
 
 var (
@@ -41,19 +41,19 @@ func SilenceComment(silence v1alpha1.Silence) string {
 }
 
 // SilenceValidUntil gets the expiry date for a given silence.
-// The expiry date is retrived from the valid-until label.
+// The expiry date is retrived from the valid-until annotation.
 // The expected format is 2006-01-02
 // It returns a invalidValidUntilDateError in case the date format is invalid.
 func SilenceValidUntil(silence v1alpha1.Silence) (time.Time, error) {
-	labels := silence.GetLabels()
+	annotations := silence.GetAnnotations()
 
-	// Check if the label exist otherwise return a date 1000 years in the future.
-	value, ok := labels[ValidUntilLabelName]
+	// Check if the annotation exist otherwise return a date 1000 years in the future.
+	value, ok := annotations[ValidUntilAnnotationName]
 	if !ok {
 		return eternity, nil
 	}
 
-	// Parse the date found in the label.
+	// Parse the date found in the annotation.
 	validUntilTime, err := time.Parse(ValidUntilDateLayout, value)
 	if err != nil {
 		return time.Time{}, microerror.Maskf(invalidValidUntilDateError, "valid-until date %q does not match expected format %q: %v", value, ValidUntilDateLayout, err)
