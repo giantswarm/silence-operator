@@ -9,3 +9,11 @@ var wrongTypeError = &microerror.Error{
 func IsWrongType(err error) bool {
 	return microerror.Cause(err) == wrongTypeError
 }
+
+var invalidValidUntilDateError = &microerror.Error{
+	Kind: "invalidValidaUntilDateError",
+}
+
+func IsInvalidValidUntilDate(err error) bool {
+	return microerror.Cause(err) == invalidValidUntilDateError
+}
