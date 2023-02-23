@@ -10,10 +10,9 @@ import (
 )
 
 const (
-	CreatedBy = "silence-operator"
-
+	CreatedBy                = "silence-operator"
 	ValidUntilAnnotationName = "valid-until"
-	ValidDateLayout          = "2006-01-02"
+	DateOnlyLayout           = "2006-01-02"
 )
 
 var (
