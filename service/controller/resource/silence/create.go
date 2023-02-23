@@ -92,5 +92,6 @@ func updateNeeded(existingSilence, newSilence *alertmanager.Silence) bool {
 	oneDay := 24 * time.Hour
 
 	return !cmp.Equal(existingSilence.Matchers, newSilence.Matchers) ||
+		!existingSilence.StartsAt.Truncate(oneDay).Equal(newSilence.StartsAt.Truncate(oneDay)) ||
 		!existingSilence.EndsAt.Truncate(oneDay).Equal(newSilence.EndsAt.Truncate(oneDay))
 }
