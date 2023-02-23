@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	// used to create never-ending silence
+	// defaultEndDate is used to create never-ending silence
 	defaultEndDate = time.Now().AddDate(100, 0, 0)
 )
 
