@@ -106,6 +106,22 @@
                             "type": "string"
                         }
                     }
+        "rbac": {
+            "type": "object",
+            "properties": {
+                "create": {
+                    "type": "boolean"
+                },
+                "pspEnabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "registry": {
+            "type": "object",
+            "properties": {
+                "domain": {
+                    "type": "string"
                 }
             }
         },

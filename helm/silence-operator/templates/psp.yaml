@@ -1,3 +1,4 @@
+{{- if and .Values.rbac.pspEnabled (.Capabilities.APIVersions.Has "policy/v1beta1") }}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
@@ -12,7 +13,7 @@ spec:
     rule: MustRunAs
     ranges:
       - min: 1
-        max: 65535 
+        max: 65535
   runAsUser:
     rule: MustRunAsNonRoot
   runAsGroup:
@@ -32,3 +33,4 @@ spec:
   hostNetwork: false
   hostIPC: false
   hostPID: false
+{{- end }}
