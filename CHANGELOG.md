@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added the use of runtime/default seccomp profile.
 
+### Changed
+
+- updated giantswarm/k8sclient from v6.1.0 to v7.0.1
+- updated giantswarm/operatorkit from v6.1.0 to v8.0.0
+
 ## [0.8.0] - 2022-11-08
 
 ### Changed
