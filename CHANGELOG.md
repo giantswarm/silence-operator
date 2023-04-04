@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - updated giantswarm/k8sclient from v6.1.0 to v7.0.1
 - updated giantswarm/operatorkit from v6.1.0 to v8.0.0
+- Updated sigs.k8s.io/controller-tools from v0.7.0 to v0.11.3
 
 ## [0.8.0] - 2022-11-08
 
