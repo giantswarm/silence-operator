@@ -47,4 +47,3 @@ rbac:
   create: true
   # The PSP will only be deployed when Kubernetes supports it (<1.25)
   pspEnabled: true
-  
