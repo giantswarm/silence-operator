@@ -54,20 +54,6 @@ workflows:
               only: /^v.*/
 
       - architect/push-to-app-collection:
-          name: push-silence-operator-to-shared-app-collection
-          context: architect
-          app_name: "silence-operator"
-          app_namespace: "monitoring"
-          app_collection_repo: "shared-app-collection"
-          requires:
-            - push-silence-operator-to-app-catalog
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
-
-      - architect/push-to-app-collection:
           name: push-silence-operator-to-aws-app-collection
           context: architect
           app_name: "silence-operator"
