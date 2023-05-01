@@ -1,17 +1,5 @@
 # pkg:golang/github.com/hashicorp/consul/api@v1.18.0
-# pkg:golang/github.com/hashicorp/consul/sdk@v0.3.0
-CVE-2022-29153 until=2023-05-01
-
-# pkg:golang/github.com/nats-io/jwt@v0.3.0
-CVE-2020-26892 until=2023-05-01
-CVE-2021-3127 until=2023-05-01
-
-# pkg:golang/github.com/urfave/negroni@v1.0.0
-sonatype-2021-1485 until=2023-05-01
-
-# pkg:golang/golang.org/x/net@v0.6.0
-CVE-2022-41723 until=2023-05-01
+CVE-2022-29153 until=2023-07-01
 
 # pkg:golang/k8s.io/apiserver@v0.26.0
-sonatype-2022-6522 until=2023-05-01
-CVE-2020-8561 until=2023-05-01
+CVE-2020-8561 until=2023-07-01
