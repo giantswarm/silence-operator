@@ -13,7 +13,7 @@ require (
 	github.com/giantswarm/micrologger v1.0.0
 	github.com/giantswarm/operatorkit/v8 v8.0.0
 	github.com/google/go-cmp v0.5.9
-	github.com/prometheus/client_golang v1.15.0
+	github.com/prometheus/client_golang v1.15.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	k8s.io/apimachinery v0.26.0
