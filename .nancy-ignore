@@ -3,3 +3,6 @@ CVE-2022-29153 until=2023-07-01
 
 # pkg:golang/k8s.io/apiserver@v0.26.0
 CVE-2020-8561 until=2023-07-01
+
+# pkg:golang/github.com/gin-gonic/gin@v1.8.1
+CVE-2023-26125 until=2023-07-01
