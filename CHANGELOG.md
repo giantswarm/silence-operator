@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated sigs.k8s.io/controller-tools from v0.7.0 to v0.11.3
 - Updated github.com/spf13/cobra from v1.6.1 to v1.7.0
 
+### Removed
+
+- Stop pushing to `openstack-app-collection`.
+
 ## [0.8.0] - 2022-11-08
 
 ### Changed

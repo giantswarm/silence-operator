@@ -82,20 +82,6 @@ workflows:
               only: /^v.*/
 
       - architect/push-to-app-collection:
-          name: push-silence-operator-to-openstack-app-collection
-          context: architect
-          app_name: "silence-operator"
-          app_namespace: "monitoring"
-          app_collection_repo: "openstack-app-collection"
-          requires:
-            - push-silence-operator-to-app-catalog
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
-
-      - architect/push-to-app-collection:
           name: push-silence-operator-to-vsphere-app-collection
           context: architect
           app_name: "silence-operator"
@@ -116,7 +102,7 @@ workflows:
           app_namespace: "monitoring"
           app_collection_repo: "gcp-app-collection"
           requires:
-          - push-silence-operator-to-app-catalog
+            - push-silence-operator-to-app-catalog
           filters:
             branches:
               ignore: /.*/
