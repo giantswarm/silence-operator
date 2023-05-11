@@ -58,7 +58,7 @@ func SilenceValidUntil(silence v1alpha1.Silence) (time.Time, error) {
 		return time.Time{}, microerror.Maskf(invalidValidUntilDateError, "%s date %q does not match expected format %q: %v", ValidUntilAnnotationName, value, DateOnlyLayout, err)
 	}
 	// We shift the time to 9 hours CET to ensure silences do not expire at night.
-	validUntilTime = time.Date(validUntilTime.Year(), validUntilTime.Month(), validUntilTime.Day(), 9, 0, 0, 0, time.FixedZone("Europe/Berlin", 0))
+	validUntilTime = time.Date(validUntilTime.Year(), validUntilTime.Month(), validUntilTime.Day(), 14, 55, 0, 0, time.FixedZone("Europe/Berlin", 0))
 
 	return validUntilTime, nil
 }
