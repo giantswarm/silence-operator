@@ -176,8 +176,23 @@ func updateMeta(c, d metav1.Object) {
 	d.SetCreationTimestamp(c.GetCreationTimestamp())
 	d.SetDeletionTimestamp(c.GetDeletionTimestamp())
 	d.SetDeletionGracePeriodSeconds(c.GetDeletionGracePeriodSeconds())
-	d.SetLabels(c.GetLabels())
-	d.SetAnnotations(c.GetAnnotations())
+	labels := make(map[string]string)
+	for key, value := range c.GetLabels() {
+		labels[key] = value
+	}
+	for key, value := range d.GetLabels() {
+		labels[key] = value
+	}
+	d.SetLabels(labels)
+	// make sure valid-until annotation updates are carried over
+	annotations := make(map[string]string)
+	for key, value := range c.GetAnnotations() {
+		annotations[key] = value
+	}
+	for key, value := range d.GetAnnotations() {
+		annotations[key] = value
+	}
+	d.SetAnnotations(annotations)
 	d.SetFinalizers(c.GetFinalizers())
 	d.SetOwnerReferences(c.GetOwnerReferences())
 	d.SetManagedFields(c.GetManagedFields())
