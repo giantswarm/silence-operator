@@ -17,11 +17,3 @@ var invalidValidUntilDateError = &microerror.Error{
 func IsInvalidValidUntilDate(err error) bool {
 	return microerror.Cause(err) == invalidValidUntilDateError
 }
-
-var invalidLocationError = &microerror.Error{
-	Kind: "invalidLocationError",
-}
-
-func IsInvalidLocation(err error) bool {
-	return microerror.Cause(err) == invalidLocationError
-}
