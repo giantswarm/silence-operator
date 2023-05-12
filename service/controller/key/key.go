@@ -59,7 +59,7 @@ func SilenceValidUntil(silence v1alpha1.Silence) (time.Time, error) {
 	}
 
 	// We shift the time to 9am CET to ensure silences do not expire at night.
-	validUntilTime = time.Date(validUntilTime.Year(), validUntilTime.Month(), validUntilTime.Day(), 9, 0, 0, 0, time.FixedZone("CET", 0))
+	validUntilTime = time.Date(validUntilTime.Year(), validUntilTime.Month(), validUntilTime.Day(), 11, 0, 0, 0, time.FixedZone("CET", 0))
 
 	return validUntilTime.UTC(), nil
 }
