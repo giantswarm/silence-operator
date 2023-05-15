@@ -74,25 +74,23 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 		} else {
 			r.logger.LogCtx(ctx, "level", "debug", "message", "skipped creation : silence is expired")
 		}
-	} else if updateNeeded(existingSilence, newSilence) {
-		if newSilence.EndsAt.Before(now) {
-			r.logger.LogCtx(ctx, "level", "debug", "message", "deleting silence")
+	} else if newSilence.EndsAt.Before(now) {
+		r.logger.LogCtx(ctx, "level", "debug", "message", "deleting silence")
 
-			err = r.amClient.DeleteSilenceByID(existingSilence.ID)
-			if err != nil {
-				return microerror.Mask(err)
-			}
-			r.logger.LogCtx(ctx, "level", "debug", "message", "deleted silence")
-		} else {
-			newSilence.ID = existingSilence.ID
-			r.logger.LogCtx(ctx, "level", "debug", "message", "updating silence")
-
-			err = r.amClient.UpdateSilence(newSilence)
-			if err != nil {
-				return microerror.Mask(err)
-			}
-			r.logger.LogCtx(ctx, "level", "debug", "message", "updated silence")
+		err = r.amClient.DeleteSilenceByID(existingSilence.ID)
+		if err != nil {
+			return microerror.Mask(err)
 		}
+		r.logger.LogCtx(ctx, "level", "debug", "message", "deleted silence")
+	} else if updateNeeded(existingSilence, newSilence) {
+		newSilence.ID = existingSilence.ID
+		r.logger.LogCtx(ctx, "level", "debug", "message", "updating silence")
+
+		err = r.amClient.UpdateSilence(newSilence)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+		r.logger.LogCtx(ctx, "level", "debug", "message", "updated silence")
 	} else {
 		r.logger.LogCtx(ctx, "level", "debug", "message", "skipped update : silence unchanged")
 	}
