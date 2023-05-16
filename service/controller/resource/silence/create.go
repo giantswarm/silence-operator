@@ -30,7 +30,7 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Sil
 		}
 	}
 
-	validUntil, err := key.SilenceValidUntil(silence)
+	endsAt, err := key.SilenceEndsAt(silence)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
@@ -39,7 +39,7 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Sil
 		Comment:   key.SilenceComment(silence),
 		CreatedBy: key.CreatedBy,
 		StartsAt:  time.Now(),
-		EndsAt:    validUntil,
+		EndsAt:    endsAt,
 		Matchers:  matchers,
 	}
 
@@ -101,5 +101,5 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 // updateNeeded return true when silence need to be updated.
 func updateNeeded(existingSilence, newSilence *alertmanager.Silence) bool {
 	return !cmp.Equal(existingSilence.Matchers, newSilence.Matchers) ||
-		!existingSilence.EndsAt.Truncate(oneDay).Equal(newSilence.EndsAt.Truncate(oneDay))
+		!existingSilence.EndsAt.Equal(newSilence.EndsAt)
 }
