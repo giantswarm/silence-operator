@@ -12,10 +12,6 @@ import (
 	"github.com/giantswarm/silence-operator/service/controller/key"
 )
 
-var (
-	oneDay = 24 * time.Hour
-)
-
 func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
 	{

@@ -10,10 +10,10 @@ func IsWrongType(err error) bool {
 	return microerror.Cause(err) == wrongTypeError
 }
 
-var invalidValidUntilDateError = &microerror.Error{
-	Kind: "invalidValidaUntilDateError",
+var invalidExpirationDateError = &microerror.Error{
+	Kind: "invalidExpirationDateError",
 }
 
-func IsInvalidValidUntilDate(err error) bool {
-	return microerror.Cause(err) == invalidValidUntilDateError
+func IsInvalidExpirationDate(err error) bool {
+	return microerror.Cause(err) == invalidExpirationDateError
 }
