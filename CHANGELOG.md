@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Set Silence expiry date using value from valid-until label
 - Update alpine Docker tag from v3.17.1 to v3.17.2
 
 ### Added

@@ -6,3 +6,4 @@ CVE-2020-8561 until=2023-07-01
 
 # pkg:golang/github.com/gin-gonic/gin@v1.8.1
 CVE-2023-26125 until=2023-07-01
+CVE-2023-29401 until=2023-07-01
