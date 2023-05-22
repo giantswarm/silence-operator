@@ -19,8 +19,8 @@ Common labels
 {{- define "labels.common" -}}
 app: {{ include "name" . | quote }}
 {{ include "labels.selector" . }}
-app.giantswarm.io/branch: {{ .Values.project.branch | quote }}
-app.giantswarm.io/commit: {{ .Values.project.commit | quote }}
+app.giantswarm.io/branch: {{ .Values.project.branch | replace "/" "_" | quote }}
+app.giantswarm.io/commit: {{ .Values.project.commit | replace "/" "_" | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 helm.sh/chart: {{ include "chart" . | quote }}
