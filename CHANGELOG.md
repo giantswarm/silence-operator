@@ -9,15 +9,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Bump github.com/spf13/cobra from 1.4.0 to 1.5.0.
-- Bump sigs.k8s.io/controller-runtime from 0.12.2 to 0.12.3
-- Bump alpine from 3.16.0 to 3.16.1
-- Bump alpine from 3.16.1 to 3.16.2
-- Bump github.com/prometheus/client_golang from 1.12.2 to 1.13.0
-- Bump github.com/giantswarm/k8smetadata from 0.11.1 to 0.12.0
-- Bump sigs.k8s.io/controller-runtime from 0.12.3 to 0.13.0
-- Reconcile API if Silence CR gets updated
 - Support watching specific namespaces
+
+## [0.9.0] - 2023-05-22
+
+### Added
+
+- Added the use of runtime/default seccomp profile.
+
+### Changed
+
+- updated giantswarm/k8sclient from v6.1.0 to v7.0.1
+- updated giantswarm/operatorkit from v6.1.0 to v8.0.0
+- Updated sigs.k8s.io/controller-tools from v0.7.0 to v0.11.3
+- Updated github.com/spf13/cobra from v1.6.1 to v1.7.0
+
+### Removed
+
+- Stop pushing to `openstack-app-collection`.
+
+## [0.8.0] - 2022-11-08
+
+### Changed
+
+- Set Silence expiry date using value from valid-until label
+- Update alpine Docker tag from v3.17.1 to v3.17.2
+
+### Added
+
+- Make Helm chart CronJob optional
+- Make Helm chart AlertManager address configurable
+- Make target tags field optional for when sync is disabled
+- Only install Helm chart sync secret when sync is enabled
+- Only install PodSecurityPolicy on supported Kubernetes versions
+- Make Helm chart RBAC deployment optional
+- Added the use of runtime/default seccomp profile.
+
+## [0.8.0] - 2022-11-08
+
+### Added
+
+- Add IssueURL field to Silence CRD.
+
+### Changed
+
+- Add `.svc` suffix to the alertmanager address to make silence operator work behind a corporate proxy.
+- Upgrade to go 1.19
+- Bump github.com/spf13/cobra from 1.4.0 to 1.5.0.
+- Bump github.com/spf13/cobra from 1.6.0 to 1.6.1
+- Bump sigs.k8s.io/controller-runtime from 0.12.2 to 0.12.3
+- Bump sigs.k8s.io/controller-runtime from 0.12.3 to 0.13.0
+- Bump sigs.k8s.io/controller-runtime from 0.13.0 to 0.13.1
+- Bump alpine from 3.16.0 to 3.17.1
+- Bump github.com/prometheus/client_golang from 1.12.2 to 1.13.0
+- Bump github.com/prometheus/client_golang from 1.13.1 to 1.14.0
+- Bump github.com/giantswarm/k8smetadata from 0.11.1 to 0.13.0
+- Reconcile API if Silence CR gets updated
+- Deprecate PostmortemURL field in favour of IssueURL.
+- Make Silence Owner field a string instead of string pointer.
+- Bump golang.org/x/text from v0.3.7 to v0.3.8
+- Bump github.com/nats-io/nats-server from v2.5.0 to v2.9.3
+- Bump github.com/getsentry/sentry-go from v0.11.0 to v0.14.0
 
 ## [0.7.0] - 2022-06-13
 
@@ -28,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Dependencies updates, solves some of Nancy security alerts
-- Set `startingDeadlineSeconds` to 240 seconds to ensure it is scheduled and to avoid `FailedNeedsStart` events. 
+- Set `startingDeadlineSeconds` to 240 seconds to ensure it is scheduled and to avoid `FailedNeedsStart` events.
 
 ## [0.6.1] - 2022-04-12
 
@@ -122,7 +174,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/giantswarm/silence-operator/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/giantswarm/silence-operator/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/giantswarm/silence-operator/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/giantswarm/silence-operator/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/giantswarm/silence-operator/compare/v0.5.0...v0.6.0

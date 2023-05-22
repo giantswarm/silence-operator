@@ -2,6 +2,7 @@ package key
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/giantswarm/microerror"
 
@@ -9,7 +10,14 @@ import (
 )
 
 const (
-	CreatedBy = "silence-operator"
+	CreatedBy                = "silence-operator"
+	ValidUntilAnnotationName = "valid-until"
+	DateOnlyLayout           = "2006-01-02"
+)
+
+var (
+	// defaultEndDate is used to create never-ending silence
+	defaultEndDate = time.Now().AddDate(100, 0, 0)
 )
 
 func ToSilence(v interface{}) (v1alpha1.Silence, error) {
@@ -29,4 +37,32 @@ func ToSilence(v interface{}) (v1alpha1.Silence, error) {
 
 func SilenceComment(silence v1alpha1.Silence) string {
 	return fmt.Sprintf("%s-%s", CreatedBy, silence.Name)
+}
+
+// SilenceEndsAt gets the expiry date for a given silence.
+// The expiry date is retrieved from the annotation name configured by ValidUntilAnnotationName.
+// The expected format is defined by DateOnlyLayout.
+// It returns an invalidExpirationDateError in case the date format is invalid.
+func SilenceEndsAt(silence v1alpha1.Silence) (time.Time, error) {
+	annotations := silence.GetAnnotations()
+
+	// Check if the annotation exist otherwise return a date 100 years in the future.
+	value, ok := annotations[ValidUntilAnnotationName]
+	if !ok {
+		return defaultEndDate, nil
+	}
+
+	// Parse the date found in the annotation using RFC3339 (ISO8601) by default
+	expirationDate, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		// If it fails, we try to parse it using date only (old way)
+		expirationDate, err = time.Parse(DateOnlyLayout, value)
+		if err != nil {
+			return time.Time{}, microerror.Maskf(invalidExpirationDateError, "%s date %q does not match expected format %q: %v", ValidUntilAnnotationName, value, DateOnlyLayout, err)
+		}
+		// We shift the time to 8am UTC (9 CET or 10 CEST) to ensure silences do not expire at night.
+		expirationDate = time.Date(expirationDate.Year(), expirationDate.Month(), expirationDate.Day(), 8, 0, 0, 0, time.UTC)
+	}
+
+	return expirationDate, nil
 }

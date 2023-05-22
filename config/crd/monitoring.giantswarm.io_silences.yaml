@@ -39,6 +39,9 @@ spec:
             type: object
           spec:
             properties:
+              issue_url:
+                description: IssueURL is a link to a GitHub issue describing the problem.
+                type: string
               matchers:
                 items:
                   properties:
@@ -61,8 +64,8 @@ spec:
                   owns the silence.
                 type: string
               postmortem_url:
-                description: PostmortemURL is a link to a document describing the
-                  problem.
+                description: 'PostmortemURL is a link to a document describing the
+                  problem. Deprecated: Use IssueURL instead.'
                 type: string
               targetTags:
                 items:
@@ -78,7 +81,6 @@ spec:
                 type: array
             required:
             - matchers
-            - targetTags
             type: object
         required:
         - metadata

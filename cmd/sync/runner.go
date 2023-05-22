@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/ghodss/yaml"
-	"github.com/giantswarm/k8sclient/v6/pkg/k8sclient"
-	"github.com/giantswarm/k8sclient/v6/pkg/k8srestconfig"
+	"github.com/giantswarm/k8sclient/v7/pkg/k8sclient"
+	"github.com/giantswarm/k8sclient/v7/pkg/k8srestconfig"
 	"github.com/giantswarm/k8smetadata/pkg/annotation"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
@@ -176,8 +176,23 @@ func updateMeta(c, d metav1.Object) {
 	d.SetCreationTimestamp(c.GetCreationTimestamp())
 	d.SetDeletionTimestamp(c.GetDeletionTimestamp())
 	d.SetDeletionGracePeriodSeconds(c.GetDeletionGracePeriodSeconds())
-	d.SetLabels(c.GetLabels())
-	d.SetAnnotations(c.GetAnnotations())
+	labels := make(map[string]string)
+	for key, value := range c.GetLabels() {
+		labels[key] = value
+	}
+	for key, value := range d.GetLabels() {
+		labels[key] = value
+	}
+	d.SetLabels(labels)
+	// make sure valid-until annotation updates are carried over
+	annotations := make(map[string]string)
+	for key, value := range c.GetAnnotations() {
+		annotations[key] = value
+	}
+	for key, value := range d.GetAnnotations() {
+		annotations[key] = value
+	}
+	d.SetAnnotations(annotations)
 	d.SetFinalizers(c.GetFinalizers())
 	d.SetOwnerReferences(c.GetOwnerReferences())
 	d.SetManagedFields(c.GetManagedFields())
@@ -199,7 +214,7 @@ func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]mo
 	// Load silences CRs from yaml files.
 	var filteredSilences []monitoringv1alpha1.Silence
 	for _, silenceFile := range silenceFiles {
-		data, err := ioutil.ReadFile(silenceFile)
+		data, err := os.ReadFile(silenceFile)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
@@ -252,7 +267,7 @@ func (r *runner) isValidSilence(ctx context.Context, silence monitoringv1alpha1.
 func findYamls(dir string) ([]string, error) {
 	var result []string
 
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}

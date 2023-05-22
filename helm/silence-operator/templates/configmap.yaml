@@ -17,7 +17,7 @@ data:
       watchNamespaces:
         - ""
       alertmanager:
-        address: http://alertmanager-operated.monitoring:9093
+        address: {{ .Values.alertmanagerAddress }}
       kubernetes:
         address: ''
         inCluster: true

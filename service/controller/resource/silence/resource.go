@@ -1,9 +1,7 @@
 package silence
 
 import (
-	"time"
-
-	"github.com/giantswarm/k8sclient/v6/pkg/k8sclient"
+	"github.com/giantswarm/k8sclient/v7/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 
@@ -12,11 +10,6 @@ import (
 
 const (
 	Name = "silence"
-)
-
-var (
-	// used to create never-ending silence
-	eternity = time.Now().AddDate(1000, 0, 0)
 )
 
 type Config struct {

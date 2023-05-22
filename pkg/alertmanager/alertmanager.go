@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/giantswarm/microerror"
@@ -85,7 +85,7 @@ func (am *AlertManager) DeleteSilenceByComment(comment string) error {
 
 	for _, s := range silences {
 		if s.Comment == comment && s.CreatedBy == key.CreatedBy {
-			return am.deleteSilenceByID(s.ID)
+			return am.DeleteSilenceByID(s.ID)
 		}
 	}
 
@@ -108,7 +108,7 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
@@ -130,7 +130,7 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 	return filteredSilences, nil
 }
 
-func (am *AlertManager) deleteSilenceByID(id string) error {
+func (am *AlertManager) DeleteSilenceByID(id string) error {
 
 	endpoint := fmt.Sprintf("%s/api/v2/silence/%s", am.address, id)
 

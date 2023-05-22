@@ -12,7 +12,7 @@ import (
 	"github.com/giantswarm/silence-operator/service/controller/key"
 )
 
-func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) *alertmanager.Silence {
+func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
 	{
 		for _, matcher := range silence.Spec.Matchers {
@@ -26,15 +26,20 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) *alertmanager.Sile
 		}
 	}
 
+	endsAt, err := key.SilenceEndsAt(silence)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+
 	newSilence := &alertmanager.Silence{
 		Comment:   key.SilenceComment(silence),
 		CreatedBy: key.CreatedBy,
-		EndsAt:    eternity,
-		Matchers:  matchers,
 		StartsAt:  time.Now(),
+		EndsAt:    endsAt,
+		Matchers:  matchers,
 	}
 
-	return newSilence
+	return newSilence, nil
 }
 
 func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
@@ -42,31 +47,55 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 	if err != nil {
 		return microerror.Mask(err)
 	}
-	newSilence := r.getSilenceFromCR(silence)
+
+	newSilence, err := r.getSilenceFromCR(silence)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	now := time.Now()
 
 	var existingSilence *alertmanager.Silence
 	existingSilence, err = r.amClient.GetSilenceByComment(key.SilenceComment(silence))
 	notFound := alertmanager.IsNotFound(err)
 	if notFound {
-		r.logger.LogCtx(ctx, "level", "debug", "message", "creating silence")
+		if newSilence.EndsAt.After(now) {
+			r.logger.LogCtx(ctx, "level", "debug", "message", "creating silence")
 
-		err = r.amClient.CreateSilence(newSilence)
+			err = r.amClient.CreateSilence(newSilence)
+			if err != nil {
+				return microerror.Mask(err)
+			}
+			r.logger.LogCtx(ctx, "level", "debug", "message", "created silence")
+		} else {
+			r.logger.LogCtx(ctx, "level", "debug", "message", "skipped creation : silence is expired")
+		}
+	} else if newSilence.EndsAt.Before(now) {
+		r.logger.LogCtx(ctx, "level", "debug", "message", "deleting silence")
+
+		err = r.amClient.DeleteSilenceByID(existingSilence.ID)
 		if err != nil {
 			return microerror.Mask(err)
 		}
-		r.logger.LogCtx(ctx, "level", "debug", "message", "silence created")
-	} else if !cmp.Equal(existingSilence.Matchers, newSilence.Matchers) {
+		r.logger.LogCtx(ctx, "level", "debug", "message", "deleted silence")
+	} else if updateNeeded(existingSilence, newSilence) {
+		newSilence.ID = existingSilence.ID
 		r.logger.LogCtx(ctx, "level", "debug", "message", "updating silence")
 
-		newSilence.ID = existingSilence.ID
 		err = r.amClient.UpdateSilence(newSilence)
 		if err != nil {
 			return microerror.Mask(err)
 		}
-		r.logger.LogCtx(ctx, "level", "debug", "message", "silence updated")
+		r.logger.LogCtx(ctx, "level", "debug", "message", "updated silence")
 	} else {
-		r.logger.LogCtx(ctx, "level", "debug", "message", "silence already exists")
+		r.logger.LogCtx(ctx, "level", "debug", "message", "skipped update : silence unchanged")
 	}
 
 	return nil
+}
+
+// updateNeeded return true when silence need to be updated.
+func updateNeeded(existingSilence, newSilence *alertmanager.Silence) bool {
+	return !cmp.Equal(existingSilence.Matchers, newSilence.Matchers) ||
+		!existingSilence.EndsAt.Equal(newSilence.EndsAt)
 }
