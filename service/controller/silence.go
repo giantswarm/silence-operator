@@ -22,6 +22,7 @@ type SilenceConfig struct {
 	Logger    micrologger.Logger
 
 	AlertManagerAddress string
+	Namespace           string
 }
 
 type Silence struct {
@@ -36,6 +37,10 @@ func NewSilence(config SilenceConfig) (*Silence, error) {
 		return nil, microerror.Mask(err)
 	}
 
+	var controllerName string = project.Name()
+	if len(config.Namespace) > 0 {
+		controllerName = controllerName + "-" + config.Namespace
+	}
 	var operatorkitController *controller.Controller
 	{
 		c := controller.Config{
@@ -46,7 +51,8 @@ func NewSilence(config SilenceConfig) (*Silence, error) {
 			},
 			Resources: resources,
 
-			Name: project.Name() + "-silence-controller",
+			Name:      controllerName + "-silence-controller",
+			Namespace: config.Namespace,
 		}
 
 		operatorkitController, err = controller.New(c)
