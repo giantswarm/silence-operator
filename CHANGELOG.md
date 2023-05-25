@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2023-05-25
+
 ### Added
 
 - Add pod monitor for monitoring purposes.
@@ -174,7 +176,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/giantswarm/silence-operator/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/giantswarm/silence-operator/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/giantswarm/silence-operator/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/giantswarm/silence-operator/compare/v0.6.1...v0.7.0
