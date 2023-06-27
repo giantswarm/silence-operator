@@ -4,6 +4,11 @@ image:
 
 alertmanagerAddress: http://alertmanager-operated.monitoring.svc:9093
 
+# Enable Kyverno PolicyException
+kyvernoPolicyExceptions:
+  enabled: true
+  namespace: giantswarm
+
 pod:
   user:
     id: 1000
