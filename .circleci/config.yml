@@ -138,3 +138,16 @@ workflows:
             tags:
               only: /^v.*/
 
+      - architect/push-to-app-collection:
+          context: architect
+          name: push-to-capz-app-collection
+          app_name: "silence-operator"
+          app_namespace: "monitoring"
+          app_collection_repo: "capz-app-collection"
+          requires:
+            - push-silence-operator-to-app-catalog
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
