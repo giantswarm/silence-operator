@@ -56,12 +56,15 @@ spec:
               name: silences
               readOnly: true
           dnsPolicy: ClusterFirst
-          restartPolicy: OnFailure
+          restartPolicy: OnFailure  
           schedulerName: default-scheduler
           serviceAccountName: {{ include "resource.default.name"  . }}
           securityContext:
             runAsUser: {{ .Values.pod.user.id }}
             runAsGroup: {{ .Values.pod.group.id }}
+            {{- with .Values.securityContext }}
+              {{- . | toYaml | nindent 12 }}
+            {{- end }}
           volumes:
           - name: silences
             emptyDir: {}
