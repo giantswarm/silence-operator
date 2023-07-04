@@ -62,7 +62,7 @@ spec:
           securityContext:
             runAsUser: {{ .Values.pod.user.id }}
             runAsGroup: {{ .Values.pod.group.id }}
-            {{- with .Values.securityContext }}
+            {{- with .Values.podSecurityContext }}
               {{- . | toYaml | nindent 12 }}
             {{- end }}
           volumes:
