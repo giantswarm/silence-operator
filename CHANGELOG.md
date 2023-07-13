@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.10.1] - 2023-07-13
 
+### Added
+
+- Use `securityContext` values inside CronJob template.
+
 ### Fixed
 
 - Fix ignored error on accessing the silences.
@@ -18,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add Kyverno Policy Exceptions.
-- Use `securityContext` values inside CronJob template.
 
 ## [0.9.1] - 2023-05-25
 
