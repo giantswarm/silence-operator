@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix ignored error on accessing the silences.
+
 ## [0.10.0] - 2023-06-27
 
 ### Added
