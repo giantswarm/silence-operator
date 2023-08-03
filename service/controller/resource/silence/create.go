@@ -100,5 +100,5 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 // updateNeeded return true when silence need to be updated.
 func updateNeeded(existingSilence, newSilence *alertmanager.Silence) bool {
 	return !cmp.Equal(existingSilence.Matchers, newSilence.Matchers) ||
-		!existingSilence.EndsAt.After(newSilence.EndsAt)
+		!existingSilence.EndsAt.Equal(newSilence.EndsAt)
 }
