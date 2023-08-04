@@ -34,7 +34,7 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Sil
 	newSilence := &alertmanager.Silence{
 		Comment:   key.SilenceComment(silence),
 		CreatedBy: key.CreatedBy,
-		StartsAt:  time.Now(),
+		StartsAt:  silence.GetCreationTimestamp().Time,
 		EndsAt:    endsAt,
 		Matchers:  matchers,
 	}
