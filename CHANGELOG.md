@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.2] - 2023-08-04
+
 ### Fixed
 
 - Fix start and end dates based on the creationTimestamp provided in the SilenceCR.
@@ -196,7 +198,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.10.2...HEAD
+[0.10.2]: https://github.com/giantswarm/silence-operator/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/giantswarm/silence-operator/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/giantswarm/silence-operator/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/giantswarm/silence-operator/compare/v0.9.0...v0.9.1
