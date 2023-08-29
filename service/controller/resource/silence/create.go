@@ -16,8 +16,12 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Sil
 	var matchers []alertmanager.Matcher
 	{
 		for _, matcher := range silence.Spec.Matchers {
+			isEqual := true
+			if matcher.IsEqual != nil {
+				isEqual = *matcher.IsEqual
+			}
 			newMatcher := alertmanager.Matcher{
-				IsEqual: matcher.IsEqual,
+				IsEqual: isEqual,
 				IsRegex: matcher.IsRegex,
 				Name:    matcher.Name,
 				Value:   matcher.Value,
