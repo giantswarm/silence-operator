@@ -1,3 +1,7 @@
+global:
+  podSecurityStandards:
+    enforced: false
+
 image:
   name: "giantswarm/silence-operator"
   tag: "[[ .Version ]]"
