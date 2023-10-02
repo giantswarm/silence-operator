@@ -28,10 +28,48 @@ spec:
     - resources:
         kinds:
         - Deployment
+        - ReplicaSet
         - Pod
         namespaces:
         - {{ include "resource.default.namespace" . }}
         names:
         - {{ include "resource.default.name" . }}*
-  {{- end -}}
+---
+apiVersion: kyverno.io/v2alpha1
+kind: PolicyException
+metadata:
+  annotations:
+    "helm.sh/hook": "pre-install,pre-upgrade"
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+  name: {{ include "resource.default.name"  . }}-sync
+  namespace: {{ .Values.kyvernoPolicyExceptions.namespace | default (include "resource.default.namespace" .) }}
+spec:
+  exceptions:
+  - policyName: disallow-capabilities-strict
+    ruleNames:
+    - require-drop-all
+    - autogen-require-drop-all
+    - autogen-cronjob-require-drop-all
+  - policyName: disallow-privilege-escalation
+    ruleNames:
+    - privilege-escalation
+    - autogen-privilege-escalation
+    - autogen-cronjob-privilege-escalation
+  - policyName: require-run-as-nonroot
+    ruleNames:
+    - run-as-non-root
+    - autogen-run-as-non-root
+    - autogen-cronjob-run-as-non-root
+  match:
+    any:
+    - resources:
+        kinds:
+        - CronJob
+        - Job
+        namespaces:
+        - {{ include "resource.default.namespace" . }}
+        names:
+        - {{ include "resource.default.name"  . }}-sync*
+{{- end -}}
 {{- end -}}
