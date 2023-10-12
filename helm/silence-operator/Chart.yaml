@@ -1,4 +1,4 @@
-apiVersion: "v1"
+apiVersion: "v2"
 appVersion: "[[ .AppVersion ]]"
 description: "Chart holding silence-operator."
 home: "https://github.com/giantswarm/silence-operator"

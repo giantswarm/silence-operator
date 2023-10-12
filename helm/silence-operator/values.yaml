@@ -8,17 +8,6 @@ image:
 
 alertmanagerAddress: http://alertmanager-operated.monitoring.svc:9093
 
-# Enable Kyverno PolicyException
-kyvernoPolicyExceptions:
-  enabled: true
-  namespace: giantswarm
-
-pod:
-  user:
-    id: 1000
-  group:
-    id: 1000
-
 project:
   branch: "[[ .Branch ]]"
   commit: "[[ .SHA ]]"
@@ -33,7 +22,6 @@ initContainer:
   name: "giantswarm/alpinegit"
   tag: "v2.26.2-giantswarm"
 
-
 cluster:
   name: ""
   provider:
@@ -44,11 +32,18 @@ registry:
 
 # Add seccomp to pod security context
 podSecurityContext:
+  runAsGroup: 1000
+  runAsUser: 1000
+  runAsNonRoot: true
   seccompProfile:
     type: RuntimeDefault
 
 # Add seccomp to container security context
-securityContext:
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - "ALL"
   seccompProfile:
     type: RuntimeDefault
 
