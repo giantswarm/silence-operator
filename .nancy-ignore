@@ -1,12 +1,15 @@
 # pkg:golang/github.com/hashicorp/consul/api@v1.18.0
-CVE-2022-29153 until=2023-12-31
+CVE-2022-29153 until=2024-01-31
 
 # pkg:golang/k8s.io/apiserver@v0.26.0
-CVE-2020-8561 until=2023-12-31
+CVE-2020-8561 until=2024-01-31
 
 # pkg:golang/github.com/gin-gonic/gin@v1.8.1
-CVE-2023-26125 until=2023-12-31
-CVE-2023-29401 until=2023-12-31
+CVE-2023-26125 until=2024-01-31
+CVE-2023-29401 until=2024-01-31
 
 # pkg:golang/golang.org/x/net@v0.11.0
-CVE-2023-3978 until=2023-12-31
+CVE-2023-3978 until=2024-01-31
+
+# pkg:golang/golang.org/x/net@v0.15.0
+CVE-2023-39325 until=2024-01-31
