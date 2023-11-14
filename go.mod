@@ -14,7 +14,7 @@ require (
 	github.com/giantswarm/operatorkit/v7 v7.1.0
 	github.com/google/go-cmp v0.6.0
 	github.com/prometheus/client_golang v1.17.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.17.0
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v0.26.0
