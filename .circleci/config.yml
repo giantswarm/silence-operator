@@ -31,7 +31,7 @@ workflows:
           app_catalog_test: "control-plane-test-catalog"
           chart: "silence-operator"
           requires:
-            - push-silence-operator-to-quay
+            - push-image-to-registries
           # Needed to trigger job also on git tag.
           filters:
             tags:
