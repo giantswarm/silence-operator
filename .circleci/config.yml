@@ -13,32 +13,16 @@ workflows:
             tags:
               only: /^v.*/
 
-      - architect/push-to-docker:
-          context: "architect"
-          name: push-silence-operator-to-quay
-          image: "quay.io/giantswarm/silence-operator"
-          username_envar: "QUAY_USERNAME"
-          password_envar: "QUAY_PASSWORD"
+      - architect/push-to-registries:
+          context: architect
+          name: push-image-to-registries
+          image: giantswarm/silence-operator
           requires:
             - go-build
           # Needed to trigger job also on git tag.
           filters:
             tags:
               only: /^v.*/
-
-      - architect/push-to-docker:
-          context: "architect"
-          name: push-silence-operator-to-aliyun
-          image: "giantswarm-registry.cn-shanghai.cr.aliyuncs.com/giantswarm/silence-operator"
-          username_envar: "ALIYUN_USERNAME"
-          password_envar: "ALIYUN_PASSWORD"
-          requires:
-            - go-build
-          # Needed to trigger job also on git tag.
-          filters:
-            tags:
-              only: /^v.*/
-
 
       - architect/push-to-app-catalog:
           context: "architect"
