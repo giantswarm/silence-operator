@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  architect: giantswarm/architect@4.35.1
+  architect: giantswarm/architect@4.35.5
 
 workflows:
   build:
@@ -15,8 +15,7 @@ workflows:
 
       - architect/push-to-registries:
           context: architect
-          name: push-image-to-registries
-          image: giantswarm/silence-operator
+          name: push-to-registries
           requires:
             - go-build
           # Needed to trigger job also on git tag.
