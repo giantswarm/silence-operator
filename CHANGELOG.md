@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Configure `gsoci.azurecr.io` as the default container image registry.
 - Configure gsoci.azurecr.io as the registry to use by default
 
 ## [0.11.1] - 2023-10-12
@@ -74,23 +75,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Stop pushing to `openstack-app-collection`.
-
-## [0.8.0] - 2022-11-08
-
-### Changed
-
-- Set Silence expiry date using value from valid-until label
-- Update alpine Docker tag from v3.17.1 to v3.17.2
-
-### Added
-
-- Make Helm chart CronJob optional
-- Make Helm chart AlertManager address configurable
-- Make target tags field optional for when sync is disabled
-- Only install Helm chart sync secret when sync is enabled
-- Only install PodSecurityPolicy on supported Kubernetes versions
-- Make Helm chart RBAC deployment optional
-- Added the use of runtime/default seccomp profile.
 
 ## [0.8.0] - 2022-11-08
 
