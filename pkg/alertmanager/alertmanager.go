@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/giantswarm/microerror"
@@ -13,12 +14,16 @@ import (
 )
 
 type Config struct {
-	Address string
+	Address        string
+	Authentication bool
+	BearerToken    string
 }
 
 type AlertManager struct {
-	address string
+	address        string
+	authentication bool
 
+	token      string
 	httpClient *http.Client
 }
 
@@ -30,8 +35,10 @@ func New(config Config) (*AlertManager, error) {
 	httpClient := &http.Client{}
 
 	return &AlertManager{
-		address:    config.Address,
-		httpClient: httpClient,
+		address:        config.Address,
+		authentication: config.Authentication,
+		token:          config.BearerToken,
+		httpClient:     httpClient,
 	}, nil
 }
 
@@ -58,14 +65,24 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 		return microerror.Mask(err)
 	}
 
-	resp, err := am.httpClient.Post(endpoint, "application/json", bytes.NewBuffer(jsonValues))
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonValues))
 	if err != nil {
-		return microerror.Mask(err)
+		log.Println("Error on request.\n[ERROR] -", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	if am.authentication {
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
 	}
 
+	resp, err := am.httpClient.Do(req)
+	if err != nil {
+		log.Println("Error on response.\n[ERROR] -", err)
+	}
 	if resp.StatusCode != 200 {
 		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode))
 	}
+	defer resp.Body.Close()
 
 	return nil
 }
@@ -100,6 +117,10 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		return nil, microerror.Mask(err)
+	}
+
+	if am.authentication {
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
 	}
 
 	resp, err := am.httpClient.Do(req)
@@ -140,6 +161,10 @@ func (am *AlertManager) DeleteSilenceByID(id string) error {
 	}
 
 	req.Header.Add("Content-Type", "application/json")
+
+	if am.authentication {
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
+	}
 
 	resp, err := am.httpClient.Do(req)
 	if err != nil {

@@ -104,7 +104,8 @@ func New(config Config) (*Service, error) {
 			K8sClient: k8sClient,
 			Logger:    config.Logger,
 
-			AlertManagerAddress: config.Viper.GetString(config.Flag.Service.AlertManager.Address),
+			AlertManagerAddress:        config.Viper.GetString(config.Flag.Service.AlertManager.Address),
+			AlertManagerAuthentication: config.Viper.GetBool(config.Flag.Service.AlertManager.Authentication),
 		}
 
 		silenceController, err = controller.NewSilence(c)
