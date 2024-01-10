@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/giantswarm/microerror"
-
 	"github.com/giantswarm/silence-operator/service/controller/key"
 )
 
@@ -67,7 +65,7 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonValues))
 	if err != nil {
-		log.Println("Error on request.\n[ERROR] -", err)
+		return microerror.Mask(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
@@ -77,7 +75,7 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 
 	resp, err := am.httpClient.Do(req)
 	if err != nil {
-		log.Println("Error on response.\n[ERROR] -", err)
+		return microerror.Mask(err)
 	}
 	if resp.StatusCode != 200 {
 		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode))
