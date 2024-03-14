@@ -1,5 +1,6 @@
 package alertmanager
 
 type AlertManager struct {
-	Address string
+	Address  string
+	TenantId string
 }
