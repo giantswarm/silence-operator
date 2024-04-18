@@ -105,6 +105,6 @@ require (
 
 replace (
 	github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
-	github.com/nats-io/nats-server/v2 => github.com/nats-io/nats-server/v2 v2.10.12
+	github.com/nats-io/nats-server/v2 => github.com/nats-io/nats-server/v2 v2.10.14
 	github.com/spf13/viper => github.com/spf13/viper v1.18.2
 )
