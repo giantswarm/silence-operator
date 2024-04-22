@@ -6,7 +6,7 @@ toolchain go1.22.2
 
 require (
 	github.com/ghodss/yaml v1.0.0
-	github.com/giantswarm/exporterkit v1.1.0
+	github.com/giantswarm/exporterkit v1.2.0
 	github.com/giantswarm/k8sclient/v7 v7.2.0
 	github.com/giantswarm/k8smetadata v0.24.0
 	github.com/giantswarm/microendpoint v1.1.0
@@ -79,7 +79,7 @@ require (
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
-	golang.org/x/sync v0.6.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/term v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
