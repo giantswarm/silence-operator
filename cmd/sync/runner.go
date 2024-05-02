@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/giantswarm/k8smetadata/pkg/annotation"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -22,6 +22,8 @@ import (
 
 	monitoringv1alpha1 "github.com/giantswarm/silence-operator/api/v1alpha1"
 )
+
+var aFs = afero.Afero{Fs: afero.NewOsFs()}
 
 type runner struct {
 	flag   *flag
@@ -38,7 +40,13 @@ func (r *runner) Run(cmd *cobra.Command, args []string) error {
 		return microerror.Mask(err)
 	}
 
-	err = r.run(ctx, cmd, args)
+	// Create kubernetes client.
+	client, err := getCtrlClient(r.logger, *r.flag)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	err = r.run(ctx, cmd, client, args)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -46,17 +54,8 @@ func (r *runner) Run(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) error {
+func (r *runner) run(ctx context.Context, cmd *cobra.Command, ctrlClient client.Client, args []string) error {
 	var err error
-
-	// Create kubernetes client.
-	var ctrlClient client.Client
-	{
-		ctrlClient, err = r.getCtrlClient()
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
 
 	// Load current silences from kubernetes.
 	var currentSilences monitoringv1alpha1.SilenceList
@@ -133,14 +132,14 @@ func (r *runner) run(ctx context.Context, cmd *cobra.Command, args []string) err
 	return nil
 }
 
-func (r *runner) getCtrlClient() (ctrlClient client.Client, err error) {
+func getCtrlClient(logger micrologger.Logger, f flag) (ctrlClient client.Client, err error) {
 	var restConfig *rest.Config
 	{
 		c := k8srestconfig.Config{
-			Logger: r.logger,
+			Logger: logger,
 
-			InCluster:  r.flag.KubernetesInCluster,
-			KubeConfig: r.flag.KubernetesKubeconfig,
+			InCluster:  f.KubernetesInCluster,
+			KubeConfig: f.KubernetesKubeconfig,
 		}
 		restConfig, err = k8srestconfig.New(c)
 		if err != nil {
@@ -151,7 +150,7 @@ func (r *runner) getCtrlClient() (ctrlClient client.Client, err error) {
 	var k8sClients *k8sclient.Clients
 	{
 		c := k8sclient.ClientsConfig{
-			Logger:     r.logger,
+			Logger:     logger,
 			RestConfig: restConfig,
 			SchemeBuilder: k8sclient.SchemeBuilder{
 				monitoringv1alpha1.AddToScheme,
@@ -214,7 +213,7 @@ func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]mo
 	// Load silences CRs from yaml files.
 	var filteredSilences []monitoringv1alpha1.Silence
 	for _, silenceFile := range silenceFiles {
-		data, err := os.ReadFile(silenceFile)
+		data, err := aFs.ReadFile(silenceFile)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
@@ -267,7 +266,7 @@ func (r *runner) isValidSilence(ctx context.Context, silence monitoringv1alpha1.
 func findYamls(dir string) ([]string, error) {
 	var result []string
 
-	files, err := os.ReadDir(dir)
+	files, err := aFs.ReadDir(dir)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
