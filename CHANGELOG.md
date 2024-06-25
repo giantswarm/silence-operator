@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added option to use Service Account token for Alertmanager authentication.
+
 ## [0.11.2] - 2023-12-06
 
 ### Changed

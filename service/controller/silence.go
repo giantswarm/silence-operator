@@ -21,7 +21,8 @@ type SilenceConfig struct {
 	K8sClient k8sclient.Interface
 	Logger    micrologger.Logger
 
-	AlertManagerAddress string
+	AlertManagerAddress        string
+	AlertManagerAuthentication bool
 }
 
 type Silence struct {
@@ -68,7 +69,9 @@ func newSilenceResources(config SilenceConfig) ([]resource.Interface, error) {
 	var amClient *alertmanager.AlertManager
 	{
 		amConfig := alertmanager.Config{
-			Address: config.AlertManagerAddress,
+			Address:        config.AlertManagerAddress,
+			Authentication: config.AlertManagerAuthentication,
+			BearerToken:    config.K8sClient.RESTConfig().BearerToken,
 		}
 
 		amClient, err = alertmanager.New(amConfig)
