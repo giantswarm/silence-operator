@@ -15,11 +15,6 @@ const (
 	DateOnlyLayout           = "2006-01-02"
 )
 
-var (
-	// defaultEndDate is used to create never-ending silence
-	defaultEndDate = time.Now().AddDate(100, 0, 0)
-)
-
 func ToSilence(v interface{}) (v1alpha1.Silence, error) {
 	if v == nil {
 		return v1alpha1.Silence{}, microerror.Maskf(wrongTypeError, "expected non-nil, got %#v", v)
@@ -49,7 +44,7 @@ func SilenceEndsAt(silence v1alpha1.Silence) (time.Time, error) {
 	// Check if the annotation exist otherwise return a date 100 years in the future.
 	value, ok := annotations[ValidUntilAnnotationName]
 	if !ok {
-		return defaultEndDate, nil
+		return silence.GetCreationTimestamp().Time.AddDate(100, 0, 0), nil
 	}
 
 	// Parse the date found in the annotation using RFC3339 (ISO8601) by default

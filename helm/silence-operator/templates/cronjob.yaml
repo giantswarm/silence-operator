@@ -1,5 +1,5 @@
 {{- if .Values.sync.enabled -}}
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ include "resource.default.name"  . }}-sync
@@ -37,6 +37,10 @@ spec:
                 secretKeyRef:
                   key: github-pull-token
                   name: {{ include "resource.default.name"  . }}
+            securityContext:
+            {{- with .Values.containerSecurityContext }}
+              {{- . | toYaml | nindent 14 }}
+            {{- end }}
             volumeMounts:
             - mountPath: /data
               name: silences
@@ -51,6 +55,10 @@ spec:
             - --tag=installation={{ .Values.cluster.name }}
             - --tag=provider={{ .Values.cluster.provider.kind }}
             imagePullPolicy: Always
+            securityContext:
+            {{- with .Values.containerSecurityContext }}
+              {{- . | toYaml | nindent 14 }}
+            {{- end }}
             volumeMounts:
             - mountPath: /data
               name: silences
@@ -60,8 +68,9 @@ spec:
           schedulerName: default-scheduler
           serviceAccountName: {{ include "resource.default.name"  . }}
           securityContext:
-            runAsUser: {{ .Values.pod.user.id }}
-            runAsGroup: {{ .Values.pod.group.id }}
+            {{- with .Values.podSecurityContext }}
+              {{- . | toYaml | nindent 12 }}
+            {{- end }}
           volumes:
           - name: silences
             emptyDir: {}

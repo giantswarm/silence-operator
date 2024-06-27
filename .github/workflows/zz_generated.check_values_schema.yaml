@@ -1,6 +1,8 @@
 # DO NOT EDIT. Generated with:
 #
-#    devctl@6.3.1
+#    devctl
+#
+#    https://github.com/giantswarm/devctl/blob/1a381db95a01773e471818a4ce56ad16ad5d6111/pkg/gen/input/workflows/internal/file/check_values_schema.yaml.template
 #
 name: 'Values and schema'
 on:
@@ -21,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
 
@@ -34,6 +36,12 @@ jobs:
         run: |
           for chart_yaml in helm/*/Chart.yaml; do
             helm_dir="${chart_yaml%/Chart.yaml}"
+
+            if [ ! -f ${helm_dir}/values.schema.json ]; then
+              echo "Skipping validation for '${helm_dir}' folder, because 'values.schema.json' does not exist..."
+              continue
+            fi
+
             values=${helm_dir}/values.yaml
             if [ -f ${helm_dir}/ci/ci-values.yaml ]; then
               # merge ci-values.yaml into values.yaml (providing required values)

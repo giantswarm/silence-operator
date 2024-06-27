@@ -16,8 +16,12 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Sil
 	var matchers []alertmanager.Matcher
 	{
 		for _, matcher := range silence.Spec.Matchers {
+			isEqual := true
+			if matcher.IsEqual != nil {
+				isEqual = *matcher.IsEqual
+			}
 			newMatcher := alertmanager.Matcher{
-				IsEqual: matcher.IsEqual,
+				IsEqual: isEqual,
 				IsRegex: matcher.IsRegex,
 				Name:    matcher.Name,
 				Value:   matcher.Value,
@@ -34,7 +38,7 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Sil
 	newSilence := &alertmanager.Silence{
 		Comment:   key.SilenceComment(silence),
 		CreatedBy: key.CreatedBy,
-		StartsAt:  time.Now(),
+		StartsAt:  silence.GetCreationTimestamp().Time,
 		EndsAt:    endsAt,
 		Matchers:  matchers,
 	}
@@ -58,6 +62,9 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 	var existingSilence *alertmanager.Silence
 	existingSilence, err = r.amClient.GetSilenceByComment(key.SilenceComment(silence))
 	notFound := alertmanager.IsNotFound(err)
+	if !notFound && err != nil {
+		return microerror.Mask(err)
+	}
 	if notFound {
 		if newSilence.EndsAt.After(now) {
 			r.logger.LogCtx(ctx, "level", "debug", "message", "creating silence")

@@ -27,6 +27,7 @@ roleRef:
   kind: ClusterRole
   name: {{ include "resource.default.name"  . }}
   apiGroup: rbac.authorization.k8s.io
+{{- if not .Values.global.podSecurityStandards.enforced }}
 {{- if and .Values.rbac.pspEnabled (.Capabilities.APIVersions.Has "policy/v1beta1") }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -59,5 +60,6 @@ roleRef:
   kind: ClusterRole
   name: {{ include "resource.psp.name" . }}
   apiGroup: rbac.authorization.k8s.io
+{{- end }}
 {{- end }}
 {{- end }}
