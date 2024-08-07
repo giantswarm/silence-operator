@@ -22,6 +22,7 @@ type SilenceConfig struct {
 	Logger    micrologger.Logger
 
 	AlertManagerAddress string
+	AlertManagerTenant  string
 }
 
 type Silence struct {
@@ -68,7 +69,8 @@ func newSilenceResources(config SilenceConfig) ([]resource.Interface, error) {
 	var amClient *alertmanager.AlertManager
 	{
 		amConfig := alertmanager.Config{
-			Address: config.AlertManagerAddress,
+			Address:  config.AlertManagerAddress,
+			TenantId: config.AlertManagerTenant,
 		}
 
 		amClient, err = alertmanager.New(amConfig)
