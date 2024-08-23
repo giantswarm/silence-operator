@@ -2,7 +2,7 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/0773061f94d5eac8a0e5b8f253bc15cc35a34066/pkg/gen/input/workflows/internal/file/run_ossf_scorecard.yaml.template
+#    https://github.com/giantswarm/devctl/blob/515bdf66b25f68db4466f9fd8fa6104793785b78/pkg/gen/input/workflows/internal/file/run_ossf_scorecard.yaml.template
 #
 
 # This workflow uses actions that are not certified by GitHub. They are provided
@@ -45,7 +45,7 @@ jobs:
           persist-credentials: false
 
       - name: "Run analysis"
-        uses: ossf/scorecard-action@dc50aa9510b46c811795eb24b2f1ba02a914e534 # v2.3.3
+        uses: ossf/scorecard-action@62b2cac7ed8198b15735ed49ab1e5cf35480ba46 # v2.4.0
         with:
           results_file: results.sarif
           results_format: sarif
@@ -67,7 +67,7 @@ jobs:
       # Upload the results as artifacts (optional). Commenting out will disable uploads of run results in SARIF
       # format to the repository Actions tab.
       - name: "Upload artifact"
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
           name: SARIF file
           path: results.sarif
@@ -75,6 +75,6 @@ jobs:
 
       # Upload the results to GitHub's code scanning dashboard.
       - name: "Upload to code-scanning"
-        uses: github/codeql-action/upload-sarif@530d4feaa9c62aaab2d250371e2061eb7a172363 # v3.25.9
+        uses: github/codeql-action/upload-sarif@f0f3afee809481da311ca3a6ff1ff51d81dbeb24 # v3.26.4
         with:
           sarif_file: results.sarif
