@@ -16,6 +16,7 @@ data:
     service:
       alertmanager:
         address: {{ .Values.alertmanagerAddress }}
+        tenantId: anonymous
       kubernetes:
         address: ''
         inCluster: true
