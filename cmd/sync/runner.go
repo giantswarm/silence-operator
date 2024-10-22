@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	"github.com/giantswarm/k8sclient/v7/pkg/k8sclient"
-	"github.com/giantswarm/k8sclient/v7/pkg/k8srestconfig"
+	"github.com/giantswarm/k8sclient/v8/pkg/k8sclient"
+	"github.com/giantswarm/k8sclient/v8/pkg/k8srestconfig"
 	"github.com/giantswarm/k8smetadata/pkg/annotation"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
