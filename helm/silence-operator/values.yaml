@@ -6,7 +6,9 @@ image:
   name: "giantswarm/silence-operator"
   tag: "[[ .Version ]]"
 
-alertmanagerAddress: http://mimir-gateway.mimir.svc:8080/alertmanager
+alertmanagerAddress: ""
+# -- Default alertmanager tenant
+alertmanagerDefaultTenant: ""
 
 project:
   branch: "[[ .Branch ]]"

@@ -19,8 +19,7 @@ type Config struct {
 
 type AlertManager struct {
 	address string
-
-	client *httpClient
+	client  *http.Client
 }
 
 func New(config Config) (*AlertManager, error) {
@@ -28,9 +27,11 @@ func New(config Config) (*AlertManager, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Address must not be empty", config)
 	}
 
-	client := httpClient{
-		c:        http.Client{},
-		tenantId: config.TenantId}
+	client := http.Client{
+		Transport: &customTransport{
+			tenantId: config.TenantId,
+		},
+	}
 
 	return &AlertManager{
 		address: config.Address,
@@ -131,7 +132,14 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 func (am *AlertManager) DeleteSilenceByID(id string) error {
 	endpoint := fmt.Sprintf("%s/api/v2/silence/%s", am.address, id)
 
-	resp, err := am.client.Delete(endpoint, "application/json")
+	req, err := http.NewRequest("DELETE", endpoint, nil)
+	if err != nil {
+		return microerror.Mask(err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := am.client.Do(req)
 	if err != nil {
 		return microerror.Mask(err)
 	}
