@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.0] - 2024-11-05
 
+### Added
+
+- Add multi-tenancy support via a header for mimir support.
+- Allow setting alertmanager url through helm values.
+
 ### Changed
 
 - Change CronJob ImagePullPolicy from Always to IfNotPresent to reduce image network traffic.
