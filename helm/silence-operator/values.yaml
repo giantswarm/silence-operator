@@ -6,7 +6,9 @@ image:
   name: "giantswarm/silence-operator"
   tag: "[[ .Version ]]"
 
-alertmanagerAddress: http://alertmanager-operated.monitoring.svc:9093
+alertmanagerAddress: ""
+# -- Default alertmanager tenant
+alertmanagerDefaultTenant: ""
 
 project:
   branch: "[[ .Branch ]]"

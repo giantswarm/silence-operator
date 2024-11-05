@@ -1,8 +1,6 @@
 module github.com/giantswarm/silence-operator
 
-go 1.22.0
-
-toolchain go1.23.2
+go 1.23
 
 require (
 	github.com/ghodss/yaml v1.0.0
