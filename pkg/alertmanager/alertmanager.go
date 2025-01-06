@@ -18,8 +18,9 @@ type Config struct {
 }
 
 type AlertManager struct {
-	address string
-	client  *http.Client
+	address  string
+	tenantId string
+	client   *http.Client
 }
 
 func New(config Config) (*AlertManager, error) {
@@ -27,15 +28,10 @@ func New(config Config) (*AlertManager, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Address must not be empty", config)
 	}
 
-	client := http.Client{
-		Transport: &customTransport{
-			tenantId: config.TenantId,
-		},
-	}
-
 	return &AlertManager{
-		address: config.Address,
-		client:  &client,
+		address:  config.Address,
+		client:   http.DefaultClient,
+		tenantId: config.TenantId,
 	}, nil
 }
 
@@ -62,7 +58,13 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 		return microerror.Mask(err)
 	}
 
-	resp, err := am.client.Post(endpoint, "application/json", bytes.NewBuffer(jsonValues))
+	req, err := am.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonValues))
+	if err != nil {
+		return microerror.Mask(err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := am.client.Do(req)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -101,7 +103,12 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 
 	var silences []Silence
 
-	resp, err := am.client.Get(endpoint)
+	req, err := am.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+
+	resp, err := am.client.Do(req)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
@@ -132,7 +139,7 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 func (am *AlertManager) DeleteSilenceByID(id string) error {
 	endpoint := fmt.Sprintf("%s/api/v2/silence/%s", am.address, id)
 
-	req, err := http.NewRequest("DELETE", endpoint, nil)
+	req, err := am.NewRequest(http.MethodDelete, endpoint, nil)
 	if err != nil {
 		return microerror.Mask(err)
 	}
