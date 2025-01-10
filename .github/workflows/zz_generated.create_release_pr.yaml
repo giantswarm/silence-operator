@@ -2,7 +2,7 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/7345de0273fb431a392dc15f53961b523dba2b5e/pkg/gen/input/workflows/internal/file/create_release_pr.yaml.template
+#    https://github.com/giantswarm/devctl/blob/43bd088e6bf64525a8e566fc1b0f4761a293afc4/pkg/gen/input/workflows/internal/file/create_release_pr.yaml.template
 #
 name: Create Release PR
 on:
@@ -136,12 +136,50 @@ jobs:
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
+  prepare_release_pr:
+    name: Prepare release PR for Backstage project
+    runs-on: ubuntu-22.04
+    needs:
+      - gather_facts
+    if: ${{ needs.gather_facts.outputs.skip != 'true' && github.repository == 'giantswarm/backstage' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.gather_facts.outputs.branch }}
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '20'
+      - uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 # v5.0.0
+        with:
+          cmd: install
+      - name: Prepare release PR
+        uses: borales/actions-yarn@3766bb1335b98fb13c60eaf358fe20811b730a88 # v5.0.0
+        with:
+          cmd: release
+        env:
+          RELEASE_VERSION: ${{ needs.gather_facts.outputs.version }}
+      - name: Set up git identity
+        run: |
+          git config --local user.email "dev@giantswarm.io"
+          git config --local user.name "taylorbot"
+      - name: Create commit
+        env:
+          version: "${{ needs.gather_facts.outputs.version }}"
+        run: |
+          git add -A
+          git commit -m "Prepare release v${{ env.version }}"
+      - name: Push changes
+        env:
+          remote_repo: "https://${{ github.actor }}:${{ secrets.TAYLORBOT_GITHUB_ACTION }}@github.com/${{ github.repository }}.git"
+        run: |
+          git push "${remote_repo}" HEAD:${{ needs.gather_facts.outputs.branch }}
   create_release_pr:
     name: Create release PR
     runs-on: ubuntu-22.04
     needs:
       - gather_facts
-    if: ${{ needs.gather_facts.outputs.skip != 'true' }}
+      - prepare_release_pr
+    if: ${{ always() && needs.gather_facts.outputs.skip != 'true' }}
     env:
       architect_flags: "--organisation ${{ github.repository_owner }} --project ${{ needs.gather_facts.outputs.repo_name }}"
     steps:
@@ -154,7 +192,7 @@ jobs:
           binary: "architect"
           version: "6.17.0"
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ needs.gather_facts.outputs.branch }}
       - name: Prepare release changes
