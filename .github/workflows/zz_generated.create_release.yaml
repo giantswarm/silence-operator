@@ -2,7 +2,7 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/c90dd09846d2e87f1bad62d2089405b78da11a82/pkg/gen/input/workflows/internal/file/create_release.yaml.template
+#    https://github.com/giantswarm/devctl/blob/8960b8810d2fdb97543d84baa8b50ffa40da26a9/pkg/gen/input/workflows/internal/file/create_release.yaml.template
 #
 name: Create Release
 on:
@@ -54,7 +54,7 @@ jobs:
           echo "version=${version}" >> $GITHUB_OUTPUT
       - name: Checkout code
         if: ${{ steps.get_version.outputs.version != '' }}
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Get project.go path
         id: get_project_go_path
         if: ${{ steps.get_version.outputs.version != '' }}
@@ -103,7 +103,7 @@ jobs:
           tarball_binary_path: "*/src/${binary}"
           smoke_test: "${binary} --version"
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Update project.go
         id: update_project_go
         env:
@@ -163,7 +163,7 @@ jobs:
       upload_url: ${{ steps.create_gh_release.outputs.upload_url }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.sha }}
       - name: Ensure correct version in project.go
@@ -216,7 +216,7 @@ jobs:
           tarball_binary_path: "*/src/${binary}"
           smoke_test: "${binary} --version"
       - name: Check out the repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0  # Clone the whole history, not just the most recent commit.
       - name: Fetch all tags and branches
