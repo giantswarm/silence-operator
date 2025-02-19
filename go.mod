@@ -14,7 +14,7 @@ require (
 	github.com/giantswarm/operatorkit/v7 v7.2.0
 	github.com/google/go-cmp v0.6.0
 	github.com/prometheus/client_golang v1.21.0
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
 	k8s.io/apimachinery v0.30.3
 	k8s.io/client-go v0.30.3
@@ -72,7 +72,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
