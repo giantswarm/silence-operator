@@ -21,7 +21,7 @@ type Config struct {
 type AlertManager struct {
 	address        string
 	authentication bool
-  token          string
+	token          string
 	tenantId       string
 	client         *http.Client
 }
