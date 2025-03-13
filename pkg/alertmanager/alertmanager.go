@@ -75,7 +75,6 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	}
   
 	resp, err := am.client.Do(req)
-
 	if err != nil {
 		return microerror.Mask(err)
 	}
