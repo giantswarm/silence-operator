@@ -130,6 +130,7 @@ func mainE(ctx context.Context) error {
 
 	daemonCommand.PersistentFlags().String(f.Service.AlertManager.Address, "http://localhost:9093", "Alertmanager address used to create silences.")
 	daemonCommand.PersistentFlags().Bool(f.Service.AlertManager.Authentication, false, "Enable Alertmanager authentication using Service Account token.")
+	daemonCommand.PersistentFlags().String(f.Service.AlertManager.TenantId, "", "Alertmanager tenant id.")
 
 	err = newCommand.CobraCommand().Execute()
 	if err != nil {

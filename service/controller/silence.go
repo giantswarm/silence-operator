@@ -23,6 +23,7 @@ type SilenceConfig struct {
 
 	AlertManagerAddress        string
 	AlertManagerAuthentication bool
+	AlertManagerTenant         string
 }
 
 type Silence struct {
@@ -72,6 +73,7 @@ func newSilenceResources(config SilenceConfig) ([]resource.Interface, error) {
 			Address:        config.AlertManagerAddress,
 			Authentication: config.AlertManagerAuthentication,
 			BearerToken:    config.K8sClient.RESTConfig().BearerToken,
+			TenantId:       config.AlertManagerTenant,
 		}
 
 		amClient, err = alertmanager.New(amConfig)

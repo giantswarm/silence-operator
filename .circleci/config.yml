@@ -1,134 +1,142 @@
 version: 2.1
 
 orbs:
-  architect: giantswarm/architect@4.37.0
+  architect: giantswarm/architect@5.11.5
 
 workflows:
   build:
     jobs:
-      - architect/go-build:
-          name: go-build
-          binary: silence-operator
-          filters:
-            tags:
-              only: /^v.*/
+    - architect/go-build:
+        name: go-build
+        binary: silence-operator
+        filters:
+          tags:
+            only: /^v.*/
 
-      - architect/push-to-registries:
-          context: architect
-          name: push-to-registries
-          requires:
-            - go-build
-          filters:
-            tags:
-              only: /^v.*/
+    - architect/push-to-registries:
+        context: architect
+        name: push-to-registries
+        requires:
+        - go-build
+        filters:
+          tags:
+            only: /^v.*/
 
-      - architect/push-to-app-catalog:
-          context: "architect"
-          name: push-silence-operator-to-app-catalog
-          app_catalog: "control-plane-catalog"
-          app_catalog_test: "control-plane-test-catalog"
-          chart: "silence-operator"
-          requires:
-            - push-to-registries
-          filters:
-            tags:
-              only: /^v.*/
+          branches:
+            ignore:
+            - main
+            - master
+    - architect/push-to-app-catalog:
+        context: architect
+        name: push-silence-operator-to-app-catalog
+        app_catalog: control-plane-catalog
+        app_catalog_test: control-plane-test-catalog
+        chart: silence-operator
+        requires:
+        - push-to-registries
+        filters:
+          tags:
+            only: /^v.*/
 
-      - architect/push-to-app-collection:
-          name: push-silence-operator-to-aws-app-collection
-          context: architect
-          app_name: "silence-operator"
-          app_namespace: "monitoring"
-          app_collection_repo: "aws-app-collection"
-          requires:
-            - push-silence-operator-to-app-catalog
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
+          branches:
+            ignore:
+            - main
+            - master
+    - architect/push-to-app-collection:
+        name: push-silence-operator-to-aws-app-collection
+        context: architect
+        app_name: silence-operator
+        app_namespace: monitoring
+        app_collection_repo: aws-app-collection
+        requires:
+        - push-silence-operator-to-app-catalog
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^v.*/
 
-      - architect/push-to-app-collection:
-          name: push-silence-operator-to-azure-app-collection
-          context: architect
-          app_name: "silence-operator"
-          app_namespace: "monitoring"
-          app_collection_repo: "azure-app-collection"
-          requires:
-            - push-silence-operator-to-app-catalog
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
+    - architect/push-to-app-collection:
+        name: push-silence-operator-to-azure-app-collection
+        context: architect
+        app_name: silence-operator
+        app_namespace: monitoring
+        app_collection_repo: azure-app-collection
+        requires:
+        - push-silence-operator-to-app-catalog
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^v.*/
 
-      - architect/push-to-app-collection:
-          name: push-silence-operator-to-vsphere-app-collection
-          context: architect
-          app_name: "silence-operator"
-          app_namespace: "monitoring"
-          app_collection_repo: "vsphere-app-collection"
-          requires:
-            - push-silence-operator-to-app-catalog
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
+    - architect/push-to-app-collection:
+        name: push-silence-operator-to-vsphere-app-collection
+        context: architect
+        app_name: silence-operator
+        app_namespace: monitoring
+        app_collection_repo: vsphere-app-collection
+        requires:
+        - push-silence-operator-to-app-catalog
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^v.*/
 
-      - architect/push-to-app-collection:
-          name: push-silence-operator-to-gcp-app-collection
-          context: architect
-          app_name: "silence-operator"
-          app_namespace: "monitoring"
-          app_collection_repo: "gcp-app-collection"
-          requires:
-            - push-silence-operator-to-app-catalog
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
+    - architect/push-to-app-collection:
+        name: push-silence-operator-to-proxmox-app-collection
+        context: architect
+        app_name: silence-operator
+        app_namespace: monitoring
+        app_collection_repo: proxmox-app-collection
+        requires:
+        - push-silence-operator-to-app-catalog
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^v.*/
 
 
-      - architect/push-to-app-collection:
-          context: architect
-          name: push-to-cloud-director-app-collection
-          app_name: "silence-operator"
-          app_namespace: "monitoring"
-          app_collection_repo: "cloud-director-app-collection"
-          requires:
-            - push-silence-operator-to-app-catalog
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
+    - architect/push-to-app-collection:
+        context: architect
+        name: push-to-cloud-director-app-collection
+        app_name: silence-operator
+        app_namespace: monitoring
+        app_collection_repo: cloud-director-app-collection
+        requires:
+        - push-silence-operator-to-app-catalog
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^v.*/
 
-      - architect/push-to-app-collection:
-          context: architect
-          name: push-to-capa-app-collection
-          app_name: "silence-operator"
-          app_namespace: "monitoring"
-          app_collection_repo: "capa-app-collection"
-          requires:
-            - push-silence-operator-to-app-catalog
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
+    - architect/push-to-app-collection:
+        context: architect
+        name: push-to-capa-app-collection
+        app_name: silence-operator
+        app_namespace: monitoring
+        app_collection_repo: capa-app-collection
+        requires:
+        - push-silence-operator-to-app-catalog
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^v.*/
 
-      - architect/push-to-app-collection:
-          context: architect
-          name: push-to-capz-app-collection
-          app_name: "silence-operator"
-          app_namespace: "monitoring"
-          app_collection_repo: "capz-app-collection"
-          requires:
-            - push-silence-operator-to-app-catalog
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
+    - architect/push-to-app-collection:
+        context: architect
+        name: push-to-capz-app-collection
+        app_name: silence-operator
+        app_namespace: monitoring
+        app_collection_repo: capz-app-collection
+        requires:
+        - push-silence-operator-to-app-catalog
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^v.*/

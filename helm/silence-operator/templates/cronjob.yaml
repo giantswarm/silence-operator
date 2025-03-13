@@ -54,7 +54,7 @@ spec:
             - --kubernetes.incluster=true
             - --tag=installation={{ .Values.cluster.name }}
             - --tag=provider={{ .Values.cluster.provider.kind }}
-            imagePullPolicy: Always
+            imagePullPolicy: IfNotPresent
             securityContext:
             {{- with .Values.containerSecurityContext }}
               {{- . | toYaml | nindent 14 }}

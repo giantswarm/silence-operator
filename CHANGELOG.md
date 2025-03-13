@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added option to use Service Account token for Alertmanager authentication.
 
+### Fixed
+
+- Replace Alertmanager RoundTripper with custom NewRequest.
+- Fix CVE-2024-45338 by updating golang.org/x/net to v0.33.0
+
+## [0.12.0] - 2024-11-05
+
+### Added
+
+- Add multi-tenancy support via a header for mimir support.
+- Allow setting alertmanager url through helm values.
+
+### Changed
+
+- Change CronJob ImagePullPolicy from Always to IfNotPresent to reduce image network traffic.
+
 ## [0.11.2] - 2023-12-06
 
 ### Changed
@@ -225,7 +241,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.11.2...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/giantswarm/silence-operator/compare/v0.11.2...v0.12.0
 [0.11.2]: https://github.com/giantswarm/silence-operator/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/giantswarm/silence-operator/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/giantswarm/silence-operator/compare/v0.10.3...v0.11.0

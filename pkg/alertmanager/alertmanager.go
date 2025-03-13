@@ -15,14 +15,15 @@ type Config struct {
 	Address        string
 	Authentication bool
 	BearerToken    string
+  TenantId       string
 }
 
 type AlertManager struct {
 	address        string
-	authentication bool
-
-	token      string
-	httpClient *http.Client
+  authentication bool
+  token          string
+	tenantId       string
+	client         *http.Client
 }
 
 func New(config Config) (*AlertManager, error) {
@@ -30,13 +31,12 @@ func New(config Config) (*AlertManager, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Address must not be empty", config)
 	}
 
-	httpClient := &http.Client{}
-
 	return &AlertManager{
 		address:        config.Address,
 		authentication: config.Authentication,
 		token:          config.BearerToken,
-		httpClient:     httpClient,
+		client:         http.DefaultClient,
+		tenantId:       config.TenantId,
 	}, nil
 }
 
@@ -63,22 +63,23 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 		return microerror.Mask(err)
 	}
 
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonValues))
+	req, err := am.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonValues))
 	if err != nil {
 		return microerror.Mask(err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json")
 
-	if am.authentication {
+  if am.authentication {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
 	}
+  
+	resp, err := am.client.Do(req)
 
-	resp, err := am.httpClient.Do(req)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 	if resp.StatusCode != 200 {
-		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode))
+		return microerror.Maskf(executionFailedError, "failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode)
 	}
 	defer resp.Body.Close()
 
@@ -87,7 +88,7 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 
 func (am *AlertManager) UpdateSilence(s *Silence) error {
 	if s.ID == "" {
-		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to update silence %#q, missing ID", s.Comment))
+		return microerror.Maskf(executionFailedError, "failed to update silence %#q, missing ID", s.Comment)
 	}
 	return am.CreateSilence(s)
 }
@@ -104,7 +105,7 @@ func (am *AlertManager) DeleteSilenceByComment(comment string) error {
 		}
 	}
 
-	return microerror.Maskf(notFoundError, fmt.Sprintf("failed to delete silence by comment %#q", comment))
+	return microerror.Maskf(notFoundError, "failed to delete silence by comment %#q", comment)
 }
 
 func (am *AlertManager) ListSilences() ([]Silence, error) {
@@ -112,7 +113,7 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 
 	var silences []Silence
 
-	req, err := http.NewRequest("GET", endpoint, nil)
+	req, err := am.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
@@ -121,7 +122,7 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
 	}
 
-	resp, err := am.httpClient.Do(req)
+	resp, err := am.client.Do(req)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
@@ -150,10 +151,9 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 }
 
 func (am *AlertManager) DeleteSilenceByID(id string) error {
-
 	endpoint := fmt.Sprintf("%s/api/v2/silence/%s", am.address, id)
 
-	req, err := http.NewRequest("DELETE", endpoint, nil)
+	req, err := am.NewRequest(http.MethodDelete, endpoint, nil)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -164,13 +164,13 @@ func (am *AlertManager) DeleteSilenceByID(id string) error {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
 	}
 
-	resp, err := am.httpClient.Do(req)
+	resp, err := am.client.Do(req)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
 	if resp.StatusCode != 200 {
-		return microerror.Maskf(executionFailedError, fmt.Sprintf("failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode))
+		return microerror.Maskf(executionFailedError, "failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode)
 	}
 
 	return nil
