@@ -69,7 +69,7 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	}
 	req.Header.Add("Content-Type", "application/json")
 
-  if am.authentication {
+	if am.authentication {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
 	}
   
