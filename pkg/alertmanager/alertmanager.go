@@ -15,7 +15,7 @@ type Config struct {
 	Address        string
 	Authentication bool
 	BearerToken    string
-  TenantId       string
+	TenantId       string
 }
 
 type AlertManager struct {
