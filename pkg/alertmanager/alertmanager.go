@@ -81,7 +81,6 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	if resp.StatusCode != 200 {
 		return microerror.Maskf(executionFailedError, "failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode)
 	}
-	defer resp.Body.Close()
 
 	return nil
 }
