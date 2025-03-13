@@ -73,7 +73,6 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	if am.authentication {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
 	}
-  
 	resp, err := am.client.Do(req)
 	if err != nil {
 		return microerror.Mask(err)
