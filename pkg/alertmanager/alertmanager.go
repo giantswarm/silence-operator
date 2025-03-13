@@ -73,10 +73,12 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	if am.authentication {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
 	}
+
 	resp, err := am.client.Do(req)
 	if err != nil {
 		return microerror.Mask(err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		return microerror.Maskf(executionFailedError, "failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode)
@@ -125,8 +127,8 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
-
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, microerror.Mask(err)
@@ -167,6 +169,7 @@ func (am *AlertManager) DeleteSilenceByID(id string) error {
 	if err != nil {
 		return microerror.Mask(err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		return microerror.Maskf(executionFailedError, "failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode)

@@ -31,8 +31,7 @@ func New(config Config) (*Resource, error) {
 	}
 
 	r := &Resource{
-		logger: config.Logger,
-
+		logger:   config.Logger,
 		amClient: config.AMClient,
 	}
 

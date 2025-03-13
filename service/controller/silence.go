@@ -87,8 +87,7 @@ func newSilenceResources(config SilenceConfig) ([]resource.Interface, error) {
 		c := silence.Config{
 			K8sClient: config.K8sClient,
 			Logger:    config.Logger,
-
-			AMClient: amClient,
+			AMClient:  amClient,
 		}
 
 		silenceResource, err = silence.New(c)
