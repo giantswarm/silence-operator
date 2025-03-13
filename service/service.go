@@ -13,6 +13,8 @@ import (
 	"github.com/giantswarm/micrologger"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/flag"
@@ -57,6 +59,12 @@ func New(config Config) (*Service, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "logger must not be empty")
 	}
+
+	// Configure controller-runtime logger
+	opts := zap.Options{
+		Development: true,
+	}
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	var err error
 
@@ -104,8 +112,9 @@ func New(config Config) (*Service, error) {
 			K8sClient: k8sClient,
 			Logger:    config.Logger,
 
-			AlertManagerAddress: config.Viper.GetString(config.Flag.Service.AlertManager.Address),
-			AlertManagerTenant:  config.Viper.GetString(config.Flag.Service.AlertManager.TenantId),
+			AlertManagerAddress:        config.Viper.GetString(config.Flag.Service.AlertManager.Address),
+			AlertManagerAuthentication: config.Viper.GetBool(config.Flag.Service.AlertManager.Authentication),
+			AlertManagerTenant:         config.Viper.GetString(config.Flag.Service.AlertManager.TenantId),
 		}
 
 		silenceController, err = controller.NewSilence(c)

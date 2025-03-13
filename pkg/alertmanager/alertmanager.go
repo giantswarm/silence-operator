@@ -13,14 +13,18 @@ import (
 )
 
 type Config struct {
-	Address  string
-	TenantId string
+	Address        string
+	Authentication bool
+	BearerToken    string
+	TenantId       string
 }
 
 type AlertManager struct {
-	address  string
-	tenantId string
-	client   *http.Client
+	address        string
+	authentication bool
+	token          string
+	tenantId       string
+	client         *http.Client
 }
 
 func New(config Config) (*AlertManager, error) {
@@ -29,9 +33,11 @@ func New(config Config) (*AlertManager, error) {
 	}
 
 	return &AlertManager{
-		address:  config.Address,
-		client:   http.DefaultClient,
-		tenantId: config.TenantId,
+		address:        config.Address,
+		authentication: config.Authentication,
+		token:          config.BearerToken,
+		client:         http.DefaultClient,
+		tenantId:       config.TenantId,
 	}, nil
 }
 
@@ -64,10 +70,15 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	}
 	req.Header.Add("Content-Type", "application/json")
 
+	if am.authentication {
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
+	}
+
 	resp, err := am.client.Do(req)
 	if err != nil {
 		return microerror.Mask(err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		return microerror.Maskf(executionFailedError, "failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode)
@@ -108,12 +119,16 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 		return nil, microerror.Mask(err)
 	}
 
+	if am.authentication {
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
+	}
+
 	resp, err := am.client.Do(req)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
-
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, microerror.Mask(err)
@@ -146,10 +161,15 @@ func (am *AlertManager) DeleteSilenceByID(id string) error {
 
 	req.Header.Add("Content-Type", "application/json")
 
+	if am.authentication {
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
+	}
+
 	resp, err := am.client.Do(req)
 	if err != nil {
 		return microerror.Mask(err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		return microerror.Maskf(executionFailedError, "failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode)

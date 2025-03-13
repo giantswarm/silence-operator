@@ -16,6 +16,7 @@ data:
     service:
       alertmanager:
         address: {{ .Values.alertmanagerAddress }}
+        authentication: {{ .Values.alertmanagerAuthentication }}
         {{ with .Values.alertmanagerDefaultTenant }}
         tenantId: {{ . }}
         {{ end }}

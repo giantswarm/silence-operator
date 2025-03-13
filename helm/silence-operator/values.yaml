@@ -7,6 +7,7 @@ image:
   tag: "[[ .Version ]]"
 
 alertmanagerAddress: ""
+alertmanagerAuthentication: false
 # -- Default alertmanager tenant
 alertmanagerDefaultTenant: ""
 

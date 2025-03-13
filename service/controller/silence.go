@@ -21,8 +21,9 @@ type SilenceConfig struct {
 	K8sClient k8sclient.Interface
 	Logger    micrologger.Logger
 
-	AlertManagerAddress string
-	AlertManagerTenant  string
+	AlertManagerAddress        string
+	AlertManagerAuthentication bool
+	AlertManagerTenant         string
 }
 
 type Silence struct {
@@ -69,8 +70,10 @@ func newSilenceResources(config SilenceConfig) ([]resource.Interface, error) {
 	var amClient *alertmanager.AlertManager
 	{
 		amConfig := alertmanager.Config{
-			Address:  config.AlertManagerAddress,
-			TenantId: config.AlertManagerTenant,
+			Address:        config.AlertManagerAddress,
+			Authentication: config.AlertManagerAuthentication,
+			BearerToken:    config.K8sClient.RESTConfig().BearerToken,
+			TenantId:       config.AlertManagerTenant,
 		}
 
 		amClient, err = alertmanager.New(amConfig)
@@ -84,8 +87,7 @@ func newSilenceResources(config SilenceConfig) ([]resource.Interface, error) {
 		c := silence.Config{
 			K8sClient: config.K8sClient,
 			Logger:    config.Logger,
-
-			AMClient: amClient,
+			AMClient:  amClient,
 		}
 
 		silenceResource, err = silence.New(c)
