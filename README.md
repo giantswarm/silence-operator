@@ -14,6 +14,8 @@ to `Silence` objects and ensures that the current Alertmanager silences match th
 The Operator reconciles the `Silence` [Custom Resource Definition (CRD)][crd] which
 can be found [here][silence-crd].
 
+The `Silence` CRD generated at [config/crd/monitoring.giantswarm.io_silences.yaml](config/crd/monitoring.giantswarm.io_silences.yaml) is deployed via [management-cluster-bases](https://github.com/giantswarm/management-cluster-bases/blob/9e17d416dd324e07d7784054237302707ba42dc3/bases/crds/giantswarm/kustomization.yaml#L6C1-L7C1) repository.
+
 [crd]: https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/
 [silence-crd]: api/v1alpha1/silence_types.go
 
