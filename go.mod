@@ -17,7 +17,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/prometheus/client_golang v1.21.1
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	k8s.io/apimachinery v0.32.3
 	k8s.io/client-go v0.32.3
 	sigs.k8s.io/controller-runtime v0.20.4
@@ -106,5 +106,5 @@ require (
 replace (
 	github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/nats-io/nats-server/v2 => github.com/nats-io/nats-server/v2 v2.11.0
-	github.com/spf13/viper => github.com/spf13/viper v1.20.0
+	github.com/spf13/viper => github.com/spf13/viper v1.20.1
 )
