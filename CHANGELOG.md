@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Make the Silence `isRegex` field optional.
+
 ## [0.13.0] - 2025-03-13
 
 - Added option to use Service Account token to be used of Alertmanager authentication.

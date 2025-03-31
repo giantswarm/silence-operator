@@ -40,7 +40,7 @@ type TargetTag struct {
 }
 
 type Matcher struct {
-	IsRegex bool   `json:"isRegex"`
+	IsRegex bool   `json:"isRegex,omitempty"`
 	IsEqual *bool  `json:"isEqual,omitempty"`
 	Name    string `json:"name"`
 	Value   string `json:"value"`
