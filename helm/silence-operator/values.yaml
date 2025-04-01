@@ -16,7 +16,7 @@ project:
   commit: "[[ .SHA ]]"
 
 sync:
-  enabled: true
+  enabled: false
   repository: github.com/giantswarm/silences
   github:
     token: ""
