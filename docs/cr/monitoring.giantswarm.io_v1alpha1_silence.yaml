@@ -1,0 +1,13 @@
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: my-sample-silence
+spec:
+  matchers:
+  - isRegex: false
+    name: alertname
+    value: MyPagingAlert
+  - isEqual: false
+    isRegex: false
+    name: alertname
+    value: Heartbeat
