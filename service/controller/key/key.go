@@ -44,7 +44,7 @@ func SilenceEndsAt(silence v1alpha1.Silence) (time.Time, error) {
 	// Check if the annotation exist otherwise return a date 100 years in the future.
 	value, ok := annotations[ValidUntilAnnotationName]
 	if !ok {
-		return silence.GetCreationTimestamp().Time.AddDate(100, 0, 0), nil
+		return silence.GetCreationTimestamp().AddDate(100, 0, 0), nil
 	}
 
 	// Parse the date found in the annotation using RFC3339 (ISO8601) by default

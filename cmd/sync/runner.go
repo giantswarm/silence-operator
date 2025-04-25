@@ -214,7 +214,7 @@ func (r *runner) loadSilences(ctx context.Context, tags map[string]string) ([]mo
 	// Load silences CRs from yaml files.
 	var filteredSilences []monitoringv1alpha1.Silence
 	for _, silenceFile := range silenceFiles {
-		data, err := os.ReadFile(silenceFile)
+		data, err := os.ReadFile(silenceFile) //nolint:gosec
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
@@ -296,6 +296,6 @@ func getSilenceInList(silence monitoringv1alpha1.Silence, silences []monitoringv
 }
 
 func hasKeepAnnotation(silence monitoringv1alpha1.Silence) bool {
-	keep, ok := silence.ObjectMeta.Annotations[annotation.Keep]
+	keep, ok := silence.ObjectMeta.Annotations[annotation.Keep] //nolint:staticcheck
 	return ok && keep == "true"
 }
