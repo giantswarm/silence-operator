@@ -78,7 +78,7 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	if err != nil {
 		return microerror.Mask(err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint: errcheck
 
 	if resp.StatusCode != 200 {
 		return microerror.Maskf(executionFailedError, "failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode)
@@ -127,7 +127,7 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint: errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -169,7 +169,7 @@ func (am *AlertManager) DeleteSilenceByID(id string) error {
 	if err != nil {
 		return microerror.Mask(err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint: errcheck
 
 	if resp.StatusCode != 200 {
 		return microerror.Maskf(executionFailedError, "failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode)
