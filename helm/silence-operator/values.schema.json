@@ -5,6 +5,12 @@
         "alertmanagerAddress": {
             "type": "string"
         },
+        "alertmanagerAuthentication": {
+            "type": "boolean"
+        },
+        "alertmanagerDefaultTenant": {
+            "type": "string"
+        },
         "cluster": {
             "type": "object",
             "properties": {
@@ -15,6 +21,33 @@
                     "type": "object",
                     "properties": {
                         "kind": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "containerSecurityContext": {
+            "type": "object",
+            "properties": {
+                "allowPrivilegeEscalation": {
+                    "type": "boolean"
+                },
+                "capabilities": {
+                    "type": "object",
+                    "properties": {
+                        "drop": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "seccompProfile": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
                             "type": "string"
                         }
                     }
@@ -45,52 +78,18 @@
                 }
             }
         },
-        "initContainer": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "tag": {
-                    "type": "string"
-                }
-            }
-        },
-        "kyvernoPolicyExceptions": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "namespace": {
-                    "type": "string"
-                }
-            }
-        },
-        "pod": {
-            "type": "object",
-            "properties": {
-                "group": {
-                    "type": "object",
-                    "properties": {
-                        "id": {
-                            "type": "integer"
-                        }
-                    }
-                },
-                "user": {
-                    "type": "object",
-                    "properties": {
-                        "id": {
-                            "type": "integer"
-                        }
-                    }
-                }
-            }
-        },
         "podSecurityContext": {
             "type": "object",
             "properties": {
+                "runAsGroup": {
+                    "type": "integer"
+                },
+                "runAsNonRoot": {
+                    "type": "boolean"
+                },
+                "runAsUser": {
+                    "type": "integer"
+                },
                 "seccompProfile": {
                     "type": "object",
                     "properties": {
@@ -127,38 +126,6 @@
             "type": "object",
             "properties": {
                 "domain": {
-                    "type": "string"
-                }
-            }
-        },
-        "securityContext": {
-            "type": "object",
-            "properties": {
-                "seccompProfile": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "sync": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "github": {
-                    "type": "object",
-                    "properties": {
-                        "token": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "repository": {
                     "type": "string"
                 }
             }
