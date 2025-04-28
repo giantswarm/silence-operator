@@ -28,11 +28,11 @@ containerSecurityContext:
 
 resources:
   requests:
-    cpu: 100m
-    memory: 220Mi
+    cpu: 50m
+    memory: 50Mi
   limits:
-    cpu: 200m
-    memory: 300Mi
+    cpu: 50m
+    memory: 100Mi
 
 rbac:
   create: true

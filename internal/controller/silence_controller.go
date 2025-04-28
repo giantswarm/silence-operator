@@ -31,7 +31,6 @@ import (
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
-	"github.com/giantswarm/silence-operator/service/controller/key"
 )
 
 // SilenceReconciler reconciles a Silence object
@@ -83,7 +82,7 @@ func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alph
 	now := time.Now()
 
 	var existingSilence *alertmanager.Silence
-	existingSilence, err = r.Alertmanager.GetSilenceByComment(key.SilenceComment(silence))
+	existingSilence, err = r.Alertmanager.GetSilenceByComment(alertmanager.SilenceComment(silence))
 	notFound := alertmanager.IsNotFound(err)
 	if !notFound && err != nil {
 		return ctrl.Result{}, errors.WithStack(err)
@@ -128,7 +127,7 @@ func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alph
 	logger := log.FromContext(ctx)
 	logger.Info("deleting silence")
 
-	err := r.Alertmanager.DeleteSilenceByComment(key.SilenceComment(silence))
+	err := r.Alertmanager.DeleteSilenceByComment(alertmanager.SilenceComment(silence))
 	if err != nil {
 		if alertmanager.IsNotFound(err) {
 			logger.Info("silence does not exist")
@@ -168,14 +167,14 @@ func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) 
 		}
 	}
 
-	endsAt, err := key.SilenceEndsAt(silence)
+	endsAt, err := alertmanager.SilenceEndsAt(silence)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
 
 	newSilence := &alertmanager.Silence{
-		Comment:   key.SilenceComment(silence),
-		CreatedBy: key.CreatedBy,
+		Comment:   alertmanager.SilenceComment(silence),
+		CreatedBy: alertmanager.CreatedBy,
 		StartsAt:  silence.GetCreationTimestamp().Time,
 		EndsAt:    endsAt,
 		Matchers:  matchers,
