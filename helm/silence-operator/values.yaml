@@ -15,16 +15,6 @@ project:
   branch: "[[ .Branch ]]"
   commit: "[[ .SHA ]]"
 
-sync:
-  enabled: true
-  repository: github.com/giantswarm/silences
-  github:
-    token: ""
-
-initContainer:
-  name: "giantswarm/alpinegit"
-  tag: "v2.26.2-giantswarm"
-
 cluster:
   name: ""
   provider:

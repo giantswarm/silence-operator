@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed the linting errors from golangci-lint v2.
 
+### Removed
+
+- Remove the unnecessary sync job.
+
 ## [0.14.1] - 2025-04-23
 
 ### Changed
