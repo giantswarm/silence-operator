@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+Added initial kubebuilder template instead of operatorkit
+
 ### Fixed
 
 - Fixed the linting errors from golangci-lint v2.

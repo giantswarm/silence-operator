@@ -1,24 +1,27 @@
+/*
+Copyright 2025.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// +genclient
-// +genclient:noStatus
-// +genclient:nonNamespaced
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Cluster,categories=common;giantswarm
-// +kubebuilder:storageversion
-// +k8s:openapi-gen=true
-// Silence represents schema for managed silences in Alertmanager. Reconciled by silence-operator.
-type Silence struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata"`
-	Spec              SilenceSpec `json:"spec"`
-}
-
-// +k8s:openapi-gen=true
+// SilenceSpec defines the desired state of Silence.
+// TODO (user): Add fields to SilenceSpec to represent the actual silence api.
 type SilenceSpec struct {
 	TargetTags []TargetTag `json:"targetTags,omitempty"`
 	Matchers   []Matcher   `json:"matchers"`
@@ -46,9 +49,27 @@ type Matcher struct {
 	Value   string `json:"value"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// TODO Migrate to scope Namespace
+//+kubebuilder:resource:scope=Cluster
+
+// Silence is the Schema for the silences API.
+type Silence struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata"`
+
+	Spec SilenceSpec `json:"spec"`
+}
+
+// +kubebuilder:object:root=true
+
+// SilenceList contains a list of Silence.
 type SilenceList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Silence `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&Silence{}, &SilenceList{})
 }
