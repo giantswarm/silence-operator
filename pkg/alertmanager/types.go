@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// TODO Can we use open API Types here instead of defining our own types?
 type Silence struct {
 	Comment   string    `json:"comment"`
 	CreatedBy string    `json:"createdBy"`

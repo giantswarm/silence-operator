@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "resource.default.name"  . }}
-  namespace: {{ include "resource.default.namespace"  . }}
   labels:
     {{- include "labels.common" . | nindent 4 }}
+  name: {{ include "resource.default.name" . }}
+  namespace: {{ include "resource.default.namespace" . }}
 spec:
   replicas: 1
   selector:
@@ -30,27 +30,32 @@ spec:
             weight: 100
       containers:
       - name: {{ include "name" . }}
-        image: "{{ .Values.registry.domain }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
+        image: "{{ .Values.image.registry }}/{{ .Values.image.name }}:{{ default .Chart.Version .Values.image.tag }}"
         args:
-        - daemon
-        - --config.dirs=/var/run/{{ include "name" . }}/configmap/
-        - --config.files=config
-        ports:
-        - name: http
-          containerPort: 8000
-        volumeMounts:
-        - name: {{ include "name" . }}-configmap
-          mountPath: /var/run/{{ include "name" . }}/configmap/
+        - --leader-elect
+        - --alertmanager-address={{ .Values.alertmanagerAddress }}
+        - --alertmanager-authentication={{ .Values.alertmanagerAuthentication }}
+        {{ with .Values.alertmanagerDefaultTenant }}
+        - --alertmanager-default-tenant-id={{ . }}
+        {{ end }}
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 8000
+            port: http-healthz
           initialDelaySeconds: 30
           timeoutSeconds: 1
-        resources:
-          requests:
-            cpu: 100m
-            memory: 220Mi
+        securityContext:
+          {{- with .Values.containerSecurityContext }}
+            {{- . | toYaml | nindent 10 }}
+          {{- end }}
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 8081
+          name: http-healthz
+          protocol: TCP
+        resources: {{ toYaml .Values.resources | nindent 10 }}
         securityContext:
           {{- with .Values.containerSecurityContext }}
             {{- . | toYaml | nindent 10 }}
@@ -60,10 +65,3 @@ spec:
           {{- . | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ include "resource.default.name" . }}
-      volumes:
-      - name: {{ include "name" . }}-configmap
-        configMap:
-          name: {{ include "resource.default.name"  . }}
-          items:
-          - key: config.yml
-            path: config.yml
