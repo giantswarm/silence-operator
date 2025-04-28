@@ -3,7 +3,7 @@
 
 # silence-operator
 
-The silence-operator manages [alertmanager](https://github.com/prometheus/alertmanager) [silences](https://prometheus.io/docs/alerting/latest/alertmanager/#silences).
+The silence-operator manages [alertmanager](httpss://github.com/prometheus/alertmanager) [silences](https://prometheus.io/docs/alerting/latest/alertmanager/#silences).
 
 ## Overview
 
