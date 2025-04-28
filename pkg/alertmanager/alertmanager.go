@@ -12,6 +12,7 @@ import (
 	"github.com/giantswarm/silence-operator/service/controller/key"
 )
 
+// TODO Get rid of microerrors and use errors instead.
 type Config struct {
 	Address        string
 	Authentication bool

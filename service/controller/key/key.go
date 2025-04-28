@@ -30,7 +30,7 @@ func ToSilence(v interface{}) (v1alpha1.Silence, error) {
 	return *c, nil
 }
 
-func SilenceComment(silence v1alpha1.Silence) string {
+func SilenceComment(silence *v1alpha1.Silence) string {
 	return fmt.Sprintf("%s-%s", CreatedBy, silence.Name)
 }
 
@@ -38,7 +38,7 @@ func SilenceComment(silence v1alpha1.Silence) string {
 // The expiry date is retrieved from the annotation name configured by ValidUntilAnnotationName.
 // The expected format is defined by DateOnlyLayout.
 // It returns an invalidExpirationDateError in case the date format is invalid.
-func SilenceEndsAt(silence v1alpha1.Silence) (time.Time, error) {
+func SilenceEndsAt(silence *v1alpha1.Silence) (time.Time, error) {
 	annotations := silence.GetAnnotations()
 
 	// Check if the annotation exist otherwise return a date 100 years in the future.

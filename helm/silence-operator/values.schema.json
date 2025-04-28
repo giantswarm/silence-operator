@@ -11,22 +11,6 @@
         "alertmanagerDefaultTenant": {
             "type": "string"
         },
-        "cluster": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "provider": {
-                    "type": "object",
-                    "properties": {
-                        "kind": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "containerSecurityContext": {
             "type": "object",
             "properties": {
@@ -54,23 +38,13 @@
                 }
             }
         },
-        "global": {
-            "type": "object",
-            "properties": {
-                "podSecurityStandards": {
-                    "type": "object",
-                    "properties": {
-                        "enforced": {
-                            "type": "boolean"
-                        }
-                    }
-                }
-            }
-        },
         "image": {
             "type": "object",
             "properties": {
                 "name": {
+                    "type": "string"
+                },
+                "registry": {
                     "type": "string"
                 },
                 "tag": {
@@ -100,33 +74,27 @@
                 }
             }
         },
-        "project": {
-            "type": "object",
-            "properties": {
-                "branch": {
-                    "type": "string"
-                },
-                "commit": {
-                    "type": "string"
-                }
-            }
-        },
         "rbac": {
             "type": "object",
             "properties": {
                 "create": {
                     "type": "boolean"
-                },
-                "pspEnabled": {
-                    "type": "boolean"
                 }
             }
         },
-        "registry": {
+        "resources": {
             "type": "object",
             "properties": {
-                "domain": {
-                    "type": "string"
+                "requests": {
+                    "type": "object",
+                    "properties": {
+                        "cpu": {
+                            "type": "string"
+                        },
+                        "memory": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         }
