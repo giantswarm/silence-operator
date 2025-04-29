@@ -26,7 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/giantswarm/microerror"
 	"github.com/pkg/errors"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
@@ -83,11 +82,9 @@ func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alph
 
 	var existingSilence *alertmanager.Silence
 	existingSilence, err = r.Alertmanager.GetSilenceByComment(alertmanager.SilenceComment(silence))
-	notFound := alertmanager.IsNotFound(err)
-	if !notFound && err != nil {
+	if err != nil && !errors.Is(err, alertmanager.ErrSilenceNotFound) {
 		return ctrl.Result{}, errors.WithStack(err)
-	}
-	if notFound {
+	} else if errors.Is(err, alertmanager.ErrSilenceNotFound) {
 		if newSilence.EndsAt.After(now) {
 			logger.Info("creating silence")
 
@@ -129,7 +126,7 @@ func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alph
 
 	err := r.Alertmanager.DeleteSilenceByComment(alertmanager.SilenceComment(silence))
 	if err != nil {
-		if alertmanager.IsNotFound(err) {
+		if errors.Is(err, alertmanager.ErrSilenceNotFound) {
 			logger.Info("silence does not exist")
 			return nil
 		}
@@ -169,7 +166,7 @@ func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) 
 
 	endsAt, err := alertmanager.SilenceEndsAt(silence)
 	if err != nil {
-		return nil, microerror.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 
 	newSilence := &alertmanager.Silence{
