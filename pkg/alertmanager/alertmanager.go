@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
@@ -17,6 +18,11 @@ const (
 	CreatedBy                = "silence-operator"
 	ValidUntilAnnotationName = "valid-until"
 	DateOnlyLayout           = "2006-01-02"
+	// Define API paths as constants
+	apiV2SilencesPath = "/api/v2/silences"
+	apiV2SilencePath  = "/api/v2/silence"
+	// Define state constant
+	SilenceStateExpired = "expired"
 )
 
 var (
@@ -68,7 +74,7 @@ func (am *AlertManager) GetSilenceByComment(comment string) (*Silence, error) {
 }
 
 func (am *AlertManager) CreateSilence(s *Silence) error {
-	endpoint := fmt.Sprintf("%s/api/v2/silences", am.address)
+	endpoint := fmt.Sprintf("%s%s", am.address, apiV2SilencesPath) // Use constant
 
 	jsonValues, err := json.Marshal(s)
 	if err != nil {
@@ -121,7 +127,7 @@ func (am *AlertManager) DeleteSilenceByComment(comment string) error {
 }
 
 func (am *AlertManager) ListSilences() ([]Silence, error) {
-	endpoint := fmt.Sprintf("%s/api/v2/silences", am.address)
+	endpoint := fmt.Sprintf("%s%s", am.address, apiV2SilencesPath)
 
 	var silences []Silence
 
@@ -151,11 +157,9 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 	}
 
 	var filteredSilences []Silence
-	{
-		for _, silence := range silences {
-			if silence.Status.State != "expired" {
-				filteredSilences = append(filteredSilences, silence)
-			}
+	for _, silence := range silences {
+		if silence.Status != nil && silence.Status.State != SilenceStateExpired {
+			filteredSilences = append(filteredSilences, silence)
 		}
 	}
 
@@ -163,7 +167,8 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 }
 
 func (am *AlertManager) DeleteSilenceByID(id string) error {
-	endpoint := fmt.Sprintf("%s/api/v2/silence/%s", am.address, id)
+	// Use constant and url.PathEscape for safety if ID can contain special chars
+	endpoint := fmt.Sprintf("%s%s/%s", am.address, apiV2SilencePath, url.PathEscape(id))
 
 	req, err := am.NewRequest(http.MethodDelete, endpoint, nil)
 	if err != nil {
@@ -206,17 +211,21 @@ func SilenceEndsAt(silence *v1alpha1.Silence) (time.Time, error) {
 		return silence.GetCreationTimestamp().AddDate(100, 0, 0), nil
 	}
 
-	// Parse the date found in the annotation using RFC3339 (ISO8601) by default
-	expirationDate, err := time.Parse(time.RFC3339, value)
-	if err != nil {
-		// If it fails, we try to parse it using date only (old way)
-		expirationDate, err = time.Parse(DateOnlyLayout, value)
-		if err != nil {
-			return time.Time{}, errors.WithMessagef(errors.WithStack(err), "%s date %q does not match expected format %q", ValidUntilAnnotationName, value, DateOnlyLayout)
-		}
-		// We shift the time to 8am UTC (9 CET or 10 CEST) to ensure silences do not expire at night.
-		expirationDate = time.Date(expirationDate.Year(), expirationDate.Month(), expirationDate.Day(), 8, 0, 0, 0, time.UTC)
+	expirationDate, errRFC3339 := time.Parse(time.RFC3339, value)
+	if errRFC3339 == nil {
+		// Parsed successfully with RFC3339
+		return expirationDate, nil
 	}
+
+	// If RFC3339 parsing fails, try parsing using the legacy DateOnlyLayout
+	expirationDate, errDateOnly := time.Parse(DateOnlyLayout, value)
+	if errDateOnly != nil {
+		// Combine both errors in the message. Wrap errRFC3339 to preserve stack trace.
+		return time.Time{}, errors.Wrapf(errRFC3339, "annotation %q date %q does not match expected formats %q or %q (legacy format error: %v)", ValidUntilAnnotationName, value, time.RFC3339, DateOnlyLayout, errDateOnly)
+	}
+	// We shift the time to 8am UTC (9 CET or 10 CEST) to ensure silences do not expire at night.
+	// TODO move this rule to a config?
+	expirationDate = time.Date(expirationDate.Year(), expirationDate.Month(), expirationDate.Day(), 8, 0, 0, 0, time.UTC)
 
 	return expirationDate, nil
 }
