@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/pkg/errors"
@@ -31,6 +32,9 @@ import (
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 )
+
+// Define the finalizer name
+const silenceFinalizer = "monitoring.giantswarm.io/silence-protection"
 
 // SilenceReconciler reconciles a Silence object
 type SilenceReconciler struct {
@@ -46,9 +50,6 @@ type SilenceReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.20.4/pkg/reconcile
 func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -58,15 +59,47 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	silence := &v1alpha1.Silence{}
 	err := r.Get(ctx, req.NamespacedName, silence)
 	if err != nil {
+		// Ignore not-found errors, since they can't be fixed by an immediate
+		// requeue (we'll need to wait for a new notification).
 		return ctrl.Result{}, errors.WithStack(client.IgnoreNotFound(err))
 	}
 
-	if !silence.DeletionTimestamp.IsZero() {
-		return ctrl.Result{}, r.reconcileDelete(ctx, silence)
+	// Handle deletion: The object is being deleted
+	if !silence.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is being deleted
+		if controllerutil.ContainsFinalizer(silence, silenceFinalizer) {
+			// Our finalizer is present, so let's handle external dependency deletion
+			if err := r.reconcileDelete(ctx, silence); err != nil {
+				// If fail to delete the external dependency here, return error
+				// so that it can be retried.
+				logger.Error(err, "Failed to delete Alertmanager silence during finalization")
+				return ctrl.Result{}, err
+			}
+
+			// Once the external dependency is deleted, remove the finalizer.
+			// This allows the Kubernetes API server to finalize the object deletion.
+			logger.Info("Removing finalizer after successful Alertmanager silence deletion")
+			controllerutil.RemoveFinalizer(silence, silenceFinalizer)
+			if err := r.Update(ctx, silence); err != nil {
+				logger.Error(err, "Failed to remove finalizer")
+				return ctrl.Result{}, errors.WithStack(err)
+			}
+		}
+		// Stop reconciliation as the item is being deleted
+		return ctrl.Result{}, nil
 	}
 
-	// TODO add finalizer to silence CRs to prevent deletion of silences
+	// Ensure finalizer is present: The object is not being deleted
+	if !controllerutil.ContainsFinalizer(silence, silenceFinalizer) {
+		logger.Info("Adding finalizer")
+		controllerutil.AddFinalizer(silence, silenceFinalizer)
+		if err := r.Update(ctx, silence); err != nil {
+			logger.Error(err, "Failed to add finalizer")
+			return ctrl.Result{}, errors.WithStack(err)
+		}
+	}
 
+	// Reconcile the creation/update of the silence
 	return r.reconcileCreate(ctx, silence)
 }
 
@@ -83,58 +116,62 @@ func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alph
 	var existingSilence *alertmanager.Silence
 	existingSilence, err = r.Alertmanager.GetSilenceByComment(alertmanager.SilenceComment(silence))
 	if err != nil && !errors.Is(err, alertmanager.ErrSilenceNotFound) {
+		logger.Error(err, "Failed to get silence from Alertmanager")
 		return ctrl.Result{}, errors.WithStack(err)
 	} else if errors.Is(err, alertmanager.ErrSilenceNotFound) {
 		if newSilence.EndsAt.After(now) {
-			logger.Info("creating silence")
-
+			logger.Info("Creating silence in Alertmanager")
 			err = r.Alertmanager.CreateSilence(newSilence)
 			if err != nil {
+				logger.Error(err, "Failed to create silence in Alertmanager")
 				return ctrl.Result{}, errors.WithStack(err)
 			}
-			logger.Info("created silence")
+			logger.Info("Created silence in Alertmanager")
 		} else {
-			logger.Info("skipped creation : silence is expired")
+			logger.Info("Skipped creation: silence is already expired")
 		}
 	} else if newSilence.EndsAt.Before(now) {
-		logger.Info("deleting silence")
-
+		// Existing silence found, but the desired state is expired
+		logger.Info("Deleting expired silence from Alertmanager")
 		err = r.Alertmanager.DeleteSilenceByID(existingSilence.ID)
 		if err != nil {
+			logger.Error(err, "Failed to delete expired silence from Alertmanager")
 			return ctrl.Result{}, errors.WithStack(err)
 		}
-		logger.Info("deleted silence")
+		logger.Info("Deleted expired silence from Alertmanager")
 	} else if updateNeeded(existingSilence, newSilence) {
 		newSilence.ID = existingSilence.ID
-		logger.Info("updating silence")
-
+		logger.Info("Updating silence in Alertmanager")
 		err = r.Alertmanager.UpdateSilence(newSilence)
 		if err != nil {
+			logger.Error(err, "Failed to update silence in Alertmanager")
 			return ctrl.Result{}, errors.WithStack(err)
 		}
-		logger.Info("updated silence")
+		logger.Info("Updated silence in Alertmanager")
 	} else {
-		logger.Info("skipped update : silence unchanged")
+		logger.Info("Skipped update: silence unchanged")
 	}
 
 	return ctrl.Result{}, nil
 }
 
+// reconcileDelete handles the deletion of the external Alertmanager silence.
 func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alpha1.Silence) error {
 	logger := log.FromContext(ctx)
-	logger.Info("deleting silence")
+	logger.Info("Deleting silence from Alertmanager as part of finalization")
 
 	err := r.Alertmanager.DeleteSilenceByComment(alertmanager.SilenceComment(silence))
 	if err != nil {
+		// If the silence is already gone in Alertmanager, treat it as success
 		if errors.Is(err, alertmanager.ErrSilenceNotFound) {
-			logger.Info("silence does not exist")
-			return nil
+			logger.Info("Silence already deleted in Alertmanager")
+			return nil // Success, allows finalizer removal
 		}
-		return errors.WithStack(err)
+		// For other errors, return the error to retry
+		return errors.Wrap(err, "failed to delete silence from Alertmanager")
 	}
 
-	logger.Info("silence has been deleted")
-
+	logger.Info("Successfully deleted silence from Alertmanager")
 	return nil
 }
 
