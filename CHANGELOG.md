@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Migrate from Giant Swarm deprecated operatorkit framework to kube-builder.
+
 ### Fixed
 
 - Fixed the linting errors from golangci-lint v2.
 
 ### Removed
 
-- Remove the unnecessary sync job.
+- Remove the unnecessary sync job to rely on GitOps.
 
 ## [0.14.1] - 2025-04-23
 

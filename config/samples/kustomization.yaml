@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- monitoring_v1alpha1_silence.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples
