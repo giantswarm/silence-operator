@@ -226,6 +226,5 @@ func SilenceEndsAt(silence *v1alpha1.Silence) (time.Time, error) {
 	// We shift the time to 8am UTC (9 CET or 10 CEST) to ensure silences do not expire at night.
 	// TODO move this rule to a config?
 	expirationDate = time.Date(expirationDate.Year(), expirationDate.Month(), expirationDate.Day(), 8, 0, 0, 0, time.UTC)
-
 	return expirationDate, nil
 }
