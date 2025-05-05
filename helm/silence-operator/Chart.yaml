@@ -1,9 +1,10 @@
-apiVersion: "v2"
-appVersion: "[[ .AppVersion ]]"
-description: "Chart holding silence-operator."
-home: "https://github.com/giantswarm/silence-operator"
-name: "silence-operator"
-version: "[[ .Version ]]"
+apiVersion: v2
+appVersion: 0.14.1
+description: The silence-operator manages alertmanager silences.
+home: https://github.com/giantswarm/silence-operator
+icon: https://s.giantswarm.io/app-icons/giantswarm/1/light.svg
+name: silence-operator
+version: 0.14.1
 annotations:
   application.giantswarm.io/team: "atlas"
   config.giantswarm.io/version: 1.x.x

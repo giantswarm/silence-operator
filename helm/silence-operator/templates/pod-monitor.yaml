@@ -1,10 +1,10 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
-  name: {{ include "resource.default.name" . }}
-  namespace: {{ include "resource.default.namespace" . }}
   labels:
     {{- include "labels.common" . | nindent 4 }}
+  name: {{ include "resource.default.name" . }}
+  namespace: {{ include "resource.default.namespace" . }}
 spec:
   namespaceSelector:
     matchNames:

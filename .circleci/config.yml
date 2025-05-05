@@ -9,6 +9,7 @@ workflows:
     - architect/go-build:
         name: go-build
         binary: silence-operator
+        path: ./cmd
         filters:
           tags:
             only: /^v.*/
@@ -21,14 +22,15 @@ workflows:
         filters:
           tags:
             only: /^v.*/
-
           branches:
             ignore:
             - main
             - master
+
     - architect/push-to-app-catalog:
         context: architect
-        name: push-silence-operator-to-app-catalog
+        executor: app-build-suite
+        name: push-to-app-catalog
         app_catalog: control-plane-catalog
         app_catalog_test: control-plane-test-catalog
         chart: silence-operator
@@ -37,11 +39,11 @@ workflows:
         filters:
           tags:
             only: /^v.*/
-
           branches:
             ignore:
             - main
             - master
+
     - architect/push-to-app-collection:
         name: push-silence-operator-to-aws-app-collection
         context: architect
@@ -49,21 +51,7 @@ workflows:
         app_namespace: monitoring
         app_collection_repo: aws-app-collection
         requires:
-        - push-silence-operator-to-app-catalog
-        filters:
-          branches:
-            ignore: /.*/
-          tags:
-            only: /^v.*/
-
-    - architect/push-to-app-collection:
-        name: push-silence-operator-to-azure-app-collection
-        context: architect
-        app_name: silence-operator
-        app_namespace: monitoring
-        app_collection_repo: azure-app-collection
-        requires:
-        - push-silence-operator-to-app-catalog
+        - push-to-app-catalog
         filters:
           branches:
             ignore: /.*/
@@ -77,7 +65,7 @@ workflows:
         app_namespace: monitoring
         app_collection_repo: vsphere-app-collection
         requires:
-        - push-silence-operator-to-app-catalog
+        - push-to-app-catalog
         filters:
           branches:
             ignore: /.*/
@@ -91,13 +79,12 @@ workflows:
         app_namespace: monitoring
         app_collection_repo: proxmox-app-collection
         requires:
-        - push-silence-operator-to-app-catalog
+        - push-to-app-catalog
         filters:
           branches:
             ignore: /.*/
           tags:
             only: /^v.*/
-
 
     - architect/push-to-app-collection:
         context: architect
@@ -106,7 +93,7 @@ workflows:
         app_namespace: monitoring
         app_collection_repo: cloud-director-app-collection
         requires:
-        - push-silence-operator-to-app-catalog
+        - push-to-app-catalog
         filters:
           branches:
             ignore: /.*/
@@ -120,7 +107,7 @@ workflows:
         app_namespace: monitoring
         app_collection_repo: capa-app-collection
         requires:
-        - push-silence-operator-to-app-catalog
+        - push-to-app-catalog
         filters:
           branches:
             ignore: /.*/
@@ -134,7 +121,7 @@ workflows:
         app_namespace: monitoring
         app_collection_repo: capz-app-collection
         requires:
-        - push-silence-operator-to-app-catalog
+        - push-to-app-catalog
         filters:
           branches:
             ignore: /.*/

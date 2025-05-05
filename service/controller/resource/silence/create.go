@@ -30,13 +30,13 @@ func (r *Resource) getSilenceFromCR(silence v1alpha1.Silence) (*alertmanager.Sil
 		}
 	}
 
-	endsAt, err := key.SilenceEndsAt(silence)
+	endsAt, err := key.SilenceEndsAt(&silence)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
 
 	newSilence := &alertmanager.Silence{
-		Comment:   key.SilenceComment(silence),
+		Comment:   key.SilenceComment(&silence),
 		CreatedBy: key.CreatedBy,
 		StartsAt:  silence.GetCreationTimestamp().Time,
 		EndsAt:    endsAt,
@@ -60,7 +60,7 @@ func (r *Resource) EnsureCreated(ctx context.Context, obj interface{}) error {
 	now := time.Now()
 
 	var existingSilence *alertmanager.Silence
-	existingSilence, err = r.amClient.GetSilenceByComment(key.SilenceComment(silence))
+	existingSilence, err = r.amClient.GetSilenceByComment(key.SilenceComment(&silence))
 	notFound := alertmanager.IsNotFound(err)
 	if !notFound && err != nil {
 		return microerror.Mask(err)

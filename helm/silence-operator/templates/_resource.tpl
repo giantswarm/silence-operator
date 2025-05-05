@@ -12,13 +12,5 @@ room for such suffix.
 {{- end -}}
 
 {{- define "resource.default.namespace" -}}
-{{ .Release.Namespace }}
-{{- end -}}
-
-{{- define "resource.psp.name" -}}
-{{- include "resource.default.name" . -}}-psp
-{{- end -}}
-
-{{- define "resource.pullSecret.name" -}}
-{{- include "resource.default.name" . -}}-pull-secret
+monitoring
 {{- end -}}

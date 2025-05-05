@@ -1,46 +1,38 @@
-global:
-  podSecurityStandards:
-    enforced: false
-
 image:
+  registry: gsoci.azurecr.io
   name: "giantswarm/silence-operator"
-  tag: "[[ .Version ]]"
+  tag: ""
 
+# TODO improve this for better user experience
 alertmanagerAddress: ""
 alertmanagerAuthentication: false
 # -- Default alertmanager tenant
 alertmanagerDefaultTenant: ""
 
-project:
-  branch: "[[ .Branch ]]"
-  commit: "[[ .SHA ]]"
-
-cluster:
-  name: ""
-  provider:
-    kind: ""
-
-registry:
-  domain: gsoci.azurecr.io
-
-# Add seccomp to pod security context
+# -- Configures the pod security context
 podSecurityContext:
-  runAsGroup: 1000
-  runAsUser: 1000
   runAsNonRoot: true
+  runAsUser: 65534
   seccompProfile:
     type: RuntimeDefault
 
-# Add seccomp to container security context
+# -- Configures the container security context
 containerSecurityContext:
   allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-      - "ALL"
+  readOnlyRootFilesystem: true
   seccompProfile:
     type: RuntimeDefault
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 220Mi
+  limits:
+    cpu: 200m
+    memory: 300Mi
 
 rbac:
   create: true
-  # The PSP will only be deployed when Kubernetes supports it (<1.25)
-  pspEnabled: true
