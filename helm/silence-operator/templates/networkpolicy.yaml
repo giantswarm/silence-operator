@@ -12,7 +12,7 @@ spec:
       {{- include "labels.selector" . | nindent 6 }}
   ingress:
   - ports:
-    - port: 8000
+    - port: http
       protocol: TCP
   egress:
   - {}
