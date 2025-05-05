@@ -33,6 +33,7 @@ spec:
         image: "{{ .Values.image.registry }}/{{ .Values.image.name }}:{{ default .Chart.Version .Values.image.tag }}"
         args:
         - --leader-elect
+        - --metrics-bind-address=:8080
         - --alertmanager-address={{ .Values.alertmanagerAddress }}
         - --alertmanager-authentication={{ .Values.alertmanagerAuthentication }}
         {{ with .Values.alertmanagerDefaultTenant }}

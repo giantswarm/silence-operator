@@ -55,6 +55,17 @@
                 }
             }
         },
+        "networkPolicy": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "flavor": {
+                    "type": "string"
+                }
+            }
+        },
         "podSecurityContext": {
             "type": "object",
             "properties": {
