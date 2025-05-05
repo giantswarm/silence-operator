@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/giantswarm/microerror"
 	"github.com/pkg/errors"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
@@ -20,7 +19,10 @@ const (
 	DateOnlyLayout           = "2006-01-02"
 )
 
-// TODO Get rid of microerrors and use errors instead.
+var (
+	ErrSilenceNotFound = errors.New("silence not found")
+)
+
 type Config struct {
 	Address        string
 	Authentication bool
@@ -53,7 +55,7 @@ func New(config Config) (*AlertManager, error) {
 func (am *AlertManager) GetSilenceByComment(comment string) (*Silence, error) {
 	silences, err := am.ListSilences()
 	if err != nil {
-		return nil, microerror.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 
 	for _, s := range silences {
@@ -62,7 +64,7 @@ func (am *AlertManager) GetSilenceByComment(comment string) (*Silence, error) {
 		}
 	}
 
-	return nil, microerror.Maskf(notFoundError, "failed to get silence with comment %#q", comment)
+	return nil, errors.WithMessagef(ErrSilenceNotFound, "failed to get silence with comment %#q", comment)
 }
 
 func (am *AlertManager) CreateSilence(s *Silence) error {
@@ -70,12 +72,12 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 
 	jsonValues, err := json.Marshal(s)
 	if err != nil {
-		return microerror.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	req, err := am.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonValues))
 	if err != nil {
-		return microerror.Mask(err)
+		return errors.WithStack(err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 
@@ -85,12 +87,12 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 
 	resp, err := am.client.Do(req)
 	if err != nil {
-		return microerror.Mask(err)
+		return errors.WithStack(err)
 	}
 	defer resp.Body.Close() //nolint: errcheck
 
 	if resp.StatusCode != 200 {
-		return microerror.Maskf(executionFailedError, "failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode)
+		return errors.Errorf("failed to create/update silence %#q, expected code 200, got %d", s.Comment, resp.StatusCode)
 	}
 
 	return nil
@@ -98,7 +100,7 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 
 func (am *AlertManager) UpdateSilence(s *Silence) error {
 	if s.ID == "" {
-		return microerror.Maskf(executionFailedError, "failed to update silence %#q, missing ID", s.Comment)
+		return errors.Errorf("failed to update silence %#q, missing ID", s.Comment)
 	}
 	return am.CreateSilence(s)
 }
@@ -106,7 +108,7 @@ func (am *AlertManager) UpdateSilence(s *Silence) error {
 func (am *AlertManager) DeleteSilenceByComment(comment string) error {
 	silences, err := am.ListSilences()
 	if err != nil {
-		return microerror.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	for _, s := range silences {
@@ -115,7 +117,7 @@ func (am *AlertManager) DeleteSilenceByComment(comment string) error {
 		}
 	}
 
-	return microerror.Maskf(notFoundError, "failed to delete silence by comment %#q", comment)
+	return errors.WithMessagef(ErrSilenceNotFound, "failed to delete silence by comment %#q", comment)
 }
 
 func (am *AlertManager) ListSilences() ([]Silence, error) {
@@ -125,7 +127,7 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 
 	req, err := am.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
-		return nil, microerror.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 
 	if am.authentication {
@@ -134,18 +136,18 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 
 	resp, err := am.client.Do(req)
 	if err != nil {
-		return nil, microerror.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 	defer resp.Body.Close() //nolint: errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, microerror.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 
 	err = json.Unmarshal(body, &silences)
 	if err != nil {
-		return nil, microerror.Mask(err)
+		return nil, errors.WithStack(err)
 	}
 
 	var filteredSilences []Silence
@@ -165,7 +167,7 @@ func (am *AlertManager) DeleteSilenceByID(id string) error {
 
 	req, err := am.NewRequest(http.MethodDelete, endpoint, nil)
 	if err != nil {
-		return microerror.Mask(err)
+		return errors.WithStack(err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -176,12 +178,12 @@ func (am *AlertManager) DeleteSilenceByID(id string) error {
 
 	resp, err := am.client.Do(req)
 	if err != nil {
-		return microerror.Mask(err)
+		return errors.WithStack(err)
 	}
 	defer resp.Body.Close() //nolint: errcheck
 
 	if resp.StatusCode != 200 {
-		return microerror.Maskf(executionFailedError, "failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode)
+		return errors.WithMessagef(errors.WithStack(err), "failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode)
 	}
 
 	return nil
@@ -210,7 +212,7 @@ func SilenceEndsAt(silence *v1alpha1.Silence) (time.Time, error) {
 		// If it fails, we try to parse it using date only (old way)
 		expirationDate, err = time.Parse(DateOnlyLayout, value)
 		if err != nil {
-			return time.Time{}, microerror.Maskf(invalidExpirationDateError, "%s date %q does not match expected format %q: %v", ValidUntilAnnotationName, value, DateOnlyLayout, err)
+			return time.Time{}, errors.WithMessagef(errors.WithStack(err), "%s date %q does not match expected format %q", ValidUntilAnnotationName, value, DateOnlyLayout)
 		}
 		// We shift the time to 8am UTC (9 CET or 10 CEST) to ensure silences do not expire at night.
 		expirationDate = time.Date(expirationDate.Year(), expirationDate.Month(), expirationDate.Day(), 8, 0, 0, 0, time.UTC)
