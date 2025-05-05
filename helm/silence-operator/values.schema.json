@@ -28,6 +28,9 @@
                         }
                     }
                 },
+                "readOnlyRootFilesystem": {
+                    "type": "boolean"
+                },
                 "seccompProfile": {
                     "type": "object",
                     "properties": {
@@ -55,9 +58,6 @@
         "podSecurityContext": {
             "type": "object",
             "properties": {
-                "runAsGroup": {
-                    "type": "integer"
-                },
                 "runAsNonRoot": {
                     "type": "boolean"
                 },
@@ -85,6 +85,17 @@
         "resources": {
             "type": "object",
             "properties": {
+                "limits": {
+                    "type": "object",
+                    "properties": {
+                        "cpu": {
+                            "type": "string"
+                        },
+                        "memory": {
+                            "type": "string"
+                        }
+                    }
+                },
                 "requests": {
                     "type": "object",
                     "properties": {
