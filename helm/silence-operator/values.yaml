@@ -26,6 +26,13 @@ containerSecurityContext:
     drop:
       - ALL
 
+# -- Configures the network policy
+networkPolicy:
+  # -- Whether to create a network policy for the silence operator
+  enabled: true
+  # -- The network policy flavor to use. Can be either kubernetes or cilium.
+  flavor: "kubernetes"
+
 resources:
   requests:
     cpu: 50m
