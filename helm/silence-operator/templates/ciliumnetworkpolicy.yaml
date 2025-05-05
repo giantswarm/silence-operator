@@ -1,0 +1,26 @@
+{{- if and .Values.networkPolicy.enabled (eq .Values.networkPolicy.flavor "cilium") }}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+  name: {{ include "resource.default.name" . }}
+  namespace: {{ include "resource.default.namespace" . }}
+spec:
+  endpointSelector:
+    matchLabels:
+      {{- include "labels.selector" . | nindent 6 }}
+  egress:
+  - toEntities:
+    - kube-apiserver
+    - cluster
+  ingress:
+  - toPorts:
+    - ports:
+      - port: "http"
+        protocol: "TCP"
+      rules:
+        http:
+        - method: "GET"
+          path: "/metrics"
+{{- end }}
