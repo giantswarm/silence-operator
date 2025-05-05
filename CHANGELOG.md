@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Migrate from Giant Swarm deprecated operatorkit framework to kube-builder.
 
+### Changed
+
+- Make Silences namespace scoped.
+
 ### Fixed
 
 - Fixed the linting errors from golangci-lint v2.
