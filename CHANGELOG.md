@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - http port has been changed from 8000 to 8080.
   - Finalizers set on silences have been changed from `operatorkit.giantswarm.io/silence-operator-silence-controller` to `monitoring.giantswarm.io/silence-protection`
 - **helm** `.registry.domain` has been renamed to `image.registry` (**breaking change**)
-- **helm** deprecated PodSecurityPolicy has been removed
+- **helm** deprecated PodSecurityPolicy has been removed (**breaking change** with kubernetes < 1.25)
 - Use `app-build-suite` to build the operator.
 - Changed container image from alpine to a non-root distroless image.
 
