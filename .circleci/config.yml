@@ -45,20 +45,6 @@ workflows:
             - master
 
     - architect/push-to-app-collection:
-        name: push-silence-operator-to-aws-app-collection
-        context: architect
-        app_name: silence-operator
-        app_namespace: monitoring
-        app_collection_repo: aws-app-collection
-        requires:
-        - push-to-app-catalog
-        filters:
-          branches:
-            ignore: /.*/
-          tags:
-            only: /^v.*/
-
-    - architect/push-to-app-collection:
         name: push-silence-operator-to-vsphere-app-collection
         context: architect
         app_name: silence-operator
