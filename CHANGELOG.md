@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Migrate from Giant Swarm deprecated ``operatorkit` framework to `kube-builder`. This change introduces a few breaking changes:
+- Migrate from Giant Swarm deprecated `operatorkit` framework to `kube-builder`. This change introduces a few **breaking changes**:
   - Operator configuration has been moved from a configmap to command-line arguments. **This does not affect helm chart users**
   - The operator needs new rbac capabilities to be able manage `leases` and to create `events`
   - http port has been changed from 8000 to 8080.
