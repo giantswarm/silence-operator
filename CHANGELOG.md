@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Operator configuration has been moved from a configmap to command-line arguments. **This does not affect helm chart users**
   - The operator needs new rbac capabilities to be able manage `leases` and to create `events`
   - http port has been changed from 8000 to 8080.
-  - Finalizers sets on silences has been changed from `operatorkit.giantswarm.io/silence-operator-silence-controller` to `monitoring.giantswarm.io/silence-protection`
+  - Finalizers set on silences have been changed from `operatorkit.giantswarm.io/silence-operator-silence-controller` to `monitoring.giantswarm.io/silence-protection`
 - **helm** `.registry.domain` has been renamed to `image.registry`
 - **helm** deprecated PodSecurityPolicy has been removed
 - Use `app-build-suite` to build the operator.
