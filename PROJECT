@@ -10,6 +10,7 @@ repo: github.com/giantswarm/silence-operator
 resources:
 - api:
     crdVersion: v1
+    namespaced: true
   controller: true
   domain: giantswarm.io
   group: monitoring

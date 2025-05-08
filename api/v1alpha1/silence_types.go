@@ -50,8 +50,7 @@ type Matcher struct {
 }
 
 // +kubebuilder:object:root=true
-// TODO Migrate to scope Namespace
-//+kubebuilder:resource:scope=Cluster
+//+kubebuilder:resource:scope=Namespaced
 
 // Silence is the Schema for the silences API.
 type Silence struct {
