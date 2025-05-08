@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Remove the unnecessary sync job to rely on GitOps. This means that you should now use your favorite GitOps tool (flux, ArgoCD) to deploy silences on your clusters.
+- Remove the unnecessary sync job to rely on GitOps. **Breaking change**: this means that you should now use your favorite GitOps tool (flux, ArgoCD) to deploy silences on your clusters.
 - Removed Giant Swarm legacy `microerrors` package for error handling
 
 ## [0.14.1] - 2025-04-23
