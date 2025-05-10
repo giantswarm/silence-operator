@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  architect: giantswarm/architect@5.13.1
+  architect: giantswarm/architect@5.14.0
 
 workflows:
   build:
@@ -43,20 +43,6 @@ workflows:
             ignore:
             - main
             - master
-
-    - architect/push-to-app-collection:
-        name: push-silence-operator-to-aws-app-collection
-        context: architect
-        app_name: silence-operator
-        app_namespace: monitoring
-        app_collection_repo: aws-app-collection
-        requires:
-        - push-to-app-catalog
-        filters:
-          branches:
-            ignore: /.*/
-          tags:
-            only: /^v.*/
 
     - architect/push-to-app-collection:
         name: push-silence-operator-to-vsphere-app-collection
