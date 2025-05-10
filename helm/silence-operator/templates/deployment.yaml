@@ -3,8 +3,8 @@ kind: Deployment
 metadata:
   labels:
     {{- include "labels.common" . | nindent 4 }}
-  name: {{ include "resource.default.name" . }}
-  namespace: {{ include "resource.default.namespace" . }}
+  name: {{ template "silence-operator.name" . }}
+  namespace: {{ template "silence-operator.namespace" . }}
 spec:
   replicas: 1
   selector:
@@ -29,7 +29,7 @@ spec:
               topologyKey: kubernetes.io/hostname
             weight: 100
       containers:
-      - name: {{ include "name" . }}
+      - name: {{ template "silence-operator.name" . }}
         image: "{{ .Values.image.registry }}/{{ .Values.image.name }}:{{ default .Chart.Version .Values.image.tag }}"
         args:
         - --leader-elect
@@ -65,4 +65,4 @@ spec:
         {{- with .Values.podSecurityContext }}
           {{- . | toYaml | nindent 8 }}
         {{- end }}
-      serviceAccountName: {{ include "resource.default.name" . }}
+      serviceAccountName: {{ template "silence-operator.name" . }}

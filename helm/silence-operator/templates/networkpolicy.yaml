@@ -4,8 +4,8 @@ kind: NetworkPolicy
 metadata:
   labels:
     {{- include "labels.common" . | nindent 4 }}
-  name: {{ include "resource.default.name" . }}
-  namespace: {{ include "resource.default.namespace" . }}
+  name: {{ template "silence-operator.name" . }}
+  namespace: {{ template "silence-operator.namespace" . }}
 spec:
   podSelector:
     matchLabels:

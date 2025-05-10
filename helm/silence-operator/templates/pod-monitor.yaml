@@ -3,12 +3,12 @@ kind: PodMonitor
 metadata:
   labels:
     {{- include "labels.common" . | nindent 4 }}
-  name: {{ include "resource.default.name" . }}
-  namespace: {{ include "resource.default.namespace" . }}
+  name: {{ template "silence-operator.name" . }}
+  namespace: {{ template "silence-operator.namespace" . }}
 spec:
   namespaceSelector:
     matchNames:
-      - {{ include "resource.default.namespace" . }}
+      - {{ template "silence-operator.namespace" . }}
   selector:
     matchLabels:
       {{- include "labels.selector" . | nindent 6 }}
