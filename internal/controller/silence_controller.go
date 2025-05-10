@@ -35,6 +35,7 @@ import (
 
 // Define the finalizer name
 const silenceFinalizer = "monitoring.giantswarm.io/silence-protection"
+const legacySilenceFinalizer = "operatorkit.giantswarm.io/silence-operator-silence-controller"
 
 // SilenceReconciler reconciles a Silence object
 type SilenceReconciler struct {
@@ -66,7 +67,6 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Handle deletion: The object is being deleted
 	if !silence.ObjectMeta.DeletionTimestamp.IsZero() {
-		// The object is being deleted
 		if controllerutil.ContainsFinalizer(silence, silenceFinalizer) {
 			// Our finalizer is present, so let's handle external dependency deletion
 			if err := r.reconcileDelete(ctx, silence); err != nil {
@@ -85,6 +85,13 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				return ctrl.Result{}, errors.WithStack(err)
 			}
 		}
+
+		// If the legacy finalizer is present, remove it after the new finalizer has been removed.
+		if err = r.cleanUpLegacyFinalizer(ctx, silence); err != nil {
+			logger.Error(err, "Failed to remove legacy finalizer")
+			return ctrl.Result{}, errors.WithStack(err)
+		}
+
 		// Stop reconciliation as the item is being deleted
 		return ctrl.Result{}, nil
 	}
@@ -99,8 +106,28 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
+	// If the legacy finalizer is present, remove it after the new finalizer has been added.
+	if err = r.cleanUpLegacyFinalizer(ctx, silence); err != nil {
+		logger.Error(err, "Failed to remove legacy finalizer")
+		return ctrl.Result{}, errors.WithStack(err)
+	}
+
 	// Reconcile the creation/update of the silence
 	return r.reconcileCreate(ctx, silence)
+}
+
+func (r *SilenceReconciler) cleanUpLegacyFinalizer(ctx context.Context, silence *v1alpha1.Silence) error {
+	logger := log.FromContext(ctx)
+
+	if controllerutil.ContainsFinalizer(silence, legacySilenceFinalizer) {
+		logger.Info("Removing legacy finalizer")
+		controllerutil.RemoveFinalizer(silence, legacySilenceFinalizer)
+		if err := r.Update(ctx, silence); err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	return nil
 }
 
 // TODO encapsulate business logic in a separate package
