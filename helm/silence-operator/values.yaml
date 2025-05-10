@@ -1,3 +1,15 @@
+# Default values for silence-operator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates
+
+## Provide a name in place of silence-operator for `app:` labels
+##
+nameOverride: ""
+
+## Override the deployment namespace
+##
+namespaceOverride: ""
+
 image:
   registry: gsoci.azurecr.io
   name: "giantswarm/silence-operator"
