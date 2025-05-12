@@ -10,8 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Migrate from Giant Swarm deprecated operatorkit framework to kube-builder.
-- Add finalizer to the silence.
 - Add CiliumNetworkPolicy support.
+
+### Changed
+
+- Migrate from Giant Swarm deprecated `operatorkit` framework to `kube-builder`. This change introduces a few **breaking changes**:
+  - Operator configuration has been moved from a configmap to command-line arguments. **This does not affect helm chart users**
+  - The operator needs new rbac capabilities to be able manage `leases` and to create `events`
+  - http port has been changed from 8000 to 8080.
+  - Finalizers set on silences have been changed from `operatorkit.giantswarm.io/silence-operator-silence-controller` to `monitoring.giantswarm.io/silence-protection`
+- **helm** `.registry.domain` has been renamed to `image.registry` (**breaking change**)
+- **helm** deprecated PodSecurityPolicy has been removed (**breaking change** with kubernetes < 1.25)
+- Use `app-build-suite` to build the operator.
+- Changed container image from alpine to a non-root distroless image.
 
 ### Fixed
 
@@ -19,7 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Remove the unnecessary sync job to rely on GitOps.
+- Remove the unnecessary sync job to rely on GitOps. **Breaking change**: this means that you should now use your favorite GitOps tool (flux, ArgoCD) to deploy silences on your clusters.
+- Removed Giant Swarm legacy `microerrors` package for error handling
 
 ## [0.14.1] - 2025-04-23
 
