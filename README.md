@@ -116,6 +116,10 @@ https://quay.io/repository/giantswarm/silence-operator
 
 Build the standard way.
 
+```
+go build github.com/giantswarm/silence-operator
+```
+
 ## Contributing & Reporting Bugs
 
 See [CONTRIBUTING](CONTRIBUTING.md) for details on submitting patches, the
