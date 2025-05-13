@@ -112,6 +112,10 @@ Clone the git repository: https://github.com/giantswarm/silence-operator.git
 Download the latest docker image from here:
 https://quay.io/repository/giantswarm/silence-operator
 
+### How to build
+
+Build the standard way.
+
 ## Contributing & Reporting Bugs
 
 See [CONTRIBUTING](CONTRIBUTING.md) for details on submitting patches, the
