@@ -3,7 +3,66 @@
 
 # silence-operator
 
-The silence-operator manages [alertmanager](https://github.com/prometheus/alertmanager) [silences](https://prometheus.io/docs/alerting/latest/alertmanager/#silences).
+The Silence Operator automates the management of [Alertmanager](https://github.com/prometheus/alertmanager) [silences](https://prometheus.io/docs/alerting/latest/alertmanager/#silences) using Kubernetes Custom Resources. This allows you to define and manage silences declaratively, just like other Kubernetes objects, integrating them into your GitOps workflows.
+
+## Prerequisites
+
+- Kubernetes 1.25+
+- Helm 3+
+
+## Get Helm Repository Info
+
+```console
+helm repo add giantswarm https://giantswarm.github.io/control-plane-catalog/
+helm repo update
+```
+
+_See [`helm repo`](https://helm.sh/docs/helm/helm_repo/) for command documentation._
+
+## Install Helm Chart
+
+```console
+helm install [RELEASE_NAME] giantswarm/silence-operator
+```
+
+_See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation._
+
+
+CRDs are not created by this chart and should be manually deployed:
+
+```console
+kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/monitoring.giantswarm.io_silences.yaml
+```
+
+## Uninstall Helm Chart
+
+```console
+helm uninstall [RELEASE_NAME]
+```
+
+This removes all the Kubernetes components associated with the chart and deletes the release.
+
+_See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command documentation._
+
+CRDs are not removed by default and should be manually cleaned up:
+
+```console
+kubectl delete crd silences.monitoring.giantswarm.io
+```
+
+## Upgrading Chart
+
+```console
+helm upgrade [RELEASE_NAME] giantswarm/silence-operator
+```
+
+CRDs should be manually updated:
+
+```
+kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/monitoring.giantswarm.io_silences.yaml
+```
+
+_See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
 
 ## Overview
 
@@ -61,11 +120,6 @@ Build the standard way.
 go build github.com/giantswarm/silence-operator
 ```
 
-## Contact
-
-- Mailing list: [giantswarm](https://groups.google.com/forum/!forum/giantswarm)
-- Bugs: [issues](https://github.com/giantswarm/silence-operator/issues)
-
 ## Contributing & Reporting Bugs
 
 See [CONTRIBUTING](CONTRIBUTING.md) for details on submitting patches, the
@@ -73,12 +127,8 @@ contribution workflow as well as reporting bugs.
 
 For security issues, please see [the security policy](SECURITY.md).
 
-
 ## License
 
-silence-operator is under the Apache 2.0 license. See the [LICENSE](LICENSE) file
-for details.
+This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE) file for the full license text.
 
-
-## Credit
-- https://golang.org
+Copyright (c) 2025 Giant Swarm GmbH
