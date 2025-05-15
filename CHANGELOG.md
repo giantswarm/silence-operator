@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Helm chart now supports conditional installation of the Silence CRD via the `crds.install` value. The CRD is templated and will only be installed if `crds.install` is set to `true`.
+- Helm chart now supports conditional installation of the Silence CRD via the `crds.install` value. The CRD is templated and installed by default, but you can disable it by setting `crds.install` to `false`.
 
 ## [0.15.0] - 2025-05-14
 
