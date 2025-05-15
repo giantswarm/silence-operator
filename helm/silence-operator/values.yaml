@@ -55,3 +55,6 @@ resources:
 
 rbac:
   create: true
+
+crds:
+  install: true
