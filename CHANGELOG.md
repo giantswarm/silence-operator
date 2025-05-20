@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2025-05-20
+
 ### Added
 
 - Helm chart now supports conditional installation of the Silence CRD via the `crds.install` value. The CRD is templated and installed by default, but you can disable it by setting `crds.install` to `false`.
@@ -287,7 +289,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/giantswarm/silence-operator/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/giantswarm/silence-operator/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/giantswarm/silence-operator/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/giantswarm/silence-operator/compare/v0.13.0...v0.14.0
