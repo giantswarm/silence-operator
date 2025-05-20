@@ -45,10 +45,6 @@ spec:
             port: http-healthz
           initialDelaySeconds: 30
           timeoutSeconds: 1
-        securityContext:
-          {{- with .Values.containerSecurityContext }}
-            {{- . | toYaml | nindent 10 }}
-          {{- end }}
         ports:
         - containerPort: 8080
           name: http
