@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.16.1] - 2025-05-20
 
-- Remove duplicate `securityContext` from deployment template.
+- Remove duplicate `securityContext` from the Helm chart deployment template.
 
 ## [0.16.0] - 2025-05-20
 
