@@ -55,3 +55,7 @@ resources:
 
 rbac:
   create: true
+
+crds:
+  # Whether to install the Silence CRD with this chart.
+  install: true

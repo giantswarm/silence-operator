@@ -125,6 +125,16 @@
                     }
                 }
             }
+        },
+        "crds": {
+            "type": "object",
+            "properties": {
+                "install": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether to install the Silence CRD with this chart."
+                }
+            }
         }
     }
 }
