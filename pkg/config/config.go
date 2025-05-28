@@ -10,5 +10,6 @@ type Config struct {
 	Authentication  bool
 	BearerToken     string
 	TenantId        string
+	// SilenceSelector is used to filter silences based on label selectors.
 	SilenceSelector labels.Selector
 }
