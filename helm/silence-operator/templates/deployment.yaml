@@ -39,6 +39,9 @@ spec:
         {{ with .Values.alertmanagerDefaultTenant }}
         - --alertmanager-default-tenant-id={{ . }}
         {{ end }}
+        {{- if .Values.silenceSelector }}
+        - --silence-selector={{ .Values.silenceSelector }}
+        {{- end }}
         livenessProbe:
           httpGet:
             path: /healthz

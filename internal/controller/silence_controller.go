@@ -21,13 +21,13 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/pkg/errors"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
@@ -42,7 +42,8 @@ type SilenceReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	Alertmanager *alertmanager.AlertManager
+	Alertmanager    *alertmanager.AlertManager
+	SilenceSelector labels.Selector
 }
 
 // +kubebuilder:rbac:groups=monitoring.giantswarm.io,resources=silences,verbs=get;list;watch;create;update;patch;delete
@@ -63,6 +64,14 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// Ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification).
 		return ctrl.Result{}, errors.WithStack(client.IgnoreNotFound(err))
+	}
+
+	if r.SilenceSelector != nil && !r.SilenceSelector.Empty() {
+		// Check if the silence matches the selector
+		if !r.SilenceSelector.Matches(labels.Set(silence.Labels)) {
+			logger.Info("Skipping silence as it does not match the selector", "selector", r.SilenceSelector.String())
+			return ctrl.Result{}, nil
+		}
 	}
 
 	// Handle deletion: The object is being deleted

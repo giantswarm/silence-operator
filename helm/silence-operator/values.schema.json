@@ -11,6 +11,11 @@
         "alertmanagerDefaultTenant": {
             "type": "string"
         },
+        "silenceSelector": {
+            "type": "string",
+            "default": "",
+            "description": "Label selector to filter Silence custom resources (e.g., 'environment=production,tier=frontend')."
+        },
         "containerSecurityContext": {
             "type": "object",
             "properties": {

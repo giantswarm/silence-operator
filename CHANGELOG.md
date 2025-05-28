@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Allow filtering of `Silence` custom resources based on a label selector. The operator will only process `Silence` CRs that match the selector provided via the `--silence-selector` command-line flag or the `silenceSelector` Helm chart value. If no selector is provided, all `Silence` CRs are processed.
+
 ## [0.16.1] - 2025-05-20
 
 - Remove duplicate container `securityContext` from the Helm chart deployment template.

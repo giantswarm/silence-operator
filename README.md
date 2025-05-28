@@ -25,6 +25,14 @@ _See [`helm repo`](https://helm.sh/docs/helm/helm_repo/) for command documentati
 helm install [RELEASE_NAME] giantswarm/silence-operator
 ```
 
+You can customize the installation by providing your own values file or by overriding values on the command line. For example, to set the Alertmanager address and a silence selector:
+
+```console
+helm install [RELEASE_NAME] giantswarm/silence-operator \\
+  --set alertmanagerAddress="http://my-alertmanager:9093" \\
+  --set silenceSelector="environment=production"
+```
+
 _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation._
 
 
@@ -81,6 +89,7 @@ The `Silence` CRD generated at [config/crd/monitoring.giantswarm.io_silences.yam
 ### How does it work
 
 Deployment runs the Kubernetes controller, which reconciles `Silence` CRs.
+The operator can be configured to only process `Silence` CRs that match a specific label selector. This is done by setting the `silenceSelector` value in the Helm chart (e.g., `silenceSelector: "team=alpha"`). If left empty or not provided, the operator will process all `Silence` CRs in the cluster.
 
 Sample CR:
 

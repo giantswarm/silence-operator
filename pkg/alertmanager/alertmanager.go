@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
+	"github.com/giantswarm/silence-operator/pkg/config"
 )
 
 const (
@@ -29,13 +30,6 @@ var (
 	ErrSilenceNotFound = errors.New("silence not found")
 )
 
-type Config struct {
-	Address        string
-	Authentication bool
-	BearerToken    string
-	TenantId       string
-}
-
 type AlertManager struct {
 	address        string
 	authentication bool
@@ -44,7 +38,7 @@ type AlertManager struct {
 	client         *http.Client
 }
 
-func New(config Config) (*AlertManager, error) {
+func New(config config.Config) (*AlertManager, error) {
 	if config.Address == "" {
 		return nil, errors.Errorf("%T.Address must not be empty", config)
 	}
