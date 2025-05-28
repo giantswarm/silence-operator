@@ -101,7 +101,7 @@ func main() {
 	if silenceSelector != "" {
 		parsedSelector, err := metav1.ParseToLabelSelector(silenceSelector)
 		if err != nil {
-			setupLog.Error(err, "unable to parse silence-selector string")
+			setupLog.Error(err, "unable to parse silence-selector string", "selector", silenceSelector)
 			os.Exit(1)
 		}
 		cfg.SilenceSelector, err = metav1.LabelSelectorAsSelector(parsedSelector)

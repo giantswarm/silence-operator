@@ -22,12 +22,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
@@ -64,14 +66,6 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// Ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification).
 		return ctrl.Result{}, errors.WithStack(client.IgnoreNotFound(err))
-	}
-
-	if r.SilenceSelector != nil && !r.SilenceSelector.Empty() {
-		// Check if the silence matches the selector
-		if !r.SilenceSelector.Matches(labels.Set(silence.Labels)) {
-			logger.Info("Skipping silence as it does not match the selector", "selector", r.SilenceSelector.String())
-			return ctrl.Result{}, nil
-		}
 	}
 
 	// Handle deletion: The object is being deleted
@@ -213,10 +207,27 @@ func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alph
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SilenceReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Silence{}).
-		Named("silence").
-		Complete(r)
+		Named("silence")
+
+	if r.SilenceSelector != nil && !r.SilenceSelector.Empty() {
+		// Convert labels.Selector to metav1.LabelSelector string representation
+		selectorStr := r.SilenceSelector.String()
+		// Parse the string into metav1.LabelSelector
+		metaLabelSelector, err := metav1.ParseToLabelSelector(selectorStr)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse silence selector for predicate")
+		}
+		// Create the predicate using controller-runtime's LabelSelectorPredicate
+		labelPredicate, err := predicate.LabelSelectorPredicate(*metaLabelSelector)
+		if err != nil {
+			return errors.Wrap(err, "failed to create label selector predicate")
+		}
+		controllerBuilder = controllerBuilder.WithEventFilter(labelPredicate)
+	}
+
+	return controllerBuilder.Complete(r)
 }
 
 func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) {
