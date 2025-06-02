@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
+	"github.com/giantswarm/silence-operator/api/v1alpha2"
 )
 
 const (
@@ -196,6 +197,10 @@ func (am *AlertManager) DeleteSilenceByID(id string) error {
 
 func SilenceComment(silence *v1alpha1.Silence) string {
 	return fmt.Sprintf("%s-%s", CreatedBy, silence.Name)
+}
+
+func SilenceCommentV1Alpha2(silence *v1alpha2.Silence) string {
+	return fmt.Sprintf("%s-%s-%s", CreatedBy, silence.Namespace, silence.Name)
 }
 
 // SilenceEndsAt gets the expiry date for a given silence.

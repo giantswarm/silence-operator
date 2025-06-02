@@ -107,7 +107,7 @@ func (r *SilenceV2Reconciler) reconcileCreate(ctx context.Context, silence *v1al
 
 	now := time.Now()
 
-	existingSilence, err := r.Alertmanager.GetSilenceByComment(alertmanager.SilenceComment(convertToV1Alpha1(silence)))
+	existingSilence, err := r.Alertmanager.GetSilenceByComment(alertmanager.SilenceCommentV1Alpha2(silence))
 	if err != nil && !errors.Is(err, alertmanager.ErrSilenceNotFound) {
 		logger.Error(err, "Failed to get silence from Alertmanager")
 		return ctrl.Result{}, errors.WithStack(err)
@@ -152,7 +152,7 @@ func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1al
 	logger := log.FromContext(ctx)
 	logger.Info("deleting silence")
 
-	err := r.Alertmanager.DeleteSilenceByComment(alertmanager.SilenceComment(convertToV1Alpha1(silence)))
+	err := r.Alertmanager.DeleteSilenceByComment(alertmanager.SilenceCommentV1Alpha2(silence))
 	if err != nil {
 		// If the silence is already gone in Alertmanager, treat it as success
 		if errors.Is(err, alertmanager.ErrSilenceNotFound) {
@@ -171,6 +171,7 @@ func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1al
 func (r *SilenceV2Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha2.Silence{}).
+		Named("silence-v2").
 		Complete(r)
 }
 
@@ -198,7 +199,7 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 	}
 
 	newSilence := &alertmanager.Silence{
-		Comment:   alertmanager.SilenceComment(v1Alpha1Silence),
+		Comment:   alertmanager.SilenceCommentV1Alpha2(silence),
 		CreatedBy: alertmanager.CreatedBy,
 		StartsAt:  silence.GetCreationTimestamp().Time,
 		EndsAt:    endsAt,
