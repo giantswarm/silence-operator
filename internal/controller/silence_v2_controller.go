@@ -21,21 +21,20 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 )
 
 const (
 	// FinalizerName is the finalizer added to Silence resources
-	FinalizerName = "observability.giantswarm.io/silence-finalizer"
+	FinalizerName = "observability.giantswarm.io/silence-protection"
 )
 
 // SilenceV2Reconciler reconciles a Silence object in the observability.giantswarm.io API group
@@ -171,7 +170,7 @@ func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1al
 // SetupWithManager sets up the controller with the Manager.
 func (r *SilenceV2Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&observabilityv1alpha2.Silence{}).
+		For(&v1alpha2.Silence{}).
 		Complete(r)
 }
 

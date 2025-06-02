@@ -31,7 +31,7 @@ type SilenceMatcher struct {
 	IsRegex bool `json:"isRegex,omitempty"`
 	// IsEqual defines whether the provided value should match or not match the actual label value.
 	// +optional
-	IsEqual bool `json:"isEqual,omitempty"`
+	IsEqual *bool `json:"isEqual,omitempty"`
 }
 
 // SilenceSpec defines the desired state of Silence.
