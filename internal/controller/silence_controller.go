@@ -49,7 +49,6 @@ type SilenceReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=monitoring.giantswarm.io,resources=silences,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=monitoring.giantswarm.io,resources=silences/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=monitoring.giantswarm.io,resources=silences/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -69,7 +68,7 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	// Handle deletion: The object is being deleted
-	if !silence.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !silence.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(silence, silenceFinalizer) {
 			// Our finalizer is present, so let's handle external dependency deletion
 			if err := r.reconcileDelete(ctx, silence); err != nil {

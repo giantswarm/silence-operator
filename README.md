@@ -39,8 +39,14 @@ _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documen
 CRDs are not created by this chart and should be manually deployed:
 
 ```console
+# For existing cluster-scoped silences (legacy)
 kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/monitoring.giantswarm.io_silences.yaml
+
+# For new namespace-scoped silences (recommended)
+kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/observability.giantswarm.io_silences.yaml
 ```
+
+**Note**: The operator supports both API versions for backward compatibility. New deployments should use the namespace-scoped `observability.giantswarm.io/v1alpha2` API. See [MIGRATION.md](MIGRATION.md) for migration guidance.
 
 ## Uninstall Helm Chart
 
@@ -55,7 +61,11 @@ _See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command doc
 CRDs are not removed by default and should be manually cleaned up:
 
 ```console
+# Remove legacy cluster-scoped CRD
 kubectl delete crd silences.monitoring.giantswarm.io
+
+# Remove namespace-scoped CRD
+kubectl delete crd silences.observability.giantswarm.io
 ```
 
 ## Upgrading Chart
@@ -67,21 +77,56 @@ helm upgrade [RELEASE_NAME] giantswarm/silence-operator
 CRDs should be manually updated:
 
 ```
+# Update legacy cluster-scoped CRD (if using v1alpha1)
 kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/monitoring.giantswarm.io_silences.yaml
+
+# Update namespace-scoped CRD (if using v1alpha2)
+kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/observability.giantswarm.io_silences.yaml
 ```
 
 _See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
 
 ## Overview
 
+### API Versions and Migration
+
+The silence-operator supports two API versions:
+
+- **`monitoring.giantswarm.io/v1alpha1`** - Legacy cluster-scoped API (deprecated)
+- **`observability.giantswarm.io/v1alpha2`** - New namespace-scoped API (recommended)
+
+**Migration Notice**: The v1alpha1 API is deprecated but remains fully supported for backward compatibility. New deployments should use the v1alpha2 API for better multi-tenancy and namespace isolation. Existing v1alpha1 silences continue to work unchanged. For migration guidance, see [MIGRATION.md](MIGRATION.md).
+
+### Migration from v1alpha1 to v1alpha2
+
+If you're currently using the cluster-scoped `monitoring.giantswarm.io/v1alpha1` API, we recommend migrating to the namespace-scoped `observability.giantswarm.io/v1alpha2` API for improved multi-tenancy and security isolation.
+
+**Key differences in v1alpha2:**
+- **Namespace-scoped**: Silences are scoped to specific namespaces instead of cluster-wide
+- **Enhanced status**: Comprehensive status tracking with conditions and phase information
+- **Additional fields**: Support for `owner` and `issue_url` fields for better traceability
+- **New API group**: Uses `observability.giantswarm.io` instead of `monitoring.giantswarm.io`
+
+**Migration steps:**
+1. Deploy the new v1alpha2 CRD (both CRDs can coexist)
+2. Create equivalent v1alpha2 Silence resources in appropriate namespaces
+3. Verify the new silences are working correctly
+4. Remove old v1alpha1 resources
+5. Eventually remove the v1alpha1 CRD when no longer needed
+
+For detailed migration instructions and examples, see [MIGRATION.md](MIGRATION.md).
+
 ### CustomResourceDefinition
 
 The silence-operator monitors the Kubernetes API server for changes
 to `Silence` objects and ensures that the current Alertmanager silences match these objects.
 The Operator reconciles the `Silence` [Custom Resource Definition (CRD)][crd] which
-can be found [here][silence-crd].
+supports two API versions:
 
-The `Silence` CRD generated at [config/crd/monitoring.giantswarm.io_silences.yaml](config/crd/monitoring.giantswarm.io_silences.yaml) is deployed via [management-cluster-bases](https://github.com/giantswarm/management-cluster-bases/blob/9e17d416dd324e07d7784054237302707ba42dc3/bases/crds/giantswarm/kustomization.yaml#L6C1-L7C1) repository.
+- **v1alpha1** (legacy): [monitoring.giantswarm.io_silences.yaml](config/crd/bases/monitoring.giantswarm.io_silences.yaml)
+- **v1alpha2** (recommended): [observability.giantswarm.io_silences.yaml](config/crd/bases/observability.giantswarm.io_silences.yaml)
+
+The v1alpha1 CRD is deployed via [management-cluster-bases](https://github.com/giantswarm/management-cluster-bases/blob/9e17d416dd324e07d7784054237302707ba42dc3/bases/crds/giantswarm/kustomization.yaml#L6C1-L7C1) repository.
 
 [crd]: https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/
 [silence-crd]: api/v1alpha1/silence_types.go
@@ -91,8 +136,9 @@ The `Silence` CRD generated at [config/crd/monitoring.giantswarm.io_silences.yam
 Deployment runs the Kubernetes controller, which reconciles `Silence` CRs.
 The operator can be configured to only process `Silence` CRs that match a specific label selector. This is done by setting the `silenceSelector` value in the Helm chart (e.g., `silenceSelector: "team=alpha"`). If left empty or not provided, the operator will process all `Silence` CRs in the cluster.
 
-Sample CR:
+Sample CRs:
 
+**v1alpha1 (legacy, cluster-scoped):**
 ```yaml
 apiVersion: monitoring.giantswarm.io/v1alpha1
 kind: Silence
@@ -103,6 +149,22 @@ spec:
   - name: cluster
     value: test
     isRegex: false
+```
+
+**v1alpha2 (recommended, namespace-scoped):**
+```yaml
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: test-silence1
+  namespace: my-namespace
+spec:
+  matchers:
+  - name: cluster
+    value: test
+    isRegex: false
+  owner: team-platform
+  issue_url: https://github.com/example/issues/123
 ```
 
 - `matchers` field corresponds to the Alertmanager silence `matchers` each of which consists of:

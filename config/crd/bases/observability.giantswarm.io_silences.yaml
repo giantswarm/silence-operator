@@ -3,18 +3,25 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
-  name: silences.monitoring.giantswarm.io
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: silences.observability.giantswarm.io
 spec:
-  group: monitoring.giantswarm.io
+  group: observability.giantswarm.io
   names:
     kind: Silence
     listKind: SilenceList
     plural: silences
     singular: silence
-  scope: Cluster
+  scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.owner
+      name: Owner
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha2
     schema:
       openAPIV3Schema:
         description: Silence is the Schema for the silences API.
@@ -43,15 +50,25 @@ spec:
                 description: IssueURL is a link to a GitHub issue describing the problem.
                 type: string
               matchers:
+                description: Matchers defines the alert matchers that this silence
+                  will apply to.
                 items:
+                  description: SilenceMatcher defines an alert matcher to be muted
+                    by the Silence.
                   properties:
                     isEqual:
+                      description: IsEqual defines whether the provided value should
+                        match or not match the actual label value.
                       type: boolean
                     isRegex:
+                      description: IsRegex defines whether the provided value should
+                        be interpreted as a regular expression.
                       type: boolean
                     name:
+                      description: Name of the label to match.
                       type: string
                     value:
+                      description: Value to match for the given label name.
                       type: string
                   required:
                   - name
@@ -62,29 +79,10 @@ spec:
                 description: Owner is GitHub username of a person who created and/or
                   owns the silence.
                 type: string
-              postmortem_url:
-                description: |-
-                  PostmortemURL is a link to a document describing the problem.
-                  Deprecated: Use IssueURL instead.
-                type: string
-              targetTags:
-                items:
-                  properties:
-                    name:
-                      type: string
-                    value:
-                      type: string
-                  required:
-                  - name
-                  - value
-                  type: object
-                type: array
             required:
             - matchers
             type: object
-        required:
-        - metadata
-        - spec
         type: object
     served: true
     storage: true
+    subresources: {}

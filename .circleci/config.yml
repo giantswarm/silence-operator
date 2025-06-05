@@ -3,12 +3,28 @@ version: 2.1
 orbs:
   architect: giantswarm/architect@5.15.0
 
+jobs:
+  go-tests:
+    executor: architect/architect
+    steps:
+    - checkout
+    - run:
+        name: Run unit and integration tests
+        command: CGO_ENABLED=0 make test
+
 workflows:
   build:
     jobs:
+    - go-tests:
+        filters:
+          tags:
+            only: /^v.*/
+
     - architect/go-build:
         name: go-build
         binary: silence-operator
+        requires:
+        - go-tests
         path: ./cmd
         filters:
           tags:
@@ -25,7 +41,6 @@ workflows:
           branches:
             ignore:
             - main
-            - master
 
     - architect/push-to-app-catalog:
         context: architect
@@ -42,7 +57,6 @@ workflows:
           branches:
             ignore:
             - main
-            - master
 
     - architect/push-to-app-collection:
         name: push-silence-operator-to-vsphere-app-collection
