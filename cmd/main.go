@@ -41,6 +41,7 @@ import (
 	observabilityv1alpha2 "github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/internal/controller"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/config"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -68,8 +69,8 @@ func main() {
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
 
-	var alertmanagerAddress, alertmanagerTenantId string
-	var alertmanagerAuthentication bool
+	var cfg config.Config
+	var silenceSelector string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -87,15 +88,23 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	flag.StringVar(&alertmanagerAddress, "alertmanager-address", "http://localhost:9093", "Alertmanager address used to create silences.")
-	flag.StringVar(&alertmanagerTenantId, "alertmanager-default-tenant-id", "", "Alertmanager tenant id.")
-	flag.BoolVar(&alertmanagerAuthentication, "alertmanager-authentication", false, "Enable Alertmanager authentication using Service Account token.")
+	flag.StringVar(&cfg.Address, "alertmanager-address", "http://localhost:9093", "Alertmanager address used to create silences.")
+	flag.StringVar(&cfg.TenantId, "alertmanager-default-tenant-id", "", "Alertmanager tenant id.")
+	flag.BoolVar(&cfg.Authentication, "alertmanager-authentication", false, "Enable Alertmanager authentication using Service Account token.")
+	flag.StringVar(&silenceSelector, "silence-selector", "", "Label selector to filter Silence custom resources (e.g., 'environment=production,tier=frontend').")
 
 	opts := zap.Options{
 		Development: false,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
+
+	selector, err := config.ParseSilenceSelector(silenceSelector)
+	if err != nil {
+		setupLog.Error(err, "failed to parse silence selector", "selector", silenceSelector)
+		os.Exit(1)
+	}
+	cfg.SilenceSelector = selector
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
@@ -212,20 +221,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	cfg.BearerToken = mgr.GetConfig().BearerToken
+
 	// TODO Make this more configurable:
-	// - label selector to select silences
 	// - support all alertmanager auth methods
 	// - support multiple tenant (configurable label like observability.giantswarm.io/tenant)
 	var amClient *alertmanager.AlertManager
 	{
-		amConfig := alertmanager.Config{
-			Address:        alertmanagerAddress,
-			Authentication: alertmanagerAuthentication,
-			BearerToken:    mgr.GetConfig().BearerToken,
-			TenantId:       alertmanagerTenantId,
-		}
-
-		amClient, err = alertmanager.New(amConfig)
+		amClient, err = alertmanager.New(cfg)
 		if err != nil {
 			setupLog.Error(err, "unable to setup client", "client", "Alertmanager")
 			os.Exit(1)
@@ -233,17 +236,19 @@ func main() {
 	}
 
 	if err = (&controller.SilenceReconciler{
-		Client:       mgr.GetClient(),
-		Scheme:       mgr.GetScheme(),
-		Alertmanager: amClient,
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		Alertmanager:    amClient,
+		SilenceSelector: cfg.SilenceSelector,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Silence")
 		os.Exit(1)
 	}
 	if err = (&controller.SilenceV2Reconciler{
-		Client:       mgr.GetClient(),
-		Scheme:       mgr.GetScheme(),
-		Alertmanager: amClient,
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		Alertmanager:    amClient,
+		SilenceSelector: cfg.SilenceSelector,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SilenceV2")
 		os.Exit(1)

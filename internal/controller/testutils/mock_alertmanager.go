@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/config"
 )
 
 // MockAlertManagerServer provides a mock AlertManager HTTP server for testing
@@ -53,7 +54,7 @@ func NewMockAlertManagerServer() *MockAlertManagerServer {
 
 // GetAlertManager returns a real AlertManager configured to use the mock server
 func (m *MockAlertManagerServer) GetAlertManager() (*alertmanager.AlertManager, error) {
-	config := alertmanager.Config{
+	config := config.Config{
 		Address:        m.server.URL,
 		Authentication: false,
 	}
