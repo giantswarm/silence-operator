@@ -289,12 +289,12 @@ update-tools: clean-tools install-tools ## Update all tools to latest versions
 # $3 - specific version of package
 define go-install-tool
 @[ -f "$(1)-$(3)" ] || { \
-$(call log_build,"Downloading $(2)@$(3)") ;\
-set -e ;\
-package=$(2)@$(3) ;\
-rm -f $(1) || true ;\
-GOBIN=$(LOCALBIN) go install $${package} ;\
-mv $(1) $(1)-$(3) ;\
+	echo "$(BUILD_COLOR)🔨 Downloading $(2)@$(3)$(NO_COLOR)" ;\
+	set -e ;\
+	package=$(2)@$(3) ;\
+	rm -f $(1) || true ;\
+	GOBIN=$(LOCALBIN) go install $${package} ;\
+	mv $(1) $(1)-$(3) ;\
 } ;\
 ln -sf $(1)-$(3) $(1)
 endef
