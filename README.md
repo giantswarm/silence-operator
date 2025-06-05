@@ -30,7 +30,8 @@ You can customize the installation by providing your own values file or by overr
 ```console
 helm install [RELEASE_NAME] giantswarm/silence-operator \\
   --set alertmanagerAddress="http://my-alertmanager:9093" \\
-  --set silenceSelector="environment=production"
+  --set silenceSelector="environment=production" \\
+  --set namespaceSelector="team=platform"
 ```
 
 _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation._
@@ -86,6 +87,57 @@ kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/sile
 
 _See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
 
+## Configuration
+
+The silence-operator can be configured through Helm values to control which resources it processes:
+
+### Silence Selector
+
+Filter which `Silence` custom resources the operator processes based on their labels. This applies to both v1alpha1 and v1alpha2 APIs.
+
+```yaml
+# values.yaml
+silenceSelector: "environment=production,tier=frontend"
+```
+
+**Examples:**
+- `"environment=production"` - Only process silences with `environment=production` label
+- `"team=platform,tier=monitoring"` - Only process silences with both labels
+- `"environment in (production,staging)"` - Process silences with environment in the specified set
+- `""` - Process all silence resources (default)
+
+### Namespace Selector
+
+Restrict which namespaces the v2 controller watches for `Silence` CRs. This only applies to the namespace-scoped `observability.giantswarm.io/v1alpha2` API.
+
+```yaml
+# values.yaml
+namespaceSelector: "environment=production"
+```
+
+**Examples:**
+- `"environment=production"` - Only watch namespaces labeled with `environment=production`
+- `"team=platform,tier=monitoring"` - Only watch namespaces with both labels  
+- `"team notin (test,staging)"` - Watch namespaces except those with specified team labels
+- `""` - Watch all namespaces (default)
+
+**Note:** The namespace selector provides an additional layer of filtering for the v2 controller, allowing you to restrict monitoring to specific namespace subsets. The v1 controller continues to process all cluster-scoped v1alpha1 resources regardless of this setting.
+
+### Complete Configuration Example
+
+```yaml
+# values.yaml
+alertmanagerAddress: "http://alertmanager.monitoring.svc.cluster.local:9093"
+alertmanagerAuthentication: true
+alertmanagerDefaultTenant: "my-tenant"
+
+# Only process silences for production workloads
+silenceSelector: "environment=production"
+
+# Only watch namespaces managed by the platform team
+namespaceSelector: "team=platform,environment in (production,staging)"
+```
+
 ## Overview
 
 ### API Versions and Migration
@@ -134,7 +186,14 @@ The v1alpha1 CRD is deployed via [management-cluster-bases](https://github.com/g
 ### How does it work
 
 Deployment runs the Kubernetes controller, which reconciles `Silence` CRs.
-The operator can be configured to only process `Silence` CRs that match a specific label selector. This is done by setting the `silenceSelector` value in the Helm chart (e.g., `silenceSelector: "team=alpha"`). If left empty or not provided, the operator will process all `Silence` CRs in the cluster.
+
+**Filtering Options:**
+
+The operator provides two filtering mechanisms:
+
+1. **Silence Filtering (`silenceSelector`):** Filters which `Silence` CRs the operator processes based on their labels. This applies to both v1alpha1 and v1alpha2 APIs. Set via `silenceSelector` in the Helm chart (e.g., `silenceSelector: "team=alpha"`). If empty, all `Silence` CRs are processed.
+
+2. **Namespace Filtering (`namespaceSelector`):** Restricts which namespaces the v2 controller watches for `Silence` CRs. Only applies to the namespace-scoped v1alpha2 API. Set via `namespaceSelector` in the Helm chart (e.g., `namespaceSelector: "environment=production"`). If empty, the v2 controller watches all namespaces.
 
 Sample CRs:
 
