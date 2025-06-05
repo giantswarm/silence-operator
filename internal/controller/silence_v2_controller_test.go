@@ -218,7 +218,7 @@ var _ = Describe("SilenceV2 Controller", func() {
 				},
 			}
 			testNamespace.SetGroupVersionKind(metav1.SchemeGroupVersion.WithKind("Namespace"))
-			
+
 			// Note: In the test environment, we can't create actual namespaces,
 			// so we'll test the namespace selector logic without actual namespace creation
 
