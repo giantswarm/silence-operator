@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
-  "github.com/giantswarm/silence-operator/api/v1alpha2"
+	"github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/pkg/config"
 )
 

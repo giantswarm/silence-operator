@@ -26,7 +26,6 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -100,18 +99,12 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	if silenceSelector != "" {
-		parsedSelector, err := metav1.ParseToLabelSelector(silenceSelector)
-		if err != nil {
-			setupLog.Error(err, "unable to parse silence-selector string", "selector", silenceSelector)
-			os.Exit(1)
-		}
-		cfg.SilenceSelector, err = metav1.LabelSelectorAsSelector(parsedSelector)
-		if err != nil {
-			setupLog.Error(err, "unable to convert silence-selector to labels.Selector")
-			os.Exit(1)
-		}
+	selector, err := config.ParseSilenceSelector(silenceSelector)
+	if err != nil {
+		setupLog.Error(err, "failed to parse silence selector", "selector", silenceSelector)
+		os.Exit(1)
 	}
+	cfg.SilenceSelector = selector
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
@@ -252,9 +245,10 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controller.SilenceV2Reconciler{
-		Client:       mgr.GetClient(),
-		Scheme:       mgr.GetScheme(),
-		Alertmanager: amClient,
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		Alertmanager:    amClient,
+		SilenceSelector: cfg.SilenceSelector,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SilenceV2")
 		os.Exit(1)

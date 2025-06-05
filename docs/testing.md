@@ -77,6 +77,15 @@ make test GINKGO_ARGS="-focus='Silence Controller'"
 
 # Skip specific tests
 make test GINKGO_ARGS="-skip='Should fail'"
+
+# Run V2 controller tests specifically
+make test GINKGO_ARGS="-focus='SilenceV2 Controller'"
+
+# Run config package tests
+go test ./pkg/config/ -v
+
+# Run all controller tests
+KUBEBUILDER_ASSETS="$(./bin/setup-envtest use 1.31.0 -p path)" ./bin/ginkgo run -v ./internal/controller/
 ```
 ### Test Configuration
 
@@ -100,44 +109,102 @@ make test ENVTEST_K8S_VERSION="1.29"
 
 ## Writing Tests
 
-### Controller Tests Example
+### Controller Tests
+
+The project includes comprehensive tests for both API versions:
+
+#### V1 Controller Tests (`silence_controller_test.go`)
+Tests for the `monitoring.giantswarm.io/v1alpha1` API:
+- Basic reconciliation functionality
+- Resource creation and cleanup
+- AlertManager integration
+
+#### V2 Controller Tests (`silence_v2_controller_test.go`)
+Tests for the `observability.giantswarm.io/v1alpha2` API:
+- Basic reconciliation functionality
+- Finalizer handling and deletion
+- API conversion between v1alpha2 and v1alpha1
+- Enhanced error handling
 
 ```go
-var _ = Describe("Silence Controller", func() {
-    var (
-        ctx           context.Context
-        cancel        context.CancelFunc
-        mockAM        *testutils.MockAlertManager
-        reconciler    *SilenceReconciler
-    )
+var _ = Describe("SilenceV2 Controller", func() {
+    Context("When reconciling a resource", func() {
+        var mockServer *testutils.MockAlertManagerServer
+        var mockAlertManager *alertmanager.AlertManager
 
-    BeforeEach(func() {
-        ctx, cancel = context.WithCancel(context.Background())
-        
-        // Setup mock AlertManager
-        mockAM = testutils.NewMockAlertManager()
-        mockAM.Start()
-        
-        // Create reconciler with mock
-        reconciler = &SilenceReconciler{
-            Client:            k8sClient,
-            Scheme:            k8sManager.GetScheme(),
-            AlertManagerURL:   mockAM.URL,
-        }
-    })
+        BeforeEach(func() {
+            // Set up mock AlertManager server
+            mockServer = testutils.NewMockAlertManagerServer()
+            mockAlertManager, err = mockServer.GetAlertManager()
+            Expect(err).NotTo(HaveOccurred())
+        })
 
-    AfterEach(func() {
-        mockAM.Stop()
-        cancel()
-    })
+        AfterEach(func() {
+            if mockServer != nil {
+                mockServer.Close()
+            }
+        })
 
-    Context("When creating a Silence", func() {
-        It("Should create silence in AlertManager", func() {
+        It("should successfully reconcile the resource", func() {
+            controllerReconciler := &SilenceV2Reconciler{
+                Client:       k8sClient,
+                Scheme:       k8sClient.Scheme(),
+                Alertmanager: mockAlertManager,
+            }
             // Test implementation
+        })
+
+        It("should handle deletion with finalizer", func() {
+            // Tests finalizer addition and removal during resource deletion
+        })
+
+        It("should convert v1alpha2 to v1alpha1 format correctly", func() {
+            // Tests API conversion functionality
         })
     })
 })
 ```
+
+### Config Package Tests
+
+The `pkg/config` package includes comprehensive tests for configuration parsing:
+
+```go
+func TestParseSilenceSelector(t *testing.T) {
+    tests := []struct {
+        name           string
+        silenceSelector string
+        expectError    bool
+        expectNil      bool
+    }{
+        {"empty selector returns nil", "", false, true},
+        {"valid single label selector", "app=nginx", false, false},
+        {"valid multiple label selector", "app=nginx,env=prod", false, false},
+        {"invalid selector returns error", "invalid=", true, false},
+    }
+    // Test implementation covers various selector scenarios
+}
+```
+
+Coverage includes:
+- Empty selector handling
+- Valid single and multiple label selectors
+- Complex selectors with set-based requirements
+- Invalid selector error handling
+- Label matching validation
+
+#### Key Test Scenarios for ParseSilenceSelector
+
+The helper function `ParseSilenceSelector` is thoroughly tested with:
+
+1. **Empty selectors**: Returns `nil` without error for empty strings
+2. **Single label selectors**: `"app=nginx"` - basic equality matching
+3. **Multiple label selectors**: `"app=nginx,env=prod"` - comma-separated labels
+4. **Set-based selectors**: `"env notin (test,staging)"` - advanced matching
+5. **Invalid syntax**: Malformed selectors return proper error messages
+6. **Label validation**: Ensures selectors can match expected label sets
+
+This testing ensures robust configuration parsing for silence selector functionality extracted from `main.go` into reusable helper functions.
 
 ### Mock AlertManager Usage
 
@@ -153,6 +220,31 @@ mockAM.SetResponse("/api/v2/silences", http.StatusOK, silenceList)
 // Verify calls
 Expect(mockAM.GetRequestCount("POST", "/api/v2/silences")).To(Equal(1))
 ```
+
+## Recent Testing Improvements
+
+### V2 API Controller Testing (June 2025)
+
+Added comprehensive test coverage for the new `observability.giantswarm.io/v1alpha2` API:
+- **Basic reconciliation testing**: Validates V2 controller functionality
+- **Finalizer management testing**: Ensures proper resource cleanup
+- **API conversion testing**: Validates conversion between v1alpha2 and v1alpha1 formats
+- **Resource isolation**: Each test creates its own resources to avoid conflicts
+
+### Configuration Testing Enhancement
+
+Extracted silence selector parsing logic from `main.go` into `pkg/config/config.go` with comprehensive testing:
+- **ParseSilenceSelector function**: Helper function with 7 test scenarios
+- **Error handling**: Proper error wrapping and context
+- **Label selector validation**: Kubernetes-compatible selector parsing
+- **Edge case coverage**: Empty selectors, malformed syntax, complex requirements
+
+### Testing Infrastructure Updates
+
+- **Enhanced mock AlertManager**: Improved testutils with better error simulation
+- **Automatic binary detection**: Tests automatically find required K8s binaries
+- **Parallel test execution**: Safe parallel execution where applicable
+- **Better resource cleanup**: Improved test isolation and cleanup
 
 ## Coverage Reporting
 
@@ -256,6 +348,25 @@ Tests must pass the following quality gates:
 2. **Group related tests** using Ginkgo's `Context` and `Describe` blocks
 3. **Setup and cleanup** properly in `BeforeEach`/`AfterEach` hooks
 4. **Use table-driven tests** for testing multiple scenarios
+
+#### Current Test Structure
+
+```
+internal/controller/
+├── suite_test.go              # Test suite setup and configuration
+├── silence_controller_test.go # V1 API tests (monitoring.giantswarm.io/v1alpha1)
+├── silence_v2_controller_test.go # V2 API tests (observability.giantswarm.io/v1alpha2)
+└── testutils/                 # Mock utilities and test helpers
+
+pkg/config/
+└── config_test.go            # Configuration parsing tests
+```
+
+Each test file follows a consistent pattern:
+- **Suite setup**: Shared test environment initialization
+- **Mock setup**: AlertManager server mocking for external dependencies  
+- **Resource lifecycle**: Creation, reconciliation, and cleanup testing
+- **Error scenarios**: Validation of error handling and edge cases
 
 ### Mocking Strategy
 

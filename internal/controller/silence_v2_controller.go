@@ -21,11 +21,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/api/v1alpha2"
@@ -44,7 +47,8 @@ type SilenceV2Reconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	Alertmanager *alertmanager.AlertManager
+	Alertmanager    *alertmanager.AlertManager
+	SilenceSelector labels.Selector
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -169,10 +173,27 @@ func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1al
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SilenceV2Reconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha2.Silence{}).
-		Named("silence-v2").
-		Complete(r)
+		Named("silence-v2")
+
+	if r.SilenceSelector != nil && !r.SilenceSelector.Empty() {
+		// Convert labels.Selector to metav1.LabelSelector string representation
+		selectorStr := r.SilenceSelector.String()
+		// Parse the string into metav1.LabelSelector
+		metaLabelSelector, err := metav1.ParseToLabelSelector(selectorStr)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse silence selector for predicate")
+		}
+		// Create the predicate using controller-runtime's LabelSelectorPredicate
+		labelPredicate, err := predicate.LabelSelectorPredicate(*metaLabelSelector)
+		if err != nil {
+			return errors.Wrap(err, "failed to create label selector predicate")
+		}
+		controllerBuilder = controllerBuilder.WithEventFilter(labelPredicate)
+	}
+
+	return controllerBuilder.Complete(r)
 }
 
 func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*alertmanager.Silence, error) {
