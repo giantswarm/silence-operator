@@ -28,6 +28,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	monitoringv1alpha1 "github.com/giantswarm/silence-operator/api/v1alpha1"
+	"github.com/giantswarm/silence-operator/internal/controller/testutils"
+	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 )
 
 var _ = Describe("Silence Controller", func() {
@@ -35,6 +37,8 @@ var _ = Describe("Silence Controller", func() {
 		const resourceName = "test-resource"
 
 		ctx := context.Background()
+		var mockServer *testutils.MockAlertManagerServer
+		var mockAlertManager *alertmanager.AlertManager
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
@@ -43,21 +47,41 @@ var _ = Describe("Silence Controller", func() {
 		silence := &monitoringv1alpha1.Silence{}
 
 		BeforeEach(func() {
+			// Set up mock AlertManager server
+			mockServer = testutils.NewMockAlertManagerServer()
+			var err error
+			mockAlertManager, err = mockServer.GetAlertManager()
+			Expect(err).NotTo(HaveOccurred())
+
 			By("creating the custom resource for the Kind Silence")
-			err := k8sClient.Get(ctx, typeNamespacedName, silence)
+			err = k8sClient.Get(ctx, typeNamespacedName, silence)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &monitoringv1alpha1.Silence{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: monitoringv1alpha1.SilenceSpec{
+						Matchers: []monitoringv1alpha1.Matcher{
+							{
+								Name:  "alertname",
+								Value: "TestAlert",
+							},
+						},
+						Owner:    "test-owner",
+						IssueURL: "https://github.com/example/test-issue",
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
+			// Clean up mock server
+			if mockServer != nil {
+				mockServer.Close()
+			}
+
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
 			resource := &monitoringv1alpha1.Silence{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
@@ -66,11 +90,13 @@ var _ = Describe("Silence Controller", func() {
 			By("Cleanup the specific resource instance Silence")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
+
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
 			controllerReconciler := &SilenceReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
+				Client:       k8sClient,
+				Scheme:       k8sClient.Scheme(),
+				Alertmanager: mockAlertManager,
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{

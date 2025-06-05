@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,6 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,30 +48,45 @@ var (
 	k8sClient client.Client
 )
 
+// getKubeBuilderAssets attempts to get KUBEBUILDER_ASSETS from environment
+// or find the binaries automatically. Returns empty string if neither is available.
+func getKubeBuilderAssets() string {
+	// First try environment variable
+	if value := os.Getenv("KUBEBUILDER_ASSETS"); value != "" {
+		return value
+	}
+
+	// If not set, try to find binaries automatically
+	binDir := getFirstFoundEnvTestBinaryDir()
+	if binDir != "" {
+		logf.Log.Info("Using automatically detected envtest binaries", "path", binDir)
+		return binDir
+	}
+
+	return ""
+}
+
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	RunSpecs(t, "Controller Suite")
 }
 
-func getEnvOrSkip(env string) string {
-	value := os.Getenv(env)
-	if value == "" {
-		Skip(fmt.Sprintf("%s not exported", env))
-	}
-
-	return value
-}
-
 var _ = BeforeSuite(func() {
-	getEnvOrSkip("KUBEBUILDER_ASSETS")
-
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+
+	// Check if we have KUBEBUILDER_ASSETS or can find them automatically
+	kubeBuilderAssets := getKubeBuilderAssets()
+	if kubeBuilderAssets == "" {
+		Skip("KUBEBUILDER_ASSETS not set and envtest binaries not found. Run 'make setup-envtest' to set up test environment.")
+	}
 
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	var err error
 	err = monitoringv1alpha1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
@@ -80,11 +95,7 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: true,
-	}
-
-	// Retrieve the first found binary directory to allow running tests from IDEs
-	if getFirstFoundEnvTestBinaryDir() != "" {
-		testEnv.BinaryAssetsDirectory = getFirstFoundEnvTestBinaryDir()
+		BinaryAssetsDirectory: kubeBuilderAssets,
 	}
 
 	// cfg is defined in this file globally.
@@ -98,8 +109,32 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	getEnvOrSkip("KUBEBUILDER_ASSETS")
 	By("tearing down the test environment")
+
+	// Only check for assets if we need to clean up
+	kubeBuilderAssets := getKubeBuilderAssets()
+	if kubeBuilderAssets == "" {
+		// If no assets were available, the test was skipped, so nothing to clean up
+		return
+	}
+
+	// Clean up any test namespaces that might be in terminating state
+	if k8sClient != nil {
+		// Force cleanup any hanging namespaces
+		ctx := context.Background()
+		namespaces := &corev1.NamespaceList{}
+		err := k8sClient.List(ctx, namespaces)
+		if err == nil {
+			for _, ns := range namespaces.Items {
+				if ns.Name == "test-namespace" && ns.Status.Phase == corev1.NamespaceTerminating {
+					// Remove finalizers to force cleanup
+					ns.Finalizers = []string{}
+					_ = k8sClient.Update(ctx, &ns)
+				}
+			}
+		}
+	}
+
 	cancel()
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
@@ -114,16 +149,38 @@ var _ = AfterSuite(func() {
 // setting the 'KUBEBUILDER_ASSETS' environment variable. To ensure the binaries are
 // properly set up, run 'make setup-envtest' beforehand.
 func getFirstFoundEnvTestBinaryDir() string {
-	basePath := filepath.Join("..", "..", "bin", "k8s")
-	entries, err := os.ReadDir(basePath)
-	if err != nil {
-		logf.Log.Error(err, "Failed to read directory", "path", basePath)
-		return ""
+	// Try common paths where envtest binaries might be located
+	possiblePaths := []string{
+		filepath.Join("..", "..", "bin", "k8s"),        // bin/k8s/
+		filepath.Join("..", "..", "bin", "k8s", "k8s"), // bin/k8s/k8s/ (setup-envtest creates this nested structure)
 	}
-	for _, entry := range entries {
-		if entry.IsDir() {
-			return filepath.Join(basePath, entry.Name())
+
+	for _, basePath := range possiblePaths {
+		entries, err := os.ReadDir(basePath)
+		if err != nil {
+			logf.Log.V(1).Info("Failed to read directory", "path", basePath, "error", err)
+			continue
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				binPath := filepath.Join(basePath, entry.Name())
+				// Verify this directory contains the expected binaries
+				if hasEnvTestBinaries(binPath) {
+					return binPath
+				}
+			}
 		}
 	}
 	return ""
+}
+
+// hasEnvTestBinaries checks if a directory contains the expected envtest binaries
+func hasEnvTestBinaries(path string) bool {
+	expectedBinaries := []string{"kube-apiserver", "etcd", "kubectl"}
+	for _, binary := range expectedBinaries {
+		if _, err := os.Stat(filepath.Join(path, binary)); os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
 }
