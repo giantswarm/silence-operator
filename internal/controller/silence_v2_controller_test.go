@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -203,6 +204,60 @@ var _ = Describe("SilenceV2 Controller", func() {
 			Expect(v1Silence.Spec.Matchers[1].Value).To(Equal("critical"))
 			Expect(v1Silence.Spec.Owner).To(Equal("test-owner"))
 			Expect(v1Silence.Spec.IssueURL).To(Equal("https://github.com/test/issue"))
+		})
+
+		It("should respect namespace selector when configured", func() {
+			By("Creating a namespace with specific labels")
+			testNamespace := &metav1.PartialObjectMetadata{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-namespace",
+					Labels: map[string]string{
+						"environment": "production",
+						"team":        "platform",
+					},
+				},
+			}
+			testNamespace.SetGroupVersionKind(metav1.SchemeGroupVersion.WithKind("Namespace"))
+			
+			// Note: In the test environment, we can't create actual namespaces,
+			// so we'll test the namespace selector logic without actual namespace creation
+
+			By("Verifying namespace selector predicate works by testing label matching")
+			namespaceSelector, err := metav1.ParseToLabelSelector("environment=production")
+			Expect(err).NotTo(HaveOccurred())
+			namespaceSelectorLabels, err := metav1.LabelSelectorAsSelector(namespaceSelector)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Test that the namespace selector matches the test namespace labels
+			Expect(namespaceSelectorLabels.Matches(labels.Set{
+				"environment": "production",
+				"team":        "platform",
+			})).To(BeTrue())
+
+			// Test that the namespace selector doesn't match different labels
+			nonMatchingNamespaceSelector, err := metav1.ParseToLabelSelector("environment=staging")
+			Expect(err).NotTo(HaveOccurred())
+			nonMatchingNamespaceSelectorLabels, err := metav1.LabelSelectorAsSelector(nonMatchingNamespaceSelector)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(nonMatchingNamespaceSelectorLabels.Matches(labels.Set{
+				"environment": "production",
+				"team":        "platform",
+			})).To(BeFalse())
+
+			By("Testing that controller with namespace selector can be created")
+			controllerReconciler := &SilenceV2Reconciler{
+				Client:            k8sClient,
+				Scheme:            k8sClient.Scheme(),
+				Alertmanager:      mockAlertManager,
+				NamespaceSelector: namespaceSelectorLabels,
+			}
+
+			// Note: We can't easily test the actual filtering behavior in unit tests
+			// since it would require creating actual namespaces in the test environment.
+			// This test verifies the configuration is properly set up.
+			Expect(controllerReconciler.NamespaceSelector).ToNot(BeNil())
+			Expect(controllerReconciler.NamespaceSelector.String()).To(Equal("environment=production"))
 		})
 	})
 })

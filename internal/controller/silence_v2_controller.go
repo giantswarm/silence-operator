@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -47,8 +48,9 @@ type SilenceV2Reconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	Alertmanager    *alertmanager.AlertManager
-	SilenceSelector labels.Selector
+	Alertmanager      *alertmanager.AlertManager
+	SilenceSelector   labels.Selector
+	NamespaceSelector labels.Selector
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -177,6 +179,7 @@ func (r *SilenceV2Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&v1alpha2.Silence{}).
 		Named("silence-v2")
 
+	// Add silence selector predicate if configured
 	if r.SilenceSelector != nil && !r.SilenceSelector.Empty() {
 		// Convert labels.Selector to metav1.LabelSelector string representation
 		selectorStr := r.SilenceSelector.String()
@@ -191,6 +194,32 @@ func (r *SilenceV2Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 			return errors.Wrap(err, "failed to create label selector predicate")
 		}
 		controllerBuilder = controllerBuilder.WithEventFilter(labelPredicate)
+	}
+
+	// Add namespace selector predicate if configured
+	if r.NamespaceSelector != nil && !r.NamespaceSelector.Empty() {
+		// Create a predicate that filters by namespace labels
+		namespacePredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
+			namespace := obj.GetNamespace()
+			if namespace == "" {
+				// Skip cluster-scoped resources
+				return false
+			}
+
+			// Get the namespace object to check its labels
+			ctx := context.Background()
+			namespaceObj := &corev1.Namespace{}
+			err := mgr.GetClient().Get(ctx, client.ObjectKey{Name: namespace}, namespaceObj)
+			if err != nil {
+				// If we can't get the namespace, log and skip this object
+				ctrl.Log.WithName("silence-v2-controller").Error(err, "Failed to get namespace for namespace selector check", "namespace", namespace)
+				return false
+			}
+
+			// Check if the namespace matches the selector
+			return r.NamespaceSelector.Matches(labels.Set(namespaceObj.Labels))
+		})
+		controllerBuilder = controllerBuilder.WithEventFilter(namespacePredicate)
 	}
 
 	return controllerBuilder.Complete(r)

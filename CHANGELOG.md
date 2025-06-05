@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Allow filtering of `Silence` custom resources based on a label selector. The operator will only process `Silence` CRs that match the selector provided via the `--silence-selector` command-line flag or the `silenceSelector` Helm chart value. If no selector is provided, all `Silence` CRs are processed.
+- Add namespace selector feature for v2 controller to restrict which namespaces are watched for `observability.giantswarm.io/v1alpha2` Silence resources. Configure via `--namespace-selector` command-line flag or `namespaceSelector` Helm chart value. Supports standard Kubernetes label selectors for better multi-tenancy and resource isolation.
 - Add `observability.giantswarm.io/v1alpha2` API group with namespace-scoped Silence CRD.
 - Add `SilenceV2Reconciler` to handle v1alpha2 resources while maintaining backward compatibility with v1alpha1.
 - Add enhanced printer columns for better `kubectl get silences` output.
