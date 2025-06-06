@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `observability.giantswarm.io/v1alpha2` API group with namespace-scoped Silence CRD.
+- Add `SilenceV2Reconciler` to handle v1alpha2 resources while maintaining backward compatibility with v1alpha1.
+- Add enhanced printer columns for better `kubectl get silences` output.
+- Add migration documentation for transitioning from v1alpha1 to v1alpha2.
+
+### Changed
+
+- New namespace-scoped silences should use `observability.giantswarm.io/v1alpha2` instead of `monitoring.giantswarm.io/v1alpha1`.
+- v1alpha2 removes deprecated `TargetTags` and `PostmortemURL` fields in favor of cleaner API design.
+
+### Deprecated
+
+- The `monitoring.giantswarm.io/v1alpha1` API remains supported but is considered legacy. New deployments should use v1alpha2.
+- Cluster-scoped silences are deprecated in favor of namespace-scoped resources for better multi-tenancy.
+
+**Migration Note**: Existing v1alpha1 silences continue to work unchanged. See MIGRATION.md for guidance on migrating to v1alpha2.
+
 ## [0.16.1] - 2025-05-20
 
 - Remove duplicate container `securityContext` from the Helm chart deployment template.

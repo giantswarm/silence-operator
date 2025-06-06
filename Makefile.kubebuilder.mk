@@ -17,7 +17,7 @@
 # ==================================================================================
 
 # Core tool versions (aligned with kubebuilder defaults and auto-detection)
-CONTROLLER_TOOLS_VERSION ?= v0.17.3
+CONTROLLER_TOOLS_VERSION ?= v0.18.0
 KUSTOMIZE_VERSION ?= v5.6.0
 # Auto-detect ENVTEST version from controller-runtime dependency
 ENVTEST_VERSION ?= $(shell go list -m -f "{{ .Version }}" sigs.k8s.io/controller-runtime 2>/dev/null | awk -F'[v.]' '{printf "release-%d.%d", $$2, $$3}')
