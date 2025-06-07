@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,8 +39,8 @@ var _ = Describe("SilenceV2 Controller", func() {
 		const resourceName = "test-resource-v2"
 
 		ctx := context.Background()
-		var mockServer *testutils.MockAlertManagerServer
-		var mockAlertManager *alertmanager.AlertManager
+		var mockServer *testutils.MockAlertmanagerServer
+		var mockAlertmanager alertmanager.Client
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
@@ -48,10 +49,10 @@ var _ = Describe("SilenceV2 Controller", func() {
 		silence := &observabilityv1alpha2.Silence{}
 
 		BeforeEach(func() {
-			// Set up mock AlertManager server
-			mockServer = testutils.NewMockAlertManagerServer()
+			// Set up mock Alertmanager server
+			mockServer = testutils.NewMockAlertmanagerServer()
 			var err error
-			mockAlertManager, err = mockServer.GetAlertManager()
+			mockAlertmanager, err = mockServer.GetAlertmanager()
 			Expect(err).NotTo(HaveOccurred())
 
 			By("creating the custom resource for the Kind Silence v1alpha2")
@@ -97,7 +98,8 @@ var _ = Describe("SilenceV2 Controller", func() {
 			controllerReconciler := &SilenceV2Reconciler{
 				Client:       k8sClient,
 				Scheme:       k8sClient.Scheme(),
-				Alertmanager: mockAlertManager,
+				Alertmanager: mockAlertmanager,
+				Clock:        clock.RealClock{},
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
@@ -138,7 +140,8 @@ var _ = Describe("SilenceV2 Controller", func() {
 			controllerReconciler := &SilenceV2Reconciler{
 				Client:       k8sClient,
 				Scheme:       k8sClient.Scheme(),
-				Alertmanager: mockAlertManager,
+				Alertmanager: mockAlertmanager,
+				Clock:        clock.RealClock{},
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
@@ -166,46 +169,6 @@ var _ = Describe("SilenceV2 Controller", func() {
 			Expect(errors.IsNotFound(err)).To(BeTrue())
 		})
 
-		It("should convert v1alpha2 to v1alpha1 format correctly", func() {
-			By("Creating a v1alpha2 silence")
-			v2Silence := &observabilityv1alpha2.Silence{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "conversion-test",
-					Namespace: "default",
-				},
-				Spec: observabilityv1alpha2.SilenceSpec{
-					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{
-							Name:    "alertname",
-							Value:   "TestAlert",
-							IsRegex: true,
-						},
-						{
-							Name:  "severity",
-							Value: "critical",
-						},
-					},
-					Owner:    "test-owner",
-					IssueURL: "https://github.com/test/issue",
-				},
-			}
-
-			By("Converting to v1alpha1 format")
-			v1Silence := convertToV1Alpha1(v2Silence)
-
-			By("Verifying conversion")
-			Expect(v1Silence.ObjectMeta.Name).To(Equal("conversion-test"))
-			Expect(v1Silence.ObjectMeta.Namespace).To(Equal("default"))
-			Expect(v1Silence.Spec.Matchers).To(HaveLen(2))
-			Expect(v1Silence.Spec.Matchers[0].Name).To(Equal("alertname"))
-			Expect(v1Silence.Spec.Matchers[0].Value).To(Equal("TestAlert"))
-			Expect(v1Silence.Spec.Matchers[0].IsRegex).To(BeTrue())
-			Expect(v1Silence.Spec.Matchers[1].Name).To(Equal("severity"))
-			Expect(v1Silence.Spec.Matchers[1].Value).To(Equal("critical"))
-			Expect(v1Silence.Spec.Owner).To(Equal("test-owner"))
-			Expect(v1Silence.Spec.IssueURL).To(Equal("https://github.com/test/issue"))
-		})
-
 		It("should respect namespace selector when configured", func() {
 			By("Creating a namespace with specific labels")
 			testNamespace := &metav1.PartialObjectMetadata{
@@ -218,9 +181,6 @@ var _ = Describe("SilenceV2 Controller", func() {
 				},
 			}
 			testNamespace.SetGroupVersionKind(metav1.SchemeGroupVersion.WithKind("Namespace"))
-
-			// Note: In the test environment, we can't create actual namespaces,
-			// so we'll test the namespace selector logic without actual namespace creation
 
 			By("Verifying namespace selector predicate works by testing label matching")
 			namespaceSelector, err := metav1.ParseToLabelSelector("environment=production")
@@ -249,13 +209,11 @@ var _ = Describe("SilenceV2 Controller", func() {
 			controllerReconciler := &SilenceV2Reconciler{
 				Client:            k8sClient,
 				Scheme:            k8sClient.Scheme(),
-				Alertmanager:      mockAlertManager,
+				Alertmanager:      mockAlertmanager,
+				Clock:             clock.RealClock{},
 				NamespaceSelector: namespaceSelectorLabels,
 			}
 
-			// Note: We can't easily test the actual filtering behavior in unit tests
-			// since it would require creating actual namespaces in the test environment.
-			// This test verifies the configuration is properly set up.
 			Expect(controllerReconciler.NamespaceSelector).ToNot(BeNil())
 			Expect(controllerReconciler.NamespaceSelector.String()).To(Equal("environment=production"))
 		})

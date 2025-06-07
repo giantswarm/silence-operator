@@ -19,12 +19,12 @@ package controller
 import (
 	"context"
 	"reflect"
-	"time"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/clock"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -44,7 +44,9 @@ type SilenceReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	Alertmanager    *alertmanager.AlertManager
+	Alertmanager alertmanager.Client
+	Clock        clock.Clock
+
 	SilenceSelector labels.Selector
 }
 
@@ -140,7 +142,7 @@ func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alph
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
-	now := time.Now()
+	now := r.Clock.Now()
 
 	var existingSilence *alertmanager.Silence
 	existingSilence, err = r.Alertmanager.GetSilenceByComment(alertmanager.SilenceComment(silence))
