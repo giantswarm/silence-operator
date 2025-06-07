@@ -19,9 +19,9 @@ func getKubeBuilderAssets() string {
 }
 ```
 
-### Mock AlertManager
+### Mock Alertmanager
 
-The project includes a sophisticated mock AlertManager HTTP server for testing:
+The project includes a sophisticated mock Alertmanager HTTP server for testing:
 
 - **File**: `internal/controller/testutils/mock_alertmanager.go`
 - **Features**: 
@@ -117,7 +117,7 @@ The project includes comprehensive tests for both API versions:
 Tests for the `monitoring.giantswarm.io/v1alpha1` API:
 - Basic reconciliation functionality
 - Resource creation and cleanup
-- AlertManager integration
+- Alertmanager integration
 
 #### V2 Controller Tests (`silence_v2_controller_test.go`)
 Tests for the `observability.giantswarm.io/v1alpha2` API:
@@ -129,13 +129,13 @@ Tests for the `observability.giantswarm.io/v1alpha2` API:
 ```go
 var _ = Describe("SilenceV2 Controller", func() {
     Context("When reconciling a resource", func() {
-        var mockServer *testutils.MockAlertManagerServer
-        var mockAlertManager *alertmanager.AlertManager
+        var mockServer *testutils.MockAlertmanagerServer
+        var mockAlertmanager *alertmanager.Alertmanager
 
         BeforeEach(func() {
-            // Set up mock AlertManager server
-            mockServer = testutils.NewMockAlertManagerServer()
-            mockAlertManager, err = mockServer.GetAlertManager()
+            // Set up mock Alertmanager server
+            mockServer = testutils.NewMockAlertmanagerServer()
+            mockAlertmanager, err = mockServer.GetAlertmanager()
             Expect(err).NotTo(HaveOccurred())
         })
 
@@ -149,7 +149,7 @@ var _ = Describe("SilenceV2 Controller", func() {
             controllerReconciler := &SilenceV2Reconciler{
                 Client:       k8sClient,
                 Scheme:       k8sClient.Scheme(),
-                Alertmanager: mockAlertManager,
+                Alertmanager: mockAlertmanager,
             }
             // Test implementation
         })
@@ -206,11 +206,11 @@ The helper function `ParseSilenceSelector` is thoroughly tested with:
 
 This testing ensures robust configuration parsing for silence selector functionality extracted from `main.go` into reusable helper functions.
 
-### Mock AlertManager Usage
+### Mock Alertmanager Usage
 
 ```go
 // Create and start mock
-mockAM := testutils.NewMockAlertManager()
+mockAM := testutils.NewMockAlertmanager()
 mockAM.Start()
 defer mockAM.Stop()
 
@@ -241,7 +241,7 @@ Extracted silence selector parsing logic from `main.go` into `pkg/config/config.
 
 ### Testing Infrastructure Updates
 
-- **Enhanced mock AlertManager**: Improved testutils with better error simulation
+- **Enhanced mock Alertmanager**: Improved testutils with better error simulation
 - **Automatic binary detection**: Tests automatically find required K8s binaries
 - **Parallel test execution**: Safe parallel execution where applicable
 - **Better resource cleanup**: Improved test isolation and cleanup
@@ -364,13 +364,13 @@ pkg/config/
 
 Each test file follows a consistent pattern:
 - **Suite setup**: Shared test environment initialization
-- **Mock setup**: AlertManager server mocking for external dependencies  
+- **Mock setup**: Alertmanager server mocking for external dependencies  
 - **Resource lifecycle**: Creation, reconciliation, and cleanup testing
 - **Error scenarios**: Validation of error handling and edge cases
 
 ### Mocking Strategy
 
-1. **Mock external dependencies** like AlertManager API calls
+1. **Mock external dependencies** like Alertmanager API calls
 2. **Use real Kubernetes API** for testing controller logic
 3. **Prefer HTTP mocks** over interface mocks for external services
 4. **Make mocks configurable** for different test scenarios

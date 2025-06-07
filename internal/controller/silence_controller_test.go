@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,20 +38,20 @@ var _ = Describe("Silence Controller", func() {
 		const resourceName = "test-resource"
 
 		ctx := context.Background()
-		var mockServer *testutils.MockAlertManagerServer
-		var mockAlertManager *alertmanager.AlertManager
+		var mockServer *testutils.MockAlertmanagerServer
+		var mockAlertmanager alertmanager.Client
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
 		silence := &monitoringv1alpha1.Silence{}
 
 		BeforeEach(func() {
-			// Set up mock AlertManager server
-			mockServer = testutils.NewMockAlertManagerServer()
+			// Set up mock Alertmanager server
+			mockServer = testutils.NewMockAlertmanagerServer()
 			var err error
-			mockAlertManager, err = mockServer.GetAlertManager()
+			mockAlertmanager, err = mockServer.GetAlertmanager()
 			Expect(err).NotTo(HaveOccurred())
 
 			By("creating the custom resource for the Kind Silence")
@@ -96,7 +97,8 @@ var _ = Describe("Silence Controller", func() {
 			controllerReconciler := &SilenceReconciler{
 				Client:       k8sClient,
 				Scheme:       k8sClient.Scheme(),
-				Alertmanager: mockAlertManager,
+				Alertmanager: mockAlertmanager,
+				Clock:        clock.RealClock{},
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{

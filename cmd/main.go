@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/clock"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -234,7 +235,9 @@ func main() {
 	// TODO Make this more configurable:
 	// - support all alertmanager auth methods
 	// - support multiple tenant (configurable label like observability.giantswarm.io/tenant)
-	var amClient *alertmanager.AlertManager
+	var clock = clock.RealClock{}
+
+	var amClient alertmanager.Client
 	{
 		amClient, err = alertmanager.New(cfg)
 		if err != nil {
@@ -248,6 +251,7 @@ func main() {
 		Scheme:          mgr.GetScheme(),
 		Alertmanager:    amClient,
 		SilenceSelector: cfg.SilenceSelector,
+		Clock:           clock,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Silence")
 		os.Exit(1)
@@ -258,6 +262,7 @@ func main() {
 		Alertmanager:      amClient,
 		SilenceSelector:   cfg.SilenceSelector,
 		NamespaceSelector: cfg.NamespaceSelector,
+		Clock:             clock,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SilenceV2")
 		os.Exit(1)
