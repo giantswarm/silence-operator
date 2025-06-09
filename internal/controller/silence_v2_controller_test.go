@@ -32,6 +32,7 @@ import (
 	observabilityv1alpha2 "github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/internal/controller/testutils"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/service"
 )
 
 var _ = Describe("SilenceV2 Controller", func() {
@@ -96,10 +97,9 @@ var _ = Describe("SilenceV2 Controller", func() {
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
 			controllerReconciler := &SilenceV2Reconciler{
-				Client:       k8sClient,
-				Scheme:       k8sClient.Scheme(),
-				Alertmanager: mockAlertmanager,
-				Clock:        clock.RealClock{},
+				Client:         k8sClient,
+				Scheme:         k8sClient.Scheme(),
+				SilenceService: service.NewSilenceService(mockAlertmanager, clock.RealClock{}),
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
@@ -138,10 +138,9 @@ var _ = Describe("SilenceV2 Controller", func() {
 
 			By("Reconciling to add finalizer")
 			controllerReconciler := &SilenceV2Reconciler{
-				Client:       k8sClient,
-				Scheme:       k8sClient.Scheme(),
-				Alertmanager: mockAlertmanager,
-				Clock:        clock.RealClock{},
+				Client:         k8sClient,
+				Scheme:         k8sClient.Scheme(),
+				SilenceService: service.NewSilenceService(mockAlertmanager, clock.RealClock{}),
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
@@ -209,8 +208,7 @@ var _ = Describe("SilenceV2 Controller", func() {
 			controllerReconciler := &SilenceV2Reconciler{
 				Client:            k8sClient,
 				Scheme:            k8sClient.Scheme(),
-				Alertmanager:      mockAlertmanager,
-				Clock:             clock.RealClock{},
+				SilenceService:    service.NewSilenceService(mockAlertmanager, clock.RealClock{}),
 				NamespaceSelector: namespaceSelectorLabels,
 			}
 

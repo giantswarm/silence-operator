@@ -31,6 +31,7 @@ import (
 	monitoringv1alpha1 "github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/internal/controller/testutils"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/service"
 )
 
 var _ = Describe("Silence Controller", func() {
@@ -97,8 +98,7 @@ var _ = Describe("Silence Controller", func() {
 			controllerReconciler := &SilenceReconciler{
 				Client:       k8sClient,
 				Scheme:       k8sClient.Scheme(),
-				Alertmanager: mockAlertmanager,
-				Clock:        clock.RealClock{},
+				SilenceService: service.NewSilenceService(mockAlertmanager, clock.RealClock{}),
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{

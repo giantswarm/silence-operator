@@ -18,13 +18,11 @@ package controller
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/clock"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -33,6 +31,7 @@ import (
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/service"
 )
 
 // Define the finalizer name
@@ -44,8 +43,7 @@ type SilenceReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	Alertmanager alertmanager.Client
-	Clock        clock.Clock
+	SilenceService *service.SilenceService
 
 	SilenceSelector labels.Selector
 }
@@ -69,11 +67,18 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, errors.WithStack(client.IgnoreNotFound(err))
 	}
 
+	// Convert the Silence object to an Alertmanager silence
+	alertmanagerSilence, err := convertV1alpha1(silence)
+	if err != nil {
+		logger.Error(err, "Failed to convert Silence to Alertmanager silence")
+		return ctrl.Result{}, errors.WithStack(err)
+	}
+
 	// Handle deletion: The object is being deleted
 	if !silence.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(silence, silenceFinalizer) {
 			// Our finalizer is present, so let's handle external dependency deletion
-			if err := r.reconcileDelete(ctx, silence); err != nil {
+			if err := r.SilenceService.DeleteSilence(ctx, alertmanagerSilence); err != nil {
 				// If fail to delete the external dependency here, return error
 				// so that it can be retried.
 				logger.Error(err, "Failed to delete Alertmanager silence during finalization")
@@ -116,8 +121,20 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
-	// Reconcile the creation/update of the silence
-	return r.reconcileCreate(ctx, silence)
+	// Use the service for reconciliation
+	changed, err := r.SilenceService.SyncSilence(ctx, alertmanagerSilence)
+	if err != nil {
+		logger.Error(err, "Failed to sync silence with Alertmanager")
+		return ctrl.Result{}, errors.WithStack(err)
+	}
+
+	if changed {
+		logger.Info("Successfully updated silence in Alertmanager")
+	} else {
+		logger.Info("No changes needed for silence")
+	}
+
+	return ctrl.Result{}, nil
 }
 
 func (r *SilenceReconciler) cleanUpLegacyFinalizer(ctx context.Context, silence *v1alpha1.Silence) error {
@@ -131,78 +148,6 @@ func (r *SilenceReconciler) cleanUpLegacyFinalizer(ctx context.Context, silence 
 		}
 	}
 
-	return nil
-}
-
-// TODO encapsulate business logic in a separate package
-func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alpha1.Silence) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
-	newSilence, err := getSilenceFromCR(silence)
-	if err != nil {
-		return ctrl.Result{}, errors.WithStack(err)
-	}
-
-	now := r.Clock.Now()
-
-	var existingSilence *alertmanager.Silence
-	existingSilence, err = r.Alertmanager.GetSilenceByComment(alertmanager.SilenceComment(silence))
-	if err != nil && !errors.Is(err, alertmanager.ErrSilenceNotFound) {
-		logger.Error(err, "Failed to get silence from Alertmanager")
-		return ctrl.Result{}, errors.WithStack(err)
-	} else if errors.Is(err, alertmanager.ErrSilenceNotFound) {
-		if newSilence.EndsAt.After(now) {
-			logger.Info("Creating silence in Alertmanager")
-			err = r.Alertmanager.CreateSilence(newSilence)
-			if err != nil {
-				logger.Error(err, "Failed to create silence in Alertmanager")
-				return ctrl.Result{}, errors.WithStack(err)
-			}
-			logger.Info("Created silence in Alertmanager")
-		} else {
-			logger.Info("Skipped creation: silence is already expired")
-		}
-	} else if newSilence.EndsAt.Before(now) {
-		// Existing silence found, but the desired state is expired
-		logger.Info("Deleting expired silence from Alertmanager")
-		err = r.Alertmanager.DeleteSilenceByID(existingSilence.ID)
-		if err != nil {
-			logger.Error(err, "Failed to delete expired silence from Alertmanager")
-			return ctrl.Result{}, errors.WithStack(err)
-		}
-		logger.Info("Deleted expired silence from Alertmanager")
-	} else if updateNeeded(existingSilence, newSilence) {
-		newSilence.ID = existingSilence.ID
-		logger.Info("Updating silence in Alertmanager")
-		err = r.Alertmanager.UpdateSilence(newSilence)
-		if err != nil {
-			logger.Error(err, "Failed to update silence in Alertmanager")
-			return ctrl.Result{}, errors.WithStack(err)
-		}
-		logger.Info("Updated silence in Alertmanager")
-	} else {
-		logger.Info("Skipped update: silence unchanged")
-	}
-
-	return ctrl.Result{}, nil
-}
-
-// reconcileDelete handles the deletion of the external Alertmanager silence.
-func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alpha1.Silence) error {
-	logger := log.FromContext(ctx)
-	logger.Info("Deleting silence from Alertmanager as part of finalization")
-
-	err := r.Alertmanager.DeleteSilenceByComment(alertmanager.SilenceComment(silence))
-	if err != nil {
-		// If the silence is already gone in Alertmanager, treat it as success
-		if errors.Is(err, alertmanager.ErrSilenceNotFound) {
-			logger.Info("Silence already deleted in Alertmanager")
-			return nil // Success, allows finalizer removal
-		}
-		// For other errors, return the error to retry
-		return errors.Wrap(err, "failed to delete silence from Alertmanager")
-	}
-
-	logger.Info("Successfully deleted silence from Alertmanager")
 	return nil
 }
 
@@ -231,7 +176,7 @@ func (r *SilenceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return controllerBuilder.Complete(r)
 }
 
-func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) {
+func convertV1alpha1(silence *v1alpha1.Silence) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
 	{
 		for _, matcher := range silence.Spec.Matchers {
@@ -263,10 +208,4 @@ func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) 
 	}
 
 	return newSilence, nil
-}
-
-// updateNeeded return true when silence need to be updated.
-func updateNeeded(existingSilence, newSilence *alertmanager.Silence) bool {
-	return !reflect.DeepEqual(existingSilence.Matchers, newSilence.Matchers) ||
-		!existingSilence.EndsAt.Equal(newSilence.EndsAt)
 }
