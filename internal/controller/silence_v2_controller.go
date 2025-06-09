@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 )
@@ -91,7 +90,6 @@ func (r *SilenceV2Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if err := r.Update(ctx, silence); err != nil {
 			return ctrl.Result{}, errors.WithStack(err)
 		}
-		return ctrl.Result{Requeue: true}, nil
 	}
 
 	return r.reconcileCreate(ctx, silence)
@@ -107,7 +105,7 @@ func (r *SilenceV2Reconciler) reconcileCreate(ctx context.Context, silence *v1al
 
 	now := time.Now()
 
-	existingSilence, err := r.Alertmanager.GetSilenceByComment(alertmanager.SilenceCommentV1Alpha2(silence))
+	existingSilence, err := r.Alertmanager.GetSilenceByComment(alertmanager.SilenceComment(silence))
 	if err != nil && !errors.Is(err, alertmanager.ErrSilenceNotFound) {
 		logger.Error(err, "Failed to get silence from Alertmanager")
 		return ctrl.Result{}, errors.WithStack(err)
@@ -152,7 +150,7 @@ func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1al
 	logger := log.FromContext(ctx)
 	logger.Info("deleting silence")
 
-	err := r.Alertmanager.DeleteSilenceByComment(alertmanager.SilenceCommentV1Alpha2(silence))
+	err := r.Alertmanager.DeleteSilenceByComment(alertmanager.SilenceComment(silence))
 	if err != nil {
 		// If the silence is already gone in Alertmanager, treat it as success
 		if errors.Is(err, alertmanager.ErrSilenceNotFound) {
@@ -192,14 +190,13 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 	}
 
 	// Convert to v1alpha1 format for compatibility with existing alertmanager functions
-	v1Alpha1Silence := convertToV1Alpha1(silence)
-	endsAt, err := alertmanager.SilenceEndsAt(v1Alpha1Silence)
+	endsAt, err := alertmanager.SilenceEndsAt(silence)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
 	newSilence := &alertmanager.Silence{
-		Comment:   alertmanager.SilenceCommentV1Alpha2(silence),
+		Comment:   alertmanager.SilenceComment(silence),
 		CreatedBy: alertmanager.CreatedBy,
 		StartsAt:  silence.GetCreationTimestamp().Time,
 		EndsAt:    endsAt,
@@ -207,27 +204,4 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 	}
 
 	return newSilence, nil
-}
-
-// convertToV1Alpha1 converts a v1alpha2.Silence to v1alpha1.Silence for compatibility with existing alertmanager functions
-func convertToV1Alpha1(v2Silence *v1alpha2.Silence) *v1alpha1.Silence {
-	v1Matchers := make([]v1alpha1.Matcher, len(v2Silence.Spec.Matchers))
-	for i, matcher := range v2Silence.Spec.Matchers {
-		v1Matchers[i] = v1alpha1.Matcher{
-			IsRegex: matcher.IsRegex,
-			IsEqual: matcher.IsEqual,
-			Name:    matcher.Name,
-			Value:   matcher.Value,
-		}
-	}
-
-	return &v1alpha1.Silence{
-		TypeMeta:   v2Silence.TypeMeta,
-		ObjectMeta: v2Silence.ObjectMeta,
-		Spec: v1alpha1.SilenceSpec{
-			Matchers: v1Matchers,
-			Owner:    v2Silence.Spec.Owner,
-			IssueURL: v2Silence.Spec.IssueURL,
-		},
-	}
 }

@@ -23,8 +23,13 @@ import (
 // SilenceMatcher defines an alert matcher to be muted by the Silence.
 type SilenceMatcher struct {
 	// Name of the label to match.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
 	Name string `json:"name"`
 	// Value to match for the given label name.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MaxLength=1024
 	Value string `json:"value"`
 	// IsRegex defines whether the provided value should be interpreted as a regular expression.
 	// +optional
@@ -35,22 +40,16 @@ type SilenceMatcher struct {
 }
 
 // SilenceSpec defines the desired state of Silence.
-// TODO (user): Add fields to SilenceSpec to represent the actual silence api.
 type SilenceSpec struct {
 	// Matchers defines the alert matchers that this silence will apply to.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
 	Matchers []SilenceMatcher `json:"matchers"`
-	// Owner is GitHub username of a person who created and/or owns the silence.
-	// +optional
-	Owner string `json:"owner,omitempty"`
-	// IssueURL is a link to a GitHub issue describing the problem.
-	// +optional
-	IssueURL string `json:"issue_url,omitempty"`
 }
 
 // Silence is the Schema for the silences API.
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced
-// +kubebuilder:printcolumn:name="Owner",type=string,JSONPath=`.spec.owner`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 type Silence struct {
 	metav1.TypeMeta   `json:",inline"`

@@ -15,9 +15,6 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.owner
-      name: Owner
-      type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
@@ -46,9 +43,6 @@ spec:
           spec:
             description: SilenceSpec defines the desired state of Silence.
             properties:
-              issue_url:
-                description: IssueURL is a link to a GitHub issue describing the problem.
-                type: string
               matchers:
                 description: Matchers defines the alert matchers that this silence
                   will apply to.
@@ -66,19 +60,19 @@ spec:
                       type: boolean
                     name:
                       description: Name of the label to match.
+                      maxLength: 256
+                      minLength: 1
                       type: string
                     value:
                       description: Value to match for the given label name.
+                      maxLength: 1024
                       type: string
                   required:
                   - name
                   - value
                   type: object
+                minItems: 1
                 type: array
-              owner:
-                description: Owner is GitHub username of a person who created and/or
-                  owns the silence.
-                type: string
             required:
             - matchers
             type: object

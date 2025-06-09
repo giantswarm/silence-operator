@@ -10,9 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/giantswarm/silence-operator/api/v1alpha1"
-	"github.com/giantswarm/silence-operator/api/v1alpha2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -195,19 +193,18 @@ func (am *AlertManager) DeleteSilenceByID(id string) error {
 	return nil
 }
 
-func SilenceComment(silence *v1alpha1.Silence) string {
-	return fmt.Sprintf("%s-%s", CreatedBy, silence.Name)
-}
-
-func SilenceCommentV1Alpha2(silence *v1alpha2.Silence) string {
-	return fmt.Sprintf("%s-%s-%s", CreatedBy, silence.Namespace, silence.Name)
+func SilenceComment(silence client.Object) string {
+	if silence.GetNamespace() != "" {
+		return fmt.Sprintf("%s-%s-%s", CreatedBy, silence.GetNamespace(), silence.GetName())
+	}
+	return fmt.Sprintf("%s-%s", CreatedBy, silence.GetName())
 }
 
 // SilenceEndsAt gets the expiry date for a given silence.
 // The expiry date is retrieved from the annotation name configured by ValidUntilAnnotationName.
 // The expected format is defined by DateOnlyLayout.
 // It returns an invalidExpirationDateError in case the date format is invalid.
-func SilenceEndsAt(silence *v1alpha1.Silence) (time.Time, error) {
+func SilenceEndsAt(silence client.Object) (time.Time, error) {
 	annotations := silence.GetAnnotations()
 
 	// Check if the annotation exist otherwise return a date 100 years in the future.
