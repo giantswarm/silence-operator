@@ -48,7 +48,6 @@ func NewSilenceReconciler(client client.Client, scheme *runtime.Scheme, alertman
 	return &SilenceReconciler{
 		Client:         client,
 		Scheme:         scheme,
-		Alertmanager:   alertmanager,
 		silenceService: silenceService,
 	}
 }
