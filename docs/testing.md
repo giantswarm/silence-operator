@@ -114,36 +114,39 @@ The silence-operator includes comprehensive test suites for both API versions:
 ```go
 var _ = Describe("Silence Controller", func() {
     var (
-        ctx           context.Context
-        mockServer    *testutils.MockAlertmanagerServer
-        reconciler    *SilenceReconciler
+        mockServer       *testutils.MockAlertmanagerServer
+        mockAlertmanager *alertmanager.Alertmanager
+        reconciler       *SilenceReconciler
+        ctx              context.Context
     )
 
     BeforeEach(func() {
-        ctx = context.Background()
-        
-        // Setup mock Alertmanager server
+        // Set up mock Alertmanager server
         mockServer = testutils.NewMockAlertmanagerServer()
-        mockAlertmanager, err := mockServer.GetAlertmanager()
-        Expect(err).NotTo(HaveOccurred())
-        
-        // Create service and reconciler
-        silenceService := service.NewSilenceService(mockAlertmanager)
-        reconciler = &SilenceReconciler{
-            client:         k8sClient,
-            silenceService: silenceService,
-        }
+		    var err error
+		    mockAlertmanager, err = mockServer.GetAlertmanager()
+		    Expect(err).NotTo(HaveOccurred())
+
+		    // Create service and reconciler
+    		silenceService := service.NewSilenceService(mockAlertmanager)
+		    reconciler = &SilenceReconciler{
+			      client:         k8sClient,
+			      silenceService: silenceService,
+		    }
+
+		    ctx = context.Background()
     })
 
     AfterEach(func() {
-        if mockServer != nil {
-            mockServer.Close()
-        }
+		    // Clean up mock server
+		    if mockServer != nil {
+			      mockServer.Close()
+		    }
     })
 
     Context("When creating a Silence", func() {
-        It("Should create silence in Alertmanager and add finalizer", func() {
-            // Test implementation for v1alpha1 API
+        It("Should create silence in Alertmanager", func() {
+            // Test implementation
         })
     })
 })

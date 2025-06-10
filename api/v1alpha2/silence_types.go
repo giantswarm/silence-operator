@@ -27,7 +27,7 @@ type MatchType string
 const (
 	// MatchEqual matches alerts where the label value exactly equals the matcher value
 	MatchEqual MatchType = "="
-	// MatchNotEqual matches alerts where the label value does not equal the matcher value  
+	// MatchNotEqual matches alerts where the label value does not equal the matcher value
 	MatchNotEqual MatchType = "!="
 	// MatchRegexMatch matches alerts where the label value matches the regex pattern
 	MatchRegexMatch MatchType = "=~"
