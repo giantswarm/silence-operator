@@ -82,6 +82,14 @@ The `Silence` CRD generated at [config/crd/monitoring.giantswarm.io_silences.yam
 
 Deployment runs the Kubernetes controller, which reconciles `Silence` CRs.
 
+The operator follows a layered architecture:
+
+- **Controller Layer** (`internal/controller/`): Handles Kubernetes-specific concerns such as CR reconciliation, finalizers, and status updates
+- **Service Layer** (`pkg/service/`): Contains business logic for silence synchronization, including creation, updates, and deletion
+- **Alertmanager Client** (`pkg/alertmanager/`): Provides interface and implementation for Alertmanager API interactions
+
+This separation ensures clean code organization, improved testability, and easier maintenance.
+
 Sample CR:
 
 ```yaml
