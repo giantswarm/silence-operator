@@ -28,14 +28,19 @@ var (
 	ErrSilenceNotFound = errors.New("silence not found")
 )
 
-// Client defines the interface for Alertmanager operations
+// Client defines the contract for alertmanager operations
 type Client interface {
 	GetSilenceByComment(comment string) (*Silence, error)
-	CreateSilence(silence *Silence) error
-	UpdateSilence(silence *Silence) error
+	CreateSilence(s *Silence) error
+	UpdateSilence(s *Silence) error
 	DeleteSilenceByComment(comment string) error
 	DeleteSilenceByID(id string) error
+	ListSilences() ([]Silence, error)
 }
+
+// Ensure Alertmanager implements Client
+var _ Client = (*Alertmanager)(nil)
+
 
 type Config struct {
 	Address        string
@@ -65,19 +70,6 @@ func New(config Config) (*Alertmanager, error) {
 		tenantId:       config.TenantId,
 	}, nil
 }
-
-// Client defines the contract for alertmanager operations
-type Client interface {
-	GetSilenceByComment(comment string) (*Silence, error)
-	CreateSilence(s *Silence) error
-	UpdateSilence(s *Silence) error
-	DeleteSilenceByComment(comment string) error
-	DeleteSilenceByID(id string) error
-	ListSilences() ([]Silence, error)
-}
-
-// Ensure Alertmanager implements Client
-var _ Client = (*Alertmanager)(nil)
 
 func (am *Alertmanager) GetSilenceByComment(comment string) (*Silence, error) {
 	silences, err := am.ListSilences()
