@@ -40,6 +40,7 @@ import (
 	monitoringv1alpha1 "github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/internal/controller"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/service"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -214,7 +215,7 @@ func main() {
 	// - label selector to select silences
 	// - support all alertmanager auth methods
 	// - support multiple tenant (configurable label like observability.giantswarm.io/tenant)
-	var amClient *alertmanager.AlertManager
+	var amClient *alertmanager.Alertmanager
 	{
 		amConfig := alertmanager.Config{
 			Address:        alertmanagerAddress,
@@ -230,10 +231,13 @@ func main() {
 		}
 	}
 
+	// Create the silence service
+	silenceService := service.NewSilenceService(amClient)
+
 	if err = (&controller.SilenceReconciler{
-		Client:       mgr.GetClient(),
-		Scheme:       mgr.GetScheme(),
-		Alertmanager: amClient,
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		SilenceService: silenceService,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Silence")
 		os.Exit(1)
