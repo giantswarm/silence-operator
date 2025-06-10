@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,6 +28,7 @@ import (
 
 	"github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/service"
 )
 
 const (
@@ -43,7 +43,18 @@ type SilenceV2Reconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	Alertmanager *alertmanager.AlertManager
+	Alertmanager   *alertmanager.AlertManager
+	silenceService *service.SilenceService
+}
+
+// NewSilenceV2Reconciler creates a new SilenceV2Reconciler with the provided silence service
+func NewSilenceV2Reconciler(client client.Client, scheme *runtime.Scheme, alertmanager *alertmanager.AlertManager, silenceService *service.SilenceService) *SilenceV2Reconciler {
+	return &SilenceV2Reconciler{
+		Client:         client,
+		Scheme:         scheme,
+		Alertmanager:   alertmanager,
+		silenceService: silenceService,
+	}
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -96,100 +107,62 @@ func (r *SilenceV2Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 func (r *SilenceV2Reconciler) reconcileCreate(ctx context.Context, silence *v1alpha2.Silence) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
-
-	newSilence, err := r.getSilenceFromCR(silence)
+	// Convert the Kubernetes CR to alertmanager.Silence
+	alertmanagerSilence, err := r.getSilenceFromCR(silence)
 	if err != nil {
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
-	now := time.Now()
-
-	existingSilence, err := r.Alertmanager.GetSilenceByComment(alertmanager.SilenceComment(silence))
-	if err != nil && !errors.Is(err, alertmanager.ErrSilenceNotFound) {
-		logger.Error(err, "Failed to get silence from Alertmanager")
-		return ctrl.Result{}, errors.WithStack(err)
-	} else if errors.Is(err, alertmanager.ErrSilenceNotFound) {
-		if newSilence.EndsAt.After(now) {
-			logger.Info("Creating silence in Alertmanager")
-			err = r.Alertmanager.CreateSilence(newSilence)
-			if err != nil {
-				logger.Error(err, "Failed to create silence in Alertmanager")
-				return ctrl.Result{}, errors.WithStack(err)
-			}
-			logger.Info("Created silence in Alertmanager")
-		} else {
-			logger.Info("Skipped creation: silence is already expired")
-		}
-	} else if newSilence.EndsAt.Before(now) {
-		// Existing silence found, but the desired state is expired
-		logger.Info("Deleting expired silence from Alertmanager")
-		err = r.Alertmanager.DeleteSilenceByID(existingSilence.ID)
-		if err != nil {
-			logger.Error(err, "Failed to delete expired silence from Alertmanager")
-			return ctrl.Result{}, errors.WithStack(err)
-		}
-		logger.Info("Deleted expired silence from Alertmanager")
-	} else if updateNeeded(existingSilence, newSilence) {
-		newSilence.ID = existingSilence.ID
-		logger.Info("Updating silence in Alertmanager")
-		err = r.Alertmanager.UpdateSilence(newSilence)
-		if err != nil {
-			logger.Error(err, "Failed to update silence in Alertmanager")
-			return ctrl.Result{}, errors.WithStack(err)
-		}
-		logger.Info("Updated silence in Alertmanager")
-	} else {
-		logger.Info("Skipped update: silence unchanged")
+	comment := alertmanager.SilenceComment(silence)
+	err = r.silenceService.SyncSilence(ctx, comment, alertmanagerSilence)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
 }
 
 func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1alpha2.Silence) error {
-	logger := log.FromContext(ctx)
-	logger.Info("deleting silence")
-
-	err := r.Alertmanager.DeleteSilenceByComment(alertmanager.SilenceComment(silence))
-	if err != nil {
-		// If the silence is already gone in Alertmanager, treat it as success
-		if errors.Is(err, alertmanager.ErrSilenceNotFound) {
-			logger.Info("Silence already deleted in Alertmanager")
-			return nil // Success, allows finalizer removal
-		}
-		// For other errors, return the error to retry
-		return errors.Wrap(err, "failed to delete silence from Alertmanager")
-	}
-
-	logger.Info("Successfully deleted silence from Alertmanager")
-	return nil
+	comment := alertmanager.SilenceComment(silence)
+	return r.silenceService.DeleteSilence(ctx, comment)
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *SilenceV2Reconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha2.Silence{}).
-		Named("silence-v2").
-		Complete(r)
-}
-
+// getSilenceFromCR converts a v1alpha2.Silence to alertmanager.Silence
 func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
 	for _, matcher := range silence.Spec.Matchers {
-		isEqual := true
-		if matcher.IsEqual != nil {
-			isEqual = *matcher.IsEqual
+		// Convert MatchType enum to boolean fields for alertmanager compatibility
+		var isRegex, isEqual bool
+
+		// Default to exact match if MatchType is not specified
+		matchType := matcher.MatchType
+		if matchType == "" {
+			matchType = v1alpha2.MatchEqual
+		}
+
+		switch matchType {
+		case v1alpha2.MatchEqual:
+			isRegex = false
+			isEqual = true
+		case v1alpha2.MatchNotEqual:
+			isRegex = false
+			isEqual = false
+		case v1alpha2.MatchRegexMatch:
+			isRegex = true
+			isEqual = true
+		case v1alpha2.MatchRegexNotMatch:
+			isRegex = true
+			isEqual = false
 		}
 
 		matchers = append(matchers, alertmanager.Matcher{
-			IsRegex: matcher.IsRegex,
+			IsRegex: isRegex,
 			IsEqual: isEqual,
 			Name:    matcher.Name,
 			Value:   matcher.Value,
 		})
 	}
 
-	// Convert to v1alpha1 format for compatibility with existing alertmanager functions
 	endsAt, err := alertmanager.SilenceEndsAt(silence)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -204,4 +177,12 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 	}
 
 	return newSilence, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *SilenceV2Reconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&v1alpha2.Silence{}).
+		Named("silence-v2").
+		Complete(r)
 }

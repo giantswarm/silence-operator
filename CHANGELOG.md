@@ -13,11 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `SilenceV2Reconciler` to handle v1alpha2 resources while maintaining backward compatibility with v1alpha1.
 - Add enhanced printer columns for better `kubectl get silences` output.
 - Add migration documentation for transitioning from v1alpha1 to v1alpha2.
+- Add comprehensive validation to v1alpha2 SilenceMatcher fields with size limits and required field constraints.
+- Add `MatchType` enum using actual Alertmanager operator symbols (`=`, `!=`, `=~`, `!~`) replacing boolean fields for better usability.
+- Add shared `SilenceService` containing business logic agnostic to Kubernetes concepts.
 
 ### Changed
 
+- Extracted shared business logic into `SilenceService` with `SyncSilence` and `DeleteSilence` methods.
+- Service layer now accepts pre-converted `alertmanager.Silence` objects instead of handling conversion internally.
+- Service instantiation moved to `main.go` and injected into controllers via constructor dependency injection.
 - New namespace-scoped silences should use `observability.giantswarm.io/v1alpha2` instead of `monitoring.giantswarm.io/v1alpha1`.
 - v1alpha2 removes deprecated `TargetTags` and `PostmortemURL` fields in favor of cleaner API design.
+- **BREAKING**: v1alpha2 replaces `isRegex` and `isEqual` boolean fields with `matchType` enum using Alertmanager operator symbols.
+- Enhanced v1alpha2 API validation: matcher names limited to 256 chars, values to 1024 chars, minimum 1 matcher required.
 
 ### Deprecated
 

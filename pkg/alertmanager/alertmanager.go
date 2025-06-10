@@ -28,6 +28,15 @@ var (
 	ErrSilenceNotFound = errors.New("silence not found")
 )
 
+// Client defines the interface for Alertmanager operations
+type Client interface {
+	GetSilenceByComment(comment string) (*Silence, error)
+	CreateSilence(silence *Silence) error
+	UpdateSilence(silence *Silence) error
+	DeleteSilenceByComment(comment string) error
+	DeleteSilenceByID(id string) error
+}
+
 type Config struct {
 	Address        string
 	Authentication bool

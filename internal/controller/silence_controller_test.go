@@ -30,6 +30,7 @@ import (
 	monitoringv1alpha1 "github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/internal/controller/testutils"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/service"
 )
 
 var _ = Describe("Silence Controller", func() {
@@ -92,11 +93,13 @@ var _ = Describe("Silence Controller", func() {
 
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &SilenceReconciler{
-				Client:       k8sClient,
-				Scheme:       k8sClient.Scheme(),
-				Alertmanager: mockAlertManager,
-			}
+			silenceService := service.NewSilenceService(mockAlertManager)
+			controllerReconciler := NewSilenceReconciler(
+				k8sClient,
+				k8sClient.Scheme(),
+				mockAlertManager,
+				silenceService,
+			)
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: typeNamespacedName,

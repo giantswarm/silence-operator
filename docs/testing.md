@@ -107,27 +107,34 @@ var _ = Describe("Silence Controller", func() {
     var (
         ctx           context.Context
         cancel        context.CancelFunc
-        mockAM        *testutils.MockAlertManager
+        mockServer    *testutils.MockAlertManagerServer
         reconciler    *SilenceReconciler
     )
 
     BeforeEach(func() {
         ctx, cancel = context.WithCancel(context.Background())
         
-        // Setup mock AlertManager
-        mockAM = testutils.NewMockAlertManager()
-        mockAM.Start()
+        // Setup mock AlertManager server
+        mockServer = testutils.NewMockAlertManagerServer()
+        alertManager, err := mockServer.GetAlertManager()
+        Expect(err).NotTo(HaveOccurred())
         
-        // Create reconciler with mock
-        reconciler = &SilenceReconciler{
-            Client:            k8sClient,
-            Scheme:            k8sManager.GetScheme(),
-            AlertManagerURL:   mockAM.URL,
-        }
+        // Create shared service with mock AlertManager
+        silenceService := service.NewSilenceService(alertManager)
+        
+        // Create reconciler with dependency injection
+        reconciler = NewSilenceReconciler(
+            k8sClient,
+            k8sClient.Scheme(),
+            alertManager,
+            silenceService,
+        )
     })
 
     AfterEach(func() {
-        mockAM.Stop()
+        if mockServer != nil {
+            mockServer.Close()
+        }
         cancel()
     })
 
@@ -137,6 +144,26 @@ var _ = Describe("Silence Controller", func() {
         })
     })
 })
+```
+
+### Service Layer Testing
+
+The refactored architecture enables easier testing of business logic:
+
+```go
+// Test the service layer directly
+func TestSilenceService_CreateOrUpdateSilence(t *testing.T) {
+    // Setup mock AlertManager client
+    mockClient := &MockAlertManagerClient{}
+    service := NewSilenceService(mockClient)
+    
+    // Test business logic without Kubernetes dependencies
+    err := service.CreateOrUpdateSilence(ctx, "test-comment", silence)
+    assert.NoError(t, err)
+    
+    // Verify expected AlertManager operations
+    mockClient.AssertCreateSilenceCalled(t, silence)
+}
 ```
 
 ### Mock AlertManager Usage

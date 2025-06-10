@@ -20,6 +20,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// MatchType defines the type of matching for alert matchers.
+// +kubebuilder:validation:Enum==;!=;=~;!~
+type MatchType string
+
+const (
+	// MatchEqual matches alerts where the label value exactly equals the matcher value
+	MatchEqual MatchType = "="
+	// MatchNotEqual matches alerts where the label value does not equal the matcher value  
+	MatchNotEqual MatchType = "!="
+	// MatchRegexMatch matches alerts where the label value matches the regex pattern
+	MatchRegexMatch MatchType = "=~"
+	// MatchRegexNotMatch matches alerts where the label value does not match the regex pattern
+	MatchRegexNotMatch MatchType = "!~"
+)
+
 // SilenceMatcher defines an alert matcher to be muted by the Silence.
 type SilenceMatcher struct {
 	// Name of the label to match.
@@ -31,12 +46,10 @@ type SilenceMatcher struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MaxLength=1024
 	Value string `json:"value"`
-	// IsRegex defines whether the provided value should be interpreted as a regular expression.
+	// MatchType defines the type of matching to perform.
+	// +kubebuilder:default="="
 	// +optional
-	IsRegex bool `json:"isRegex,omitempty"`
-	// IsEqual defines whether the provided value should match or not match the actual label value.
-	// +optional
-	IsEqual *bool `json:"isEqual,omitempty"`
+	MatchType MatchType `json:"matchType,omitempty"`
 }
 
 // SilenceSpec defines the desired state of Silence.

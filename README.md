@@ -153,16 +153,46 @@ spec:
   matchers:
   - name: cluster
     value: test
-    isRegex: false
-  owner: team-platform
-  issue_url: https://github.com/example/issues/123
+    matchType: "="
 ```
 
 - `matchers` field corresponds to the Alertmanager silence `matchers` each of which consists of:
   - `name` - name of tag on an alert to match
   - `value` - fixed string or expression to match against the value of the tag named by `name` above on an alert
-  - `isRegex` - a boolean specifying whether to treat `value` as a regex (`=~`) or a fixed string (`=`)
-  - `isEqual` - a boolean specifying whether to use equal signs (`=` or `=~`) or to negate the matcher (`!=` or `!~`)
+  - `matchType` - the type of matching to perform using Alertmanager operator symbols:
+    - `"="` - exact string match
+    - `"!="` - exact string non-match
+    - `"=~"` - regex match
+    - `"!~"` - regex non-match
+
+## Architecture
+
+The silence-operator follows a clean architecture pattern with clear separation of concerns:
+
+### Components
+
+- **Controllers**: Handle Kubernetes-specific reconciliation logic and lifecycle management
+  - `SilenceReconciler`: Manages v1alpha1 cluster-scoped silences (legacy)
+  - `SilenceV2Reconciler`: Manages v1alpha2 namespace-scoped silences (recommended)
+- **Service Layer**: Contains business logic agnostic to Kubernetes concepts
+  - `SilenceService`: Core business logic for creating, updating, and deleting silences
+- **Alertmanager Client**: Handles communication with Alertmanager API
+  - `alertmanager.Client`: Interface for Alertmanager operations
+  - `AlertManager`: Concrete implementation
+
+### Data Flow
+
+1. **Conversion**: Controllers convert Kubernetes CRs to `alertmanager.Silence` objects using `getSilenceFromCR()` methods
+2. **Business Logic**: Controllers call `SilenceService` methods (`CreateOrUpdateSilence`, `DeleteSilence`)
+3. **Alertmanager Operations**: Service layer uses the `alertmanager.Client` interface to interact with Alertmanager
+4. **Error Handling**: Simple error returns propagate back through the layers for Kubernetes to handle retries
+
+### Dependency Injection
+
+The service is instantiated in `main.go` and injected into controllers via constructor dependency injection, enabling:
+- Shared business logic between v1alpha1 and v1alpha2 controllers
+- Easier testing through interface mocking
+- Clear separation between Kubernetes concerns and business logic
 
 ## Getting the Project
 

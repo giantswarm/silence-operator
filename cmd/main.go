@@ -41,6 +41,7 @@ import (
 	observabilityv1alpha2 "github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/internal/controller"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/service"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -232,19 +233,24 @@ func main() {
 		}
 	}
 
-	if err = (&controller.SilenceReconciler{
-		Client:       mgr.GetClient(),
-		Scheme:       mgr.GetScheme(),
-		Alertmanager: amClient,
-	}).SetupWithManager(mgr); err != nil {
+	// Create the shared silence service
+	silenceService := service.NewSilenceService(amClient)
+
+	if err = controller.NewSilenceReconciler(
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		amClient,
+		silenceService,
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Silence")
 		os.Exit(1)
 	}
-	if err = (&controller.SilenceV2Reconciler{
-		Client:       mgr.GetClient(),
-		Scheme:       mgr.GetScheme(),
-		Alertmanager: amClient,
-	}).SetupWithManager(mgr); err != nil {
+	if err = controller.NewSilenceV2Reconciler(
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		amClient,
+		silenceService,
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SilenceV2")
 		os.Exit(1)
 	}
