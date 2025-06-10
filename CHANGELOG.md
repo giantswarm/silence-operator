@@ -9,21 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add service layer for business logic separation and improved testability
-- Add `Client` interface for alertmanager operations to enable dependency injection
-- Add comprehensive test coverage for alertmanager and service components
 - Add `observability.giantswarm.io/v1alpha2` API group with namespace-scoped Silence CRD.
-- Add `SilenceV2Reconciler` to handle v1alpha2 resources while maintaining backward compatibility with v1alpha1.
+  - Add `MatchType` enum using actual Alertmanager operator symbols (`=`, `!=`, `=~`, `!~`) replacing boolean fields for better usability.
+  - Add `SilenceV2Reconciler` to handle v1alpha2 resources while maintaining backward compatibility with v1alpha1.
+  - Add migration documentation for transitioning from v1alpha1 to v1alpha2.
+  - Add comprehensive validation to v1alpha2 SilenceMatcher fields with size limits and required field constraints.
 - Add enhanced printer columns for better `kubectl get silences` output.
-- Add migration documentation for transitioning from v1alpha1 to v1alpha2.
-- Add comprehensive validation to v1alpha2 SilenceMatcher fields with size limits and required field constraints.
-- Add `MatchType` enum using actual Alertmanager operator symbols (`=`, `!=`, `=~`, `!~`) replacing boolean fields for better usability.
-- Add shared `SilenceService` containing business logic agnostic to Kubernetes concepts.
 
 ### Changed
 
-- Refactor controller to use service layer pattern instead of direct alertmanager calls
-- Service instantiation moved to `main.go` and injected into controllers via constructor dependency injection.
 - Improve code organization with clean separation between controller logic and business logic
 - New namespace-scoped silences should use `observability.giantswarm.io/v1alpha2` instead of `monitoring.giantswarm.io/v1alpha1`.
 - v1alpha2 removes deprecated `TargetTags` and `PostmortemURL` fields in favor of cleaner API design.
@@ -36,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cluster-scoped silences are deprecated in favor of namespace-scoped resources for better multi-tenancy.
 
 **Migration Note**: Existing v1alpha1 silences continue to work unchanged. See MIGRATION.md for guidance on migrating to v1alpha2.
+early
 
 ## [0.16.1] - 2025-05-20
 

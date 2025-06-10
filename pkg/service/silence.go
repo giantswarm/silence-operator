@@ -39,11 +39,11 @@ func NewSilenceService(alertmanager alertmanager.Client) *SilenceService {
 }
 
 // SyncSilence handles the creation or update of a silence
-func (s *SilenceService) SyncSilence(ctx context.Context, comment string, newSilence *alertmanager.Silence) error {
+func (s *SilenceService) SyncSilence(ctx context.Context, newSilence *alertmanager.Silence) error {
 	now := time.Now()
 
 	// Get existing silence by comment
-	existingSilence, err := s.alertmanager.GetSilenceByComment(comment)
+	existingSilence, err := s.alertmanager.GetSilenceByComment(newSilence.Comment)
 	if err != nil && !errors.Is(err, alertmanager.ErrSilenceNotFound) {
 		return errors.Wrap(err, "failed to get silence from Alertmanager")
 	}

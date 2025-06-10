@@ -203,8 +203,8 @@ func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) 
 	return newSilence, nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *SilenceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+//  sets up the controller with the Manager.
+func (r *SilenceReconciler) (mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Silence{}).
 		Named("silence").
