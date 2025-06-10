@@ -19,9 +19,9 @@ func getKubeBuilderAssets() string {
 }
 ```
 
-### Mock AlertManager
+### Mock Alertmanager
 
-The project includes a sophisticated mock AlertManager HTTP server for testing:
+The project includes a sophisticated mock Alertmanager HTTP server for testing:
 
 - **File**: `internal/controller/testutils/mock_alertmanager.go`
 - **Features**: 
@@ -107,22 +107,22 @@ var _ = Describe("Silence Controller", func() {
     var (
         ctx           context.Context
         cancel        context.CancelFunc
-        mockAM        *testutils.MockAlertManager
+        mockAM        *testutils.MockAlertmanager
         reconciler    *SilenceReconciler
     )
 
     BeforeEach(func() {
         ctx, cancel = context.WithCancel(context.Background())
         
-        // Setup mock AlertManager
-        mockAM = testutils.NewMockAlertManager()
+        // Setup mock Alertmanager
+        mockAM = testutils.NewMockAlertmanager()
         mockAM.Start()
         
         // Create reconciler with mock
         reconciler = &SilenceReconciler{
             Client:            k8sClient,
             Scheme:            k8sManager.GetScheme(),
-            AlertManagerURL:   mockAM.URL,
+            AlertmanagerURL:   mockAM.URL,
         }
     })
 
@@ -132,18 +132,18 @@ var _ = Describe("Silence Controller", func() {
     })
 
     Context("When creating a Silence", func() {
-        It("Should create silence in AlertManager", func() {
+        It("Should create silence in Alertmanager", func() {
             // Test implementation
         })
     })
 })
 ```
 
-### Mock AlertManager Usage
+### Mock Alertmanager Usage
 
 ```go
 // Create and start mock
-mockAM := testutils.NewMockAlertManager()
+mockAM := testutils.NewMockAlertmanager()
 mockAM.Start()
 defer mockAM.Stop()
 
@@ -259,7 +259,7 @@ Tests must pass the following quality gates:
 
 ### Mocking Strategy
 
-1. **Mock external dependencies** like AlertManager API calls
+1. **Mock external dependencies** like Alertmanager API calls
 2. **Use real Kubernetes API** for testing controller logic
 3. **Prefer HTTP mocks** over interface mocks for external services
 4. **Make mocks configurable** for different test scenarios

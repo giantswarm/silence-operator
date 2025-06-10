@@ -10,8 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/giantswarm/silence-operator/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -29,6 +28,19 @@ var (
 	ErrSilenceNotFound = errors.New("silence not found")
 )
 
+// Client defines the contract for alertmanager operations
+type Client interface {
+	GetSilenceByComment(comment string) (*Silence, error)
+	CreateSilence(s *Silence) error
+	UpdateSilence(s *Silence) error
+	DeleteSilenceByComment(comment string) error
+	DeleteSilenceByID(id string) error
+	ListSilences() ([]Silence, error)
+}
+
+// Ensure Alertmanager implements Client
+var _ Client = (*Alertmanager)(nil)
+
 type Config struct {
 	Address        string
 	Authentication bool
@@ -36,7 +48,7 @@ type Config struct {
 	TenantId       string
 }
 
-type AlertManager struct {
+type Alertmanager struct {
 	address        string
 	authentication bool
 	token          string
@@ -44,12 +56,12 @@ type AlertManager struct {
 	client         *http.Client
 }
 
-func New(config Config) (*AlertManager, error) {
+func New(config Config) (*Alertmanager, error) {
 	if config.Address == "" {
 		return nil, errors.Errorf("%T.Address must not be empty", config)
 	}
 
-	return &AlertManager{
+	return &Alertmanager{
 		address:        config.Address,
 		authentication: config.Authentication,
 		token:          config.BearerToken,
@@ -58,7 +70,7 @@ func New(config Config) (*AlertManager, error) {
 	}, nil
 }
 
-func (am *AlertManager) GetSilenceByComment(comment string) (*Silence, error) {
+func (am *Alertmanager) GetSilenceByComment(comment string) (*Silence, error) {
 	silences, err := am.ListSilences()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -73,7 +85,7 @@ func (am *AlertManager) GetSilenceByComment(comment string) (*Silence, error) {
 	return nil, errors.WithMessagef(ErrSilenceNotFound, "failed to get silence with comment %#q", comment)
 }
 
-func (am *AlertManager) CreateSilence(s *Silence) error {
+func (am *Alertmanager) CreateSilence(s *Silence) error {
 	endpoint := fmt.Sprintf("%s%s", am.address, apiV2SilencesPath) // Use constant
 
 	jsonValues, err := json.Marshal(s)
@@ -104,14 +116,14 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	return nil
 }
 
-func (am *AlertManager) UpdateSilence(s *Silence) error {
+func (am *Alertmanager) UpdateSilence(s *Silence) error {
 	if s.ID == "" {
 		return errors.Errorf("failed to update silence %#q, missing ID", s.Comment)
 	}
 	return am.CreateSilence(s)
 }
 
-func (am *AlertManager) DeleteSilenceByComment(comment string) error {
+func (am *Alertmanager) DeleteSilenceByComment(comment string) error {
 	silences, err := am.ListSilences()
 	if err != nil {
 		return errors.WithStack(err)
@@ -126,7 +138,7 @@ func (am *AlertManager) DeleteSilenceByComment(comment string) error {
 	return errors.WithMessagef(ErrSilenceNotFound, "failed to delete silence by comment %#q", comment)
 }
 
-func (am *AlertManager) ListSilences() ([]Silence, error) {
+func (am *Alertmanager) ListSilences() ([]Silence, error) {
 	endpoint := fmt.Sprintf("%s%s", am.address, apiV2SilencesPath)
 
 	var silences []Silence
@@ -166,7 +178,7 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 	return filteredSilences, nil
 }
 
-func (am *AlertManager) DeleteSilenceByID(id string) error {
+func (am *Alertmanager) DeleteSilenceByID(id string) error {
 	// Use constant and url.PathEscape for safety if ID can contain special chars
 	endpoint := fmt.Sprintf("%s%s/%s", am.address, apiV2SilencePath, url.PathEscape(id))
 
@@ -194,15 +206,15 @@ func (am *AlertManager) DeleteSilenceByID(id string) error {
 	return nil
 }
 
-func SilenceComment(silence *v1alpha1.Silence) string {
-	return fmt.Sprintf("%s-%s", CreatedBy, silence.Name)
+func SilenceComment(silence client.Object) string {
+	return fmt.Sprintf("%s-%s", CreatedBy, silence.GetName())
 }
 
 // SilenceEndsAt gets the expiry date for a given silence.
 // The expiry date is retrieved from the annotation name configured by ValidUntilAnnotationName.
 // The expected format is defined by DateOnlyLayout.
 // It returns an invalidExpirationDateError in case the date format is invalid.
-func SilenceEndsAt(silence *v1alpha1.Silence) (time.Time, error) {
+func SilenceEndsAt(silence client.Object) (time.Time, error) {
 	annotations := silence.GetAnnotations()
 
 	// Check if the annotation exist otherwise return a date 100 years in the future.

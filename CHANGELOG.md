@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add service layer for business logic separation and improved testability
+- Add `Client` interface for alertmanager operations to enable dependency injection
+- Add comprehensive test coverage for alertmanager and service components
+
+### Changed
+
+- Refactor controller to use service layer pattern instead of direct alertmanager calls
+- Improve code organization with clean separation between controller logic and business logic
+- Update main application to use dependency injection pattern
+
 ## [0.16.1] - 2025-05-20
 
 - Remove duplicate container `securityContext` from the Helm chart deployment template.
@@ -157,7 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Make Helm chart CronJob optional
-- Make Helm chart AlertManager address configurable
+- Make Helm chart Alertmanager address configurable
 - Make target tags field optional for when sync is disabled
 - Only install Helm chart sync secret when sync is enabled
 - Only install PodSecurityPolicy on supported Kubernetes versions

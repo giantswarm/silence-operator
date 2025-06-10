@@ -10,16 +10,16 @@ import (
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 )
 
-// MockAlertManagerServer provides a mock AlertManager HTTP server for testing
-type MockAlertManagerServer struct {
+// MockAlertmanagerServer provides a mock Alertmanager HTTP server for testing
+type MockAlertmanagerServer struct {
 	server   *httptest.Server
 	silences map[string]*alertmanager.Silence
 	mu       sync.RWMutex
 }
 
-// NewMockAlertManagerServer creates a new mock AlertManager server
-func NewMockAlertManagerServer() *MockAlertManagerServer {
-	mock := &MockAlertManagerServer{
+// NewMockAlertmanagerServer creates a new mock Alertmanager server
+func NewMockAlertmanagerServer() *MockAlertmanagerServer {
+	mock := &MockAlertmanagerServer{
 		silences: make(map[string]*alertmanager.Silence),
 	}
 
@@ -51,8 +51,8 @@ func NewMockAlertManagerServer() *MockAlertManagerServer {
 	return mock
 }
 
-// GetAlertManager returns a real AlertManager configured to use the mock server
-func (m *MockAlertManagerServer) GetAlertManager() (*alertmanager.AlertManager, error) {
+// GetAlertmanager returns a real Alertmanager configured to use the mock server
+func (m *MockAlertmanagerServer) GetAlertmanager() (*alertmanager.Alertmanager, error) {
 	config := alertmanager.Config{
 		Address:        m.server.URL,
 		Authentication: false,
@@ -61,12 +61,12 @@ func (m *MockAlertManagerServer) GetAlertManager() (*alertmanager.AlertManager, 
 }
 
 // Close shuts down the mock server
-func (m *MockAlertManagerServer) Close() {
+func (m *MockAlertmanagerServer) Close() {
 	m.server.Close()
 }
 
 // AddSilence adds a silence to the mock server's state
-func (m *MockAlertManagerServer) AddSilence(silence *alertmanager.Silence) {
+func (m *MockAlertmanagerServer) AddSilence(silence *alertmanager.Silence) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -77,7 +77,7 @@ func (m *MockAlertManagerServer) AddSilence(silence *alertmanager.Silence) {
 }
 
 // GetSilences returns all silences from the mock server
-func (m *MockAlertManagerServer) GetSilences() []*alertmanager.Silence {
+func (m *MockAlertmanagerServer) GetSilences() []*alertmanager.Silence {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -88,13 +88,13 @@ func (m *MockAlertManagerServer) GetSilences() []*alertmanager.Silence {
 	return silences
 }
 
-func (m *MockAlertManagerServer) handleListSilences(w http.ResponseWriter) {
+func (m *MockAlertmanagerServer) handleListSilences(w http.ResponseWriter) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	var silences []alertmanager.Silence
 	for _, silence := range m.silences {
-		// Only return non-expired silences (like the real AlertManager)
+		// Only return non-expired silences (like the real Alertmanager)
 		if silence.Status == nil || silence.Status.State != alertmanager.SilenceStateExpired {
 			silences = append(silences, *silence)
 		}
@@ -107,7 +107,7 @@ func (m *MockAlertManagerServer) handleListSilences(w http.ResponseWriter) {
 	}
 }
 
-func (m *MockAlertManagerServer) handleCreateSilence(w http.ResponseWriter, r *http.Request) {
+func (m *MockAlertmanagerServer) handleCreateSilence(w http.ResponseWriter, r *http.Request) {
 	var silence alertmanager.Silence
 	if err := json.NewDecoder(r.Body).Decode(&silence); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -132,7 +132,7 @@ func (m *MockAlertManagerServer) handleCreateSilence(w http.ResponseWriter, r *h
 	}
 }
 
-func (m *MockAlertManagerServer) handleDeleteSilence(w http.ResponseWriter, r *http.Request) {
+func (m *MockAlertmanagerServer) handleDeleteSilence(w http.ResponseWriter, r *http.Request) {
 	// Extract silence ID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/api/v2/silence/")
 	silenceID := strings.Split(path, "/")[0]
