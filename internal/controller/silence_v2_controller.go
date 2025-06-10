@@ -43,7 +43,6 @@ type SilenceV2Reconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	Alertmanager   *alertmanager.AlertManager
 	silenceService *service.SilenceService
 }
 
