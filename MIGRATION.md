@@ -397,6 +397,57 @@ echo "v1alpha2 count: $(kubectl get silences.observability.giantswarm.io --all-n
 kubectl logs -f deployment/silence-operator -n monitoring | grep -E "(SilenceReconciler|SilenceV2Reconciler)"
 ```
 
+## Testing During Migration
+
+### Dual Controller Testing
+
+During migration, both controllers run simultaneously. You can verify both are working:
+
+```bash
+# Test v1alpha1 controller
+kubectl apply -f - <<EOF
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: test-v1alpha1
+spec:
+  matchers:
+  - name: "alertname"
+    value: "TestAlert"
+    isRegex: false
+    isEqual: true
+EOF
+
+# Test v1alpha2 controller  
+kubectl apply -f - <<EOF
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: test-v1alpha2
+  namespace: default
+spec:
+  matchers:
+  - name: "alertname"
+    value: "TestAlert"
+    matchType: "="
+EOF
+```
+
+### Verification Commands
+
+```bash
+# Check both resources exist
+kubectl get silences.monitoring.giantswarm.io
+kubectl get silences.observability.giantswarm.io --all-namespaces
+
+# Verify finalizers are properly set
+kubectl get silence test-v1alpha1 -o jsonpath='{.metadata.finalizers}'
+kubectl get silence test-v1alpha2 -n default -o jsonpath='{.metadata.finalizers}'
+
+# Check controller logs for both APIs
+kubectl logs -f deployment/silence-operator -n monitoring | grep -E "(SilenceReconciler|SilenceV2Reconciler)"
+```
+
 ## Support
 
 For issues during migration:

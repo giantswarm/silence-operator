@@ -37,7 +37,7 @@ var _ = Describe("SilenceV2 Controller", func() {
 		const resourceName = "test-resource-v2"
 
 		ctx := context.Background()
-		var mockServer *testutils.MockAlertManagerServer
+		var mockServer *testutils.MockAlertmanagerServer
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
@@ -47,7 +47,7 @@ var _ = Describe("SilenceV2 Controller", func() {
 
 		BeforeEach(func() {
 			// Set up mock Alertmanager server
-			mockServer = testutils.NewMockAlertManagerServer()
+			mockServer = testutils.NewMockAlertmanagerServer()
 
 			By("creating the custom resource for the Kind Silence v1alpha2")
 			err := k8sClient.Get(ctx, typeNamespacedName, silence)
@@ -86,14 +86,12 @@ var _ = Describe("SilenceV2 Controller", func() {
 
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			alertManager, err := mockServer.GetAlertManager()
+			alertManager, err := mockServer.GetAlertmanager()
 			Expect(err).NotTo(HaveOccurred())
 
 			silenceService := service.NewSilenceService(alertManager)
 			controllerReconciler := NewSilenceV2Reconciler(
 				k8sClient,
-				k8sClient.Scheme(),
-				alertManager,
 				silenceService,
 			)
 
@@ -129,14 +127,12 @@ var _ = Describe("SilenceV2 Controller", func() {
 			Expect(k8sClient.Create(ctx, finalizerTestResource)).To(Succeed())
 
 			By("Reconciling to add finalizer")
-			alertManager, err2 := mockServer.GetAlertManager()
+			alertManager, err2 := mockServer.GetAlertmanager()
 			Expect(err2).NotTo(HaveOccurred())
 
 			silenceService := service.NewSilenceService(alertManager)
 			controllerReconciler := NewSilenceV2Reconciler(
 				k8sClient,
-				k8sClient.Scheme(),
-				alertManager,
 				silenceService,
 			)
 
@@ -207,11 +203,11 @@ var _ = Describe("SilenceV2 Controller", func() {
 				result, err := reconciler.getSilenceFromCR(silence)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result.Matchers).To(HaveLen(1))
-				
+
 				matcher := result.Matchers[0]
-				Expect(matcher.IsRegex).To(Equal(tc.expectedIsRegex), 
+				Expect(matcher.IsRegex).To(Equal(tc.expectedIsRegex),
 					"IsRegex mismatch for %s", tc.description)
-				Expect(matcher.IsEqual).To(Equal(tc.expectedIsEqual), 
+				Expect(matcher.IsEqual).To(Equal(tc.expectedIsEqual),
 					"IsEqual mismatch for %s", tc.description)
 				Expect(matcher.Name).To(Equal("alertname"))
 				Expect(matcher.Value).To(Equal("TestAlert"))

@@ -148,6 +148,12 @@ spec:
   - name: cluster
     value: test
     isRegex: false
+  - name: severity
+    value: critical
+    isRegex: false
+    isEqual: true
+  owner: example-user
+  issue_url: https://github.com/example/issue/123
 ```
 
 **v1alpha2 (recommended, namespace-scoped):**
@@ -161,6 +167,9 @@ spec:
   matchers:
   - name: cluster
     value: test
+    matchType: "="
+  - name: severity
+    value: critical
     matchType: "="
 ```
 
@@ -186,7 +195,7 @@ The silence-operator follows a clean architecture pattern with clear separation 
   - `SilenceService`: Core business logic for creating, updating, and deleting silences
 - **Alertmanager Client**: Handles communication with Alertmanager API
   - `alertmanager.Client`: Interface for Alertmanager operations
-  - `AlertManager`: Concrete implementation
+  - `Alertmanager`: Concrete implementation
 
 ### Data Flow
 
@@ -201,6 +210,47 @@ The service is instantiated in `main.go` and injected into controllers via const
 - Shared business logic between v1alpha1 and v1alpha2 controllers
 - Easier testing through interface mocking
 - Clear separation between Kubernetes concerns and business logic
+
+## Architecture Documentation
+
+### Project Structure
+
+```
+silence-operator/
+├── api/                             # API definitions and schemas
+│   ├── v1alpha1/                   # Legacy cluster-scoped API
+│   └── v1alpha2/                   # New namespace-scoped API
+├── internal/controller/            # Kubernetes controllers
+│   ├── silence_controller.go       # v1alpha1 controller (legacy)
+│   ├── silence_v2_controller.go    # v1alpha2 controller (recommended)
+│   └── testutils/                  # Test utilities and mocks
+├── pkg/                            # Reusable packages
+│   ├── alertmanager/              # Alertmanager client implementation
+│   └── service/                   # Business logic layer
+├── config/                        # Kubernetes manifests and CRDs
+├── helm/                          # Helm chart for deployment
+└── docs/                          # Documentation
+```
+
+### Design Principles
+
+1. **Clean Architecture**: Clear separation between controllers, services, and external clients
+2. **Dual API Support**: Maintains backward compatibility while providing improved v2 API
+3. **Dependency Injection**: Services are injected into controllers for better testability
+4. **Interface-Based Design**: Uses interfaces for external dependencies (Alertmanager client)
+5. **Shared Business Logic**: Common operations are handled by the service layer
+
+### Controller Responsibilities
+
+**SilenceReconciler (v1alpha1)**:
+- Manages cluster-scoped silences
+- Handles legacy boolean matcher fields (`isRegex`, `isEqual`)
+- Maintains backward compatibility
+
+**SilenceV2Reconciler (v1alpha2)**:
+- Manages namespace-scoped silences
+- Uses enum-based matcher types (`matchType: =, !=, =~, !~`)
+- Provides enhanced validation and user experience
 
 ## Getting the Project
 

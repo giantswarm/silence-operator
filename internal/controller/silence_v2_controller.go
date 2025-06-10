@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -40,18 +39,15 @@ const (
 // +kubebuilder:rbac:groups=observability.giantswarm.io,resources=silences,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=observability.giantswarm.io,resources=silences/finalizers,verbs=update
 type SilenceV2Reconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
+	client client.Client
 
 	silenceService *service.SilenceService
 }
 
 // NewSilenceV2Reconciler creates a new SilenceV2Reconciler with the provided silence service
-func NewSilenceV2Reconciler(client client.Client, scheme *runtime.Scheme, alertmanager *alertmanager.AlertManager, silenceService *service.SilenceService) *SilenceV2Reconciler {
+func NewSilenceV2Reconciler(client client.Client, silenceService *service.SilenceService) *SilenceV2Reconciler {
 	return &SilenceV2Reconciler{
-		Client:         client,
-		Scheme:         scheme,
-		Alertmanager:   alertmanager,
+		client:         client,
 		silenceService: silenceService,
 	}
 }
@@ -65,7 +61,7 @@ func (r *SilenceV2Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	defer logger.Info("Finished reconciling silence", "namespace", req.Namespace, "name", req.Name)
 
 	silence := &v1alpha2.Silence{}
-	err := r.Get(ctx, req.NamespacedName, silence)
+	err := r.client.Get(ctx, req.NamespacedName, silence)
 	if err != nil {
 		return ctrl.Result{}, errors.WithStack(client.IgnoreNotFound(err))
 	}
@@ -84,7 +80,7 @@ func (r *SilenceV2Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			// This allows the Kubernetes API server to finalize the object deletion.
 			logger.Info("Removing finalizer after successful Alertmanager silence deletion")
 			controllerutil.RemoveFinalizer(silence, FinalizerName)
-			if err := r.Update(ctx, silence); err != nil {
+			if err := r.client.Update(ctx, silence); err != nil {
 				logger.Error(err, "Failed to remove finalizer")
 				return ctrl.Result{}, errors.WithStack(err)
 			}
@@ -97,7 +93,7 @@ func (r *SilenceV2Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Add finalizer if not present
 	if !controllerutil.ContainsFinalizer(silence, FinalizerName) {
 		controllerutil.AddFinalizer(silence, FinalizerName)
-		if err := r.Update(ctx, silence); err != nil {
+		if err := r.client.Update(ctx, silence); err != nil {
 			return ctrl.Result{}, errors.WithStack(err)
 		}
 	}
@@ -112,8 +108,7 @@ func (r *SilenceV2Reconciler) reconcileCreate(ctx context.Context, silence *v1al
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
-	comment := alertmanager.SilenceComment(silence)
-	err = r.silenceService.SyncSilence(ctx, comment, alertmanagerSilence)
+	err = r.silenceService.SyncSilence(ctx, alertmanagerSilence)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

@@ -20,7 +20,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -37,17 +36,15 @@ const legacySilenceFinalizer = "operatorkit.giantswarm.io/silence-operator-silen
 
 // SilenceReconciler reconciles a Silence object
 type SilenceReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
+	client client.Client
 
 	silenceService *service.SilenceService
 }
 
 // NewSilenceReconciler creates a new SilenceReconciler with the provided silence service
-func NewSilenceReconciler(client client.Client, scheme *runtime.Scheme, silenceService *service.SilenceService) *SilenceReconciler {
+func NewSilenceReconciler(client client.Client, silenceService *service.SilenceService) *SilenceReconciler {
 	return &SilenceReconciler{
-		Client:         client,
-		Scheme:         scheme,
+		client:         client,
 		silenceService: silenceService,
 	}
 }
@@ -64,7 +61,7 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	defer logger.Info("Finished reconciling silence")
 
 	silence := &v1alpha1.Silence{}
-	err := r.Get(ctx, req.NamespacedName, silence)
+	err := r.client.Get(ctx, req.NamespacedName, silence)
 	if err != nil {
 		// Ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification).
@@ -85,7 +82,7 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			// This allows the Kubernetes API server to finalize the object deletion.
 			logger.Info("Removing finalizer after successful Alertmanager silence deletion")
 			controllerutil.RemoveFinalizer(silence, silenceFinalizer)
-			if err := r.Update(ctx, silence); err != nil {
+			if err := r.client.Update(ctx, silence); err != nil {
 				logger.Error(err, "Failed to remove finalizer")
 				return ctrl.Result{}, errors.WithStack(err)
 			}
@@ -105,7 +102,7 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if !controllerutil.ContainsFinalizer(silence, silenceFinalizer) {
 		logger.Info("Adding finalizer")
 		controllerutil.AddFinalizer(silence, silenceFinalizer)
-		if err := r.Update(ctx, silence); err != nil {
+		if err := r.client.Update(ctx, silence); err != nil {
 			logger.Error(err, "Failed to add finalizer")
 			return ctrl.Result{}, errors.WithStack(err)
 		}
@@ -127,7 +124,7 @@ func (r *SilenceReconciler) cleanUpLegacyFinalizer(ctx context.Context, silence 
 	if controllerutil.ContainsFinalizer(silence, legacySilenceFinalizer) {
 		logger.Info("Removing legacy finalizer")
 		controllerutil.RemoveFinalizer(silence, legacySilenceFinalizer)
-		if err := r.Update(ctx, silence); err != nil {
+		if err := r.client.Update(ctx, silence); err != nil {
 			return errors.WithStack(err)
 		}
 	}
@@ -137,20 +134,20 @@ func (r *SilenceReconciler) cleanUpLegacyFinalizer(ctx context.Context, silence 
 
 func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alpha1.Silence) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-	
+
 	newSilence, err := getSilenceFromCR(silence)
 	if err != nil {
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
 	logger.Info("Syncing silence with Alertmanager")
-	
-	err = r.SilenceService.SyncSilence(ctx, newSilence)
+
+	err = r.silenceService.SyncSilence(ctx, newSilence)
 	if err != nil {
 		logger.Error(err, "Failed to sync silence with Alertmanager")
 		return ctrl.Result{}, errors.WithStack(err)
 	}
-	
+
 	logger.Info("Successfully synced silence with Alertmanager")
 	return ctrl.Result{}, nil
 }
@@ -161,7 +158,7 @@ func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alph
 	logger.Info("Deleting silence from Alertmanager as part of finalization")
 
 	comment := alertmanager.SilenceComment(silence)
-	err := r.SilenceService.DeleteSilence(ctx, comment)
+	err := r.silenceService.DeleteSilence(ctx, comment)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete silence from Alertmanager")
 	}
@@ -203,8 +200,8 @@ func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) 
 	return newSilence, nil
 }
 
-//  sets up the controller with the Manager.
-func (r *SilenceReconciler) (mgr ctrl.Manager) error {
+// sets up the controller with the Manager.
+func (r *SilenceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Silence{}).
 		Named("silence").
