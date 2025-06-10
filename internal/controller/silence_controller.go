@@ -44,7 +44,7 @@ type SilenceReconciler struct {
 }
 
 // NewSilenceReconciler creates a new SilenceReconciler with the provided silence service
-func NewSilenceReconciler(client client.Client, scheme *runtime.Scheme, alertmanager *alertmanager.AlertManager, silenceService *service.SilenceService) *SilenceReconciler {
+func NewSilenceReconciler(client client.Client, scheme *runtime.Scheme, silenceService *service.SilenceService) *SilenceReconciler {
 	return &SilenceReconciler{
 		Client:         client,
 		Scheme:         scheme,
