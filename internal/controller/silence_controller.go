@@ -40,7 +40,6 @@ type SilenceReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	Alertmanager   *alertmanager.AlertManager
 	silenceService *service.SilenceService
 }
 
@@ -137,31 +136,43 @@ func (r *SilenceReconciler) cleanUpLegacyFinalizer(ctx context.Context, silence 
 	return nil
 }
 
-// reconcileCreate handles the creation/update of the silence using the business logic service
 func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alpha1.Silence) (ctrl.Result, error) {
-	// Convert the Kubernetes CR to alertmanager.Silence
-	alertmanagerSilence, err := r.getSilenceFromCR(silence)
+	logger := log.FromContext(ctx)
+	
+	newSilence, err := getSilenceFromCR(silence)
 	if err != nil {
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
-	comment := alertmanager.SilenceComment(silence)
-	err = r.silenceService.SyncSilence(ctx, comment, alertmanagerSilence)
+	logger.Info("Syncing silence with Alertmanager")
+	
+	err = r.SilenceService.SyncSilence(ctx, newSilence)
 	if err != nil {
-		return ctrl.Result{}, err
+		logger.Error(err, "Failed to sync silence with Alertmanager")
+		return ctrl.Result{}, errors.WithStack(err)
 	}
-
+	
+	logger.Info("Successfully synced silence with Alertmanager")
 	return ctrl.Result{}, nil
 }
 
 // reconcileDelete handles the deletion of the external Alertmanager silence using the business logic service
 func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alpha1.Silence) error {
+	logger := log.FromContext(ctx)
+	logger.Info("Deleting silence from Alertmanager as part of finalization")
+
 	comment := alertmanager.SilenceComment(silence)
-	return r.silenceService.DeleteSilence(ctx, comment)
+	err := r.SilenceService.DeleteSilence(ctx, comment)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete silence from Alertmanager")
+	}
+
+	logger.Info("Successfully deleted silence from Alertmanager")
+	return nil
 }
 
 // getSilenceFromCR converts a v1alpha1.Silence to alertmanager.Silence
-func (r *SilenceReconciler) getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) {
+func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
 	for _, matcher := range silence.Spec.Matchers {
 		isEqual := true

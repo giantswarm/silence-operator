@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add service layer for business logic separation and improved testability
+- Add `Client` interface for alertmanager operations to enable dependency injection
+- Add comprehensive test coverage for alertmanager and service components
 - Add `observability.giantswarm.io/v1alpha2` API group with namespace-scoped Silence CRD.
 - Add `SilenceV2Reconciler` to handle v1alpha2 resources while maintaining backward compatibility with v1alpha1.
 - Add enhanced printer columns for better `kubectl get silences` output.
@@ -19,9 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Extracted shared business logic into `SilenceService` with `SyncSilence` and `DeleteSilence` methods.
-- Service layer now accepts pre-converted `alertmanager.Silence` objects instead of handling conversion internally.
+- Refactor controller to use service layer pattern instead of direct alertmanager calls
 - Service instantiation moved to `main.go` and injected into controllers via constructor dependency injection.
+- Improve code organization with clean separation between controller logic and business logic
 - New namespace-scoped silences should use `observability.giantswarm.io/v1alpha2` instead of `monitoring.giantswarm.io/v1alpha1`.
 - v1alpha2 removes deprecated `TargetTags` and `PostmortemURL` fields in favor of cleaner API design.
 - **BREAKING**: v1alpha2 replaces `isRegex` and `isEqual` boolean fields with `matchType` enum using Alertmanager operator symbols.
@@ -184,7 +187,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Make Helm chart CronJob optional
-- Make Helm chart AlertManager address configurable
+- Make Helm chart Alertmanager address configurable
 - Make target tags field optional for when sync is disabled
 - Only install Helm chart sync secret when sync is enabled
 - Only install PodSecurityPolicy on supported Kubernetes versions

@@ -217,7 +217,7 @@ func main() {
 	// - label selector to select silences
 	// - support all alertmanager auth methods
 	// - support multiple tenant (configurable label like observability.giantswarm.io/tenant)
-	var amClient *alertmanager.AlertManager
+	var amClient *alertmanager.Alertmanager
 	{
 		amConfig := alertmanager.Config{
 			Address:        alertmanagerAddress,
@@ -233,23 +233,21 @@ func main() {
 		}
 	}
 
-	// Create the shared silence service
+	// Create the silence service
 	silenceService := service.NewSilenceService(amClient)
 
 	if err = controller.NewSilenceReconciler(
-		mgr.GetClient(),
-		mgr.GetScheme(),
-		amClient,
-		silenceService,
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		SilenceService: silenceService,
 	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Silence")
 		os.Exit(1)
 	}
 	if err = controller.NewSilenceV2Reconciler(
-		mgr.GetClient(),
-		mgr.GetScheme(),
-		amClient,
-		silenceService,
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		SilenceService: silenceService,
 	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SilenceV2")
 		os.Exit(1)

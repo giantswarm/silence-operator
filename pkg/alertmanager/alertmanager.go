@@ -44,7 +44,7 @@ type Config struct {
 	TenantId       string
 }
 
-type AlertManager struct {
+type Alertmanager struct {
 	address        string
 	authentication bool
 	token          string
@@ -52,12 +52,12 @@ type AlertManager struct {
 	client         *http.Client
 }
 
-func New(config Config) (*AlertManager, error) {
+func New(config Config) (*Alertmanager, error) {
 	if config.Address == "" {
 		return nil, errors.Errorf("%T.Address must not be empty", config)
 	}
 
-	return &AlertManager{
+	return &Alertmanager{
 		address:        config.Address,
 		authentication: config.Authentication,
 		token:          config.BearerToken,
@@ -66,7 +66,20 @@ func New(config Config) (*AlertManager, error) {
 	}, nil
 }
 
-func (am *AlertManager) GetSilenceByComment(comment string) (*Silence, error) {
+// Client defines the contract for alertmanager operations
+type Client interface {
+	GetSilenceByComment(comment string) (*Silence, error)
+	CreateSilence(s *Silence) error
+	UpdateSilence(s *Silence) error
+	DeleteSilenceByComment(comment string) error
+	DeleteSilenceByID(id string) error
+	ListSilences() ([]Silence, error)
+}
+
+// Ensure Alertmanager implements Client
+var _ Client = (*Alertmanager)(nil)
+
+func (am *Alertmanager) GetSilenceByComment(comment string) (*Silence, error) {
 	silences, err := am.ListSilences()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -81,7 +94,7 @@ func (am *AlertManager) GetSilenceByComment(comment string) (*Silence, error) {
 	return nil, errors.WithMessagef(ErrSilenceNotFound, "failed to get silence with comment %#q", comment)
 }
 
-func (am *AlertManager) CreateSilence(s *Silence) error {
+func (am *Alertmanager) CreateSilence(s *Silence) error {
 	endpoint := fmt.Sprintf("%s%s", am.address, apiV2SilencesPath) // Use constant
 
 	jsonValues, err := json.Marshal(s)
@@ -112,14 +125,14 @@ func (am *AlertManager) CreateSilence(s *Silence) error {
 	return nil
 }
 
-func (am *AlertManager) UpdateSilence(s *Silence) error {
+func (am *Alertmanager) UpdateSilence(s *Silence) error {
 	if s.ID == "" {
 		return errors.Errorf("failed to update silence %#q, missing ID", s.Comment)
 	}
 	return am.CreateSilence(s)
 }
 
-func (am *AlertManager) DeleteSilenceByComment(comment string) error {
+func (am *Alertmanager) DeleteSilenceByComment(comment string) error {
 	silences, err := am.ListSilences()
 	if err != nil {
 		return errors.WithStack(err)
@@ -134,7 +147,7 @@ func (am *AlertManager) DeleteSilenceByComment(comment string) error {
 	return errors.WithMessagef(ErrSilenceNotFound, "failed to delete silence by comment %#q", comment)
 }
 
-func (am *AlertManager) ListSilences() ([]Silence, error) {
+func (am *Alertmanager) ListSilences() ([]Silence, error) {
 	endpoint := fmt.Sprintf("%s%s", am.address, apiV2SilencesPath)
 
 	var silences []Silence
@@ -174,7 +187,7 @@ func (am *AlertManager) ListSilences() ([]Silence, error) {
 	return filteredSilences, nil
 }
 
-func (am *AlertManager) DeleteSilenceByID(id string) error {
+func (am *Alertmanager) DeleteSilenceByID(id string) error {
 	// Use constant and url.PathEscape for safety if ID can contain special chars
 	endpoint := fmt.Sprintf("%s%s/%s", am.address, apiV2SilencePath, url.PathEscape(id))
 
