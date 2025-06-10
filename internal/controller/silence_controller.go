@@ -155,7 +155,7 @@ func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alph
 	return ctrl.Result{}, nil
 }
 
-// reconcileDelete handles the deletion of the external Alertmanager silence using the business logic service
+// reconcileDelete handles the deletion of the external Alertmanager silence.
 func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alpha1.Silence) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Deleting silence from Alertmanager as part of finalization")
