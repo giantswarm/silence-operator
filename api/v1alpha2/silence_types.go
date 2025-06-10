@@ -20,37 +20,49 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// MatchType defines the type of matching for alert matchers.
+// +kubebuilder:validation:Enum==;!=;=~;!~
+type MatchType string
+
+const (
+	// MatchEqual matches alerts where the label value exactly equals the matcher value
+	MatchEqual MatchType = "="
+	// MatchNotEqual matches alerts where the label value does not equal the matcher value
+	MatchNotEqual MatchType = "!="
+	// MatchRegexMatch matches alerts where the label value matches the regex pattern
+	MatchRegexMatch MatchType = "=~"
+	// MatchRegexNotMatch matches alerts where the label value does not match the regex pattern
+	MatchRegexNotMatch MatchType = "!~"
+)
+
 // SilenceMatcher defines an alert matcher to be muted by the Silence.
 type SilenceMatcher struct {
 	// Name of the label to match.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
 	Name string `json:"name"`
 	// Value to match for the given label name.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MaxLength=1024
 	Value string `json:"value"`
-	// IsRegex defines whether the provided value should be interpreted as a regular expression.
+	// MatchType defines the type of matching to perform.
+	// +kubebuilder:default="="
 	// +optional
-	IsRegex bool `json:"isRegex,omitempty"`
-	// IsEqual defines whether the provided value should match or not match the actual label value.
-	// +optional
-	IsEqual *bool `json:"isEqual,omitempty"`
+	MatchType MatchType `json:"matchType,omitempty"`
 }
 
 // SilenceSpec defines the desired state of Silence.
-// TODO (user): Add fields to SilenceSpec to represent the actual silence api.
 type SilenceSpec struct {
 	// Matchers defines the alert matchers that this silence will apply to.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
 	Matchers []SilenceMatcher `json:"matchers"`
-	// Owner is GitHub username of a person who created and/or owns the silence.
-	// +optional
-	Owner string `json:"owner,omitempty"`
-	// IssueURL is a link to a GitHub issue describing the problem.
-	// +optional
-	IssueURL string `json:"issue_url,omitempty"`
 }
 
 // Silence is the Schema for the silences API.
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced
-// +kubebuilder:printcolumn:name="Owner",type=string,JSONPath=`.spec.owner`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 type Silence struct {
 	metav1.TypeMeta   `json:",inline"`

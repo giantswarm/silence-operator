@@ -18,13 +18,9 @@ package controller
 
 import (
 	"context"
-	"reflect"
-	"time"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -33,6 +29,8 @@ import (
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/config"
+	"github.com/giantswarm/silence-operator/pkg/service"
 )
 
 // Define the finalizer name
@@ -41,11 +39,17 @@ const legacySilenceFinalizer = "operatorkit.giantswarm.io/silence-operator-silen
 
 // SilenceReconciler reconciles a Silence object
 type SilenceReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
+	client client.Client
 
-	Alertmanager    *alertmanager.AlertManager
-	SilenceSelector labels.Selector
+	silenceService *service.SilenceService
+}
+
+// NewSilenceReconciler creates a new SilenceReconciler with the provided silence service
+func NewSilenceReconciler(client client.Client, silenceService *service.SilenceService) *SilenceReconciler {
+	return &SilenceReconciler{
+		client:         client,
+		silenceService: silenceService,
+	}
 }
 
 // +kubebuilder:rbac:groups=monitoring.giantswarm.io,resources=silences,verbs=get;list;watch;create;update;patch;delete
@@ -60,14 +64,13 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	defer logger.Info("Finished reconciling silence")
 
 	silence := &v1alpha1.Silence{}
-	err := r.Get(ctx, req.NamespacedName, silence)
+	err := r.client.Get(ctx, req.NamespacedName, silence)
 	if err != nil {
 		// Ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification).
 		return ctrl.Result{}, errors.WithStack(client.IgnoreNotFound(err))
 	}
 
-	// Handle deletion: The object is being deleted
 	if !silence.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(silence, silenceFinalizer) {
 			// Our finalizer is present, so let's handle external dependency deletion
@@ -82,7 +85,7 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			// This allows the Kubernetes API server to finalize the object deletion.
 			logger.Info("Removing finalizer after successful Alertmanager silence deletion")
 			controllerutil.RemoveFinalizer(silence, silenceFinalizer)
-			if err := r.Update(ctx, silence); err != nil {
+			if err := r.client.Update(ctx, silence); err != nil {
 				logger.Error(err, "Failed to remove finalizer")
 				return ctrl.Result{}, errors.WithStack(err)
 			}
@@ -102,7 +105,7 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if !controllerutil.ContainsFinalizer(silence, silenceFinalizer) {
 		logger.Info("Adding finalizer")
 		controllerutil.AddFinalizer(silence, silenceFinalizer)
-		if err := r.Update(ctx, silence); err != nil {
+		if err := r.client.Update(ctx, silence); err != nil {
 			logger.Error(err, "Failed to add finalizer")
 			return ctrl.Result{}, errors.WithStack(err)
 		}
@@ -124,7 +127,7 @@ func (r *SilenceReconciler) cleanUpLegacyFinalizer(ctx context.Context, silence 
 	if controllerutil.ContainsFinalizer(silence, legacySilenceFinalizer) {
 		logger.Info("Removing legacy finalizer")
 		controllerutil.RemoveFinalizer(silence, legacySilenceFinalizer)
-		if err := r.Update(ctx, silence); err != nil {
+		if err := r.client.Update(ctx, silence); err != nil {
 			return errors.WithStack(err)
 		}
 	}
@@ -132,55 +135,23 @@ func (r *SilenceReconciler) cleanUpLegacyFinalizer(ctx context.Context, silence 
 	return nil
 }
 
-// TODO encapsulate business logic in a separate package
 func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alpha1.Silence) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
+
 	newSilence, err := getSilenceFromCR(silence)
 	if err != nil {
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
-	now := time.Now()
+	logger.Info("Syncing silence with Alertmanager")
 
-	var existingSilence *alertmanager.Silence
-	existingSilence, err = r.Alertmanager.GetSilenceByComment(alertmanager.SilenceComment(silence))
-	if err != nil && !errors.Is(err, alertmanager.ErrSilenceNotFound) {
-		logger.Error(err, "Failed to get silence from Alertmanager")
+	err = r.silenceService.SyncSilence(ctx, newSilence)
+	if err != nil {
+		logger.Error(err, "Failed to sync silence with Alertmanager")
 		return ctrl.Result{}, errors.WithStack(err)
-	} else if errors.Is(err, alertmanager.ErrSilenceNotFound) {
-		if newSilence.EndsAt.After(now) {
-			logger.Info("Creating silence in Alertmanager")
-			err = r.Alertmanager.CreateSilence(newSilence)
-			if err != nil {
-				logger.Error(err, "Failed to create silence in Alertmanager")
-				return ctrl.Result{}, errors.WithStack(err)
-			}
-			logger.Info("Created silence in Alertmanager")
-		} else {
-			logger.Info("Skipped creation: silence is already expired")
-		}
-	} else if newSilence.EndsAt.Before(now) {
-		// Existing silence found, but the desired state is expired
-		logger.Info("Deleting expired silence from Alertmanager")
-		err = r.Alertmanager.DeleteSilenceByID(existingSilence.ID)
-		if err != nil {
-			logger.Error(err, "Failed to delete expired silence from Alertmanager")
-			return ctrl.Result{}, errors.WithStack(err)
-		}
-		logger.Info("Deleted expired silence from Alertmanager")
-	} else if updateNeeded(existingSilence, newSilence) {
-		newSilence.ID = existingSilence.ID
-		logger.Info("Updating silence in Alertmanager")
-		err = r.Alertmanager.UpdateSilence(newSilence)
-		if err != nil {
-			logger.Error(err, "Failed to update silence in Alertmanager")
-			return ctrl.Result{}, errors.WithStack(err)
-		}
-		logger.Info("Updated silence in Alertmanager")
-	} else {
-		logger.Info("Skipped update: silence unchanged")
 	}
 
+	logger.Info("Successfully synced silence with Alertmanager")
 	return ctrl.Result{}, nil
 }
 
@@ -189,14 +160,9 @@ func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alph
 	logger := log.FromContext(ctx)
 	logger.Info("Deleting silence from Alertmanager as part of finalization")
 
-	err := r.Alertmanager.DeleteSilenceByComment(alertmanager.SilenceComment(silence))
+	comment := alertmanager.SilenceComment(silence)
+	err := r.silenceService.DeleteSilence(ctx, comment)
 	if err != nil {
-		// If the silence is already gone in Alertmanager, treat it as success
-		if errors.Is(err, alertmanager.ErrSilenceNotFound) {
-			logger.Info("Silence already deleted in Alertmanager")
-			return nil // Success, allows finalizer removal
-		}
-		// For other errors, return the error to retry
 		return errors.Wrap(err, "failed to delete silence from Alertmanager")
 	}
 
@@ -204,47 +170,20 @@ func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alph
 	return nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *SilenceReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Silence{}).
-		Named("silence")
-
-	if r.SilenceSelector != nil && !r.SilenceSelector.Empty() {
-		// Convert labels.Selector to metav1.LabelSelector string representation
-		selectorStr := r.SilenceSelector.String()
-		// Parse the string into metav1.LabelSelector
-		metaLabelSelector, err := metav1.ParseToLabelSelector(selectorStr)
-		if err != nil {
-			return errors.Wrap(err, "failed to parse silence selector for predicate")
-		}
-		// Create the predicate using controller-runtime's LabelSelectorPredicate
-		labelPredicate, err := predicate.LabelSelectorPredicate(*metaLabelSelector)
-		if err != nil {
-			return errors.Wrap(err, "failed to create label selector predicate")
-		}
-		controllerBuilder = controllerBuilder.WithEventFilter(labelPredicate)
-	}
-
-	return controllerBuilder.Complete(r)
-}
-
 func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
-	{
-		for _, matcher := range silence.Spec.Matchers {
-			isEqual := true
-			if matcher.IsEqual != nil {
-				isEqual = *matcher.IsEqual
-			}
-			newMatcher := alertmanager.Matcher{
-				IsEqual: isEqual,
-				IsRegex: matcher.IsRegex,
-				Name:    matcher.Name,
-				Value:   matcher.Value,
-			}
-			matchers = append(matchers, newMatcher)
+	for _, matcher := range silence.Spec.Matchers {
+		isEqual := true
+		if matcher.IsEqual != nil {
+			isEqual = *matcher.IsEqual
 		}
+		newMatcher := alertmanager.Matcher{
+			IsEqual: isEqual,
+			IsRegex: matcher.IsRegex,
+			Name:    matcher.Name,
+			Value:   matcher.Value,
+		}
+		matchers = append(matchers, newMatcher)
 	}
 
 	endsAt, err := alertmanager.SilenceEndsAt(silence)
@@ -263,8 +202,27 @@ func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) 
 	return newSilence, nil
 }
 
-// updateNeeded return true when silence need to be updated.
-func updateNeeded(existingSilence, newSilence *alertmanager.Silence) bool {
-	return !reflect.DeepEqual(existingSilence.Matchers, newSilence.Matchers) ||
-		!existingSilence.EndsAt.Equal(newSilence.EndsAt)
+// SetupWithManager sets up the controller with the Manager.
+func (r *SilenceReconciler) SetupWithManager(mgr ctrl.Manager, cfg config.Config) error {
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
+		For(&v1alpha1.Silence{}).
+		Named("silence")
+
+	if cfg.SilenceSelector != nil && !cfg.SilenceSelector.Empty() {
+		// Convert labels.Selector to metav1.LabelSelector string representation
+		selectorStr := cfg.SilenceSelector.String()
+		// Parse the string into metav1.LabelSelector
+		metaLabelSelector, err := metav1.ParseToLabelSelector(selectorStr)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse silence selector for predicate")
+		}
+		// Create the predicate using controller-runtime's LabelSelectorPredicate
+		labelPredicate, err := predicate.LabelSelectorPredicate(*metaLabelSelector)
+		if err != nil {
+			return errors.Wrap(err, "failed to create label selector predicate")
+		}
+		controllerBuilder = controllerBuilder.WithEventFilter(labelPredicate)
+	}
+
+	return controllerBuilder.Complete(r)
 }

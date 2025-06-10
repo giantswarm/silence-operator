@@ -1,10 +1,17 @@
 # Testing Guide for Silence Operator
 
-This document explains the testing infrastructure and practices for the Silence Operator project.
+This document explains the testing infrastructure and practices for the Silence Operator project, which supports both v1alpha1 (legacy) and v1alpha2 (recommended) APIs.
 
 ## Overview
 
 The Silence Operator uses a comprehensive testing strategy that includes unit tests, integration tests, and end-to-end tests. The testing infrastructure is built on top of Kubebuilder's testing framework with enhancements for better developer experience.
+
+**Key Testing Areas:**
+- **Controller Logic**: Tests for both `SilenceReconciler` (v1alpha1) and `SilenceV2Reconciler` (v1alpha2) 
+- **Service Layer**: Business logic testing with mock Alertmanager clients
+- **API Conversion**: Testing the conversion between different matcher formats (boolean vs enum)
+- **Finalizer Handling**: Proper cleanup and deletion testing
+- **Error Scenarios**: Network failures, invalid configurations, etc.
 
 ## Testing Infrastructure
 
@@ -19,9 +26,9 @@ func getKubeBuilderAssets() string {
 }
 ```
 
-### Mock AlertManager
+### Mock Alertmanager
 
-The project includes a sophisticated mock AlertManager HTTP server for testing:
+The project includes a sophisticated mock Alertmanager HTTP server for testing:
 
 - **File**: `internal/controller/testutils/mock_alertmanager.go`
 - **Features**: 
@@ -117,7 +124,7 @@ The project includes comprehensive tests for both API versions:
 Tests for the `monitoring.giantswarm.io/v1alpha1` API:
 - Basic reconciliation functionality
 - Resource creation and cleanup
-- AlertManager integration
+- Alertmanager integration
 
 #### V2 Controller Tests (`silence_v2_controller_test.go`)
 Tests for the `observability.giantswarm.io/v1alpha2` API:
@@ -126,31 +133,43 @@ Tests for the `observability.giantswarm.io/v1alpha2` API:
 - API conversion between v1alpha2 and v1alpha1
 - Enhanced error handling
 
+The silence-operator includes comprehensive test suites for both API versions:
+
 ```go
-var _ = Describe("SilenceV2 Controller", func() {
-    Context("When reconciling a resource", func() {
-        var mockServer *testutils.MockAlertManagerServer
-        var mockAlertManager *alertmanager.AlertManager
+var _ = Describe("Silence Controller", func() {
+    var (
+        mockServer       *testutils.MockAlertmanagerServer
+        mockAlertmanager *alertmanager.Alertmanager
+        reconciler       *SilenceReconciler
+        ctx              context.Context
+    )
 
-        BeforeEach(func() {
-            // Set up mock AlertManager server
-            mockServer = testutils.NewMockAlertManagerServer()
-            mockAlertManager, err = mockServer.GetAlertManager()
-            Expect(err).NotTo(HaveOccurred())
-        })
+    BeforeEach(func() {
+        // Set up mock Alertmanager server
+        mockServer = testutils.NewMockAlertmanagerServer()
+		    var err error
+		    mockAlertmanager, err = mockServer.GetAlertmanager()
+		    Expect(err).NotTo(HaveOccurred())
 
-        AfterEach(func() {
-            if mockServer != nil {
-                mockServer.Close()
-            }
-        })
+		    // Create service and reconciler
+    		silenceService := service.NewSilenceService(mockAlertmanager)
+		    reconciler = &SilenceReconciler{
+			      client:         k8sClient,
+			      silenceService: silenceService,
+		    }
 
-        It("should successfully reconcile the resource", func() {
-            controllerReconciler := &SilenceV2Reconciler{
-                Client:       k8sClient,
-                Scheme:       k8sClient.Scheme(),
-                Alertmanager: mockAlertManager,
-            }
+		    ctx = context.Background()
+    })
+
+    AfterEach(func() {
+		    // Clean up mock server
+		    if mockServer != nil {
+			      mockServer.Close()
+		    }
+    })
+
+    Context("When creating a Silence", func() {
+        It("Should create silence in Alertmanager", func() {
             // Test implementation
         })
 
@@ -160,6 +179,45 @@ var _ = Describe("SilenceV2 Controller", func() {
 
         It("should convert v1alpha2 to v1alpha1 format correctly", func() {
             // Tests API conversion functionality
+        })
+    })
+})
+
+var _ = Describe("SilenceV2 Controller", func() {
+    Context("When reconciling a resource", func() {
+        It("should successfully reconcile the resource", func() {
+            // Test implementation for v1alpha2 API
+        })
+        
+        It("should handle deletion with finalizer", func() {
+            // Test finalizer logic for v1alpha2
+        })
+    })
+
+    Context("MatchType Conversion", func() {
+        It("should convert MatchType enum to correct boolean values", func() {
+            testCases := []struct {
+                matchType       observabilityv1alpha2.MatchType
+                expectedIsRegex bool
+                expectedIsEqual bool
+                description     string
+            }{
+                {observabilityv1alpha2.MatchEqual, false, true, "exact match (=)"},
+                {observabilityv1alpha2.MatchNotEqual, false, false, "exact non-match (!=)"},
+                {observabilityv1alpha2.MatchRegexMatch, true, true, "regex match (=~)"},
+                {observabilityv1alpha2.MatchRegexNotMatch, true, false, "regex non-match (!~)"},
+                {"", false, true, "empty/default should be exact match"},
+            }
+            
+            for _, tc := range testCases {
+                // Test the conversion logic for each match type
+                silence := createTestSilenceWithMatchType(tc.matchType)
+                result, err := reconciler.getSilenceFromCR(silence)
+                
+                Expect(err).NotTo(HaveOccurred())
+                Expect(result.Matchers[0].IsRegex).To(Equal(tc.expectedIsRegex))
+                Expect(result.Matchers[0].IsEqual).To(Equal(tc.expectedIsEqual))
+            }
         })
     })
 })
@@ -206,11 +264,32 @@ The helper function `ParseSilenceSelector` is thoroughly tested with:
 
 This testing ensures robust configuration parsing for silence selector functionality extracted from `main.go` into reusable helper functions.
 
-### Mock AlertManager Usage
+### Mock Alertmanager Usage
+### Service Layer Testing
+
+The refactored architecture enables easier testing of business logic:
+
+```go
+// Test the service layer directly
+func TestSilenceService_CreateOrUpdateSilence(t *testing.T) {
+    // Setup mock Alertmanager client
+    mockClient := &MockAlertmanagerClient{}
+    service := NewSilenceService(mockClient)
+    
+    // Test business logic without Kubernetes dependencies
+    err := service.CreateOrUpdateSilence(ctx, "test-comment", silence)
+    assert.NoError(t, err)
+    
+    // Verify expected Alertmanager operations
+    mockClient.AssertCreateSilenceCalled(t, silence)
+}
+```
+
+### Mock Alertmanager Usage
 
 ```go
 // Create and start mock
-mockAM := testutils.NewMockAlertManager()
+mockAM := testutils.NewMockAlertmanager()
 mockAM.Start()
 defer mockAM.Stop()
 
@@ -241,7 +320,7 @@ Extracted silence selector parsing logic from `main.go` into `pkg/config/config.
 
 ### Testing Infrastructure Updates
 
-- **Enhanced mock AlertManager**: Improved testutils with better error simulation
+- **Enhanced mock Alertmanager**: Improved testutils with better error simulation
 - **Automatic binary detection**: Tests automatically find required K8s binaries
 - **Parallel test execution**: Safe parallel execution where applicable
 - **Better resource cleanup**: Improved test isolation and cleanup
@@ -348,6 +427,8 @@ Tests must pass the following quality gates:
 2. **Group related tests** using Ginkgo's `Context` and `Describe` blocks
 3. **Setup and cleanup** properly in `BeforeEach`/`AfterEach` hooks
 4. **Use table-driven tests** for testing multiple scenarios
+5. **Separate API version tests** - keep v1alpha1 and v1alpha2 tests in separate files
+6. **Test conversion logic** between different matcher field formats
 
 #### Current Test Structure
 
@@ -364,16 +445,17 @@ pkg/config/
 
 Each test file follows a consistent pattern:
 - **Suite setup**: Shared test environment initialization
-- **Mock setup**: AlertManager server mocking for external dependencies  
+- **Mock setup**: Alertmanager server mocking for external dependencies  
 - **Resource lifecycle**: Creation, reconciliation, and cleanup testing
 - **Error scenarios**: Validation of error handling and edge cases
 
 ### Mocking Strategy
 
-1. **Mock external dependencies** like AlertManager API calls
+1. **Mock external dependencies** like Alertmanager API calls
 2. **Use real Kubernetes API** for testing controller logic
 3. **Prefer HTTP mocks** over interface mocks for external services
 4. **Make mocks configurable** for different test scenarios
+5. **Share mock setup** between v1alpha1 and v1alpha2 tests when appropriate
 
 ### Coverage Guidelines
 
@@ -381,6 +463,8 @@ Each test file follows a consistent pattern:
 2. **Exclude generated code** from coverage calculations
 3. **Test error paths** and edge cases
 4. **Document untested code** with justification
+5. **Cover both API versions** - ensure feature parity testing
+6. **Test migration scenarios** where both APIs interact
 
 ### Performance Considerations
 
@@ -434,3 +518,73 @@ make test GINKGO_ARGS="-v" 2>&1 | grep "controller"
 ```
 
 For more specific troubleshooting, refer to the individual test files and the Kubebuilder documentation.
+
+## API Version Testing
+
+### v1alpha1 vs v1alpha2 Testing Differences
+
+The silence-operator supports two API versions with different matcher field formats:
+
+**v1alpha1 (Legacy)**:
+- Uses boolean fields: `isRegex: bool`, `isEqual: *bool`
+- Cluster-scoped resources
+- Tested in `silence_controller_test.go`
+
+**v1alpha2 (Recommended)**:
+- Uses enum field: `matchType: MatchType` with values `=`, `!=`, `=~`, `!~`
+- Namespace-scoped resources  
+- Tested in `silence_v2_controller_test.go`
+
+### MatchType Conversion Testing
+
+The v1alpha2 controller includes specific tests for converting the new enum-based `matchType` field to the boolean fields expected by the Alertmanager API:
+
+```go
+Context("MatchType Conversion", func() {
+    It("should convert MatchType enum to correct boolean values", func() {
+        testCases := []struct {
+            matchType       observabilityv1alpha2.MatchType
+            expectedIsRegex bool
+            expectedIsEqual bool
+            description     string
+        }{
+            {observabilityv1alpha2.MatchEqual, false, true, "exact match (=)"},
+            {observabilityv1alpha2.MatchNotEqual, false, false, "exact non-match (!=)"},
+            {observabilityv1alpha2.MatchRegexMatch, true, true, "regex match (=~)"},
+            {observabilityv1alpha2.MatchRegexNotMatch, true, false, "regex non-match (!~)"},
+            {"", false, true, "empty/default should be exact match"},
+        }
+        
+        for _, tc := range testCases {
+            // Test conversion logic
+        }
+    })
+})
+```
+
+This ensures the new user-friendly enum values are correctly converted to the internal boolean representation.
+
+## Test File Structure
+
+The test suite is organized across multiple files for better maintainability:
+
+```
+internal/controller/
+├── suite_test.go                    # Test suite setup and shared utilities
+├── silence_controller_test.go       # Tests for v1alpha1 SilenceReconciler
+├── silence_v2_controller_test.go    # Tests for v1alpha2 SilenceV2Reconciler
+└── testutils/
+    ├── mock_alertmanager.go         # Mock Alertmanager HTTP server
+    └── ...                          # Other test utilities
+
+pkg/alertmanager/
+└── alertmanager_test.go             # Unit tests for Alertmanager client
+```
+
+### Test Suite Features
+
+- **Shared Test Environment**: `suite_test.go` sets up a common Kubernetes test environment
+- **Automatic Binary Detection**: Automatically finds required Kubernetes testing binaries
+- **Mock Alertmanager**: Sophisticated HTTP server mock for realistic testing
+- **API Version Separation**: Dedicated test files for each API version
+- **Conversion Testing**: Specific tests for field format conversion between APIs

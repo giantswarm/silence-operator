@@ -11,14 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Allow filtering of `Silence` custom resources based on a label selector. The operator will only process `Silence` CRs that match the selector provided via the `--silence-selector` command-line flag or the `silenceSelector` Helm chart value. If no selector is provided, all `Silence` CRs are processed.
 - Add `observability.giantswarm.io/v1alpha2` API group with namespace-scoped Silence CRD.
-- Add `SilenceV2Reconciler` to handle v1alpha2 resources while maintaining backward compatibility with v1alpha1.
+  - Add `MatchType` enum using actual Alertmanager operator symbols (`=`, `!=`, `=~`, `!~`) replacing boolean fields for better usability.
+  - Add `SilenceV2Reconciler` to handle v1alpha2 resources while maintaining backward compatibility with v1alpha1.
+  - Add migration documentation for transitioning from v1alpha1 to v1alpha2.
+  - Add comprehensive validation to v1alpha2 SilenceMatcher fields with size limits and required field constraints.
 - Add enhanced printer columns for better `kubectl get silences` output.
-- Add migration documentation for transitioning from v1alpha1 to v1alpha2.
 
 ### Changed
 
+- Improve code organization with clean separation between controller logic and business logic
 - New namespace-scoped silences should use `observability.giantswarm.io/v1alpha2` instead of `monitoring.giantswarm.io/v1alpha1`.
 - v1alpha2 removes deprecated `TargetTags` and `PostmortemURL` fields in favor of cleaner API design.
+- **BREAKING**: v1alpha2 replaces `isRegex` and `isEqual` boolean fields with `matchType` enum using Alertmanager operator symbols.
+- Enhanced v1alpha2 API validation: matcher names limited to 256 chars, values to 1024 chars, minimum 1 matcher required.
 
 ### Deprecated
 
@@ -26,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cluster-scoped silences are deprecated in favor of namespace-scoped resources for better multi-tenancy.
 
 **Migration Note**: Existing v1alpha1 silences continue to work unchanged. See MIGRATION.md for guidance on migrating to v1alpha2.
+early
 
 ## [0.16.1] - 2025-05-20
 
@@ -177,7 +183,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Make Helm chart CronJob optional
-- Make Helm chart AlertManager address configurable
+- Make Helm chart Alertmanager address configurable
 - Make target tags field optional for when sync is disabled
 - Only install Helm chart sync secret when sync is enabled
 - Only install PodSecurityPolicy on supported Kubernetes versions
