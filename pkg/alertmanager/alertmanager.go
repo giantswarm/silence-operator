@@ -41,7 +41,6 @@ type Client interface {
 // Ensure Alertmanager implements Client
 var _ Client = (*Alertmanager)(nil)
 
-
 type Config struct {
 	Address        string
 	Authentication bool
