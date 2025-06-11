@@ -21,7 +21,7 @@ Thank you for your interest in contributing to the silence-operator! This guide 
    ```
 3. Generate code and manifests:
    ```bash
-   make generate-all
+   make generate-all-with-helm
    ```
 
 ### Making Changes

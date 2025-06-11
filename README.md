@@ -103,16 +103,16 @@ If you're currently using the cluster-scoped `monitoring.giantswarm.io/v1alpha1`
 
 **Key differences in v1alpha2:**
 - **Namespace-scoped**: Silences are scoped to specific namespaces instead of cluster-wide
-- **Enhanced status**: Comprehensive status tracking with conditions and phase information
-- **Additional fields**: Support for `owner` and `issue_url` fields for better traceability
 - **New API group**: Uses `observability.giantswarm.io` instead of `monitoring.giantswarm.io`
+- **Simplified matcher syntax**: Uses enum-based `matchType` field (`=`, `!=`, `=~`, `!~`) instead of boolean `isRegex`/`isEqual` fields
+- **Streamlined spec**: Removes legacy fields (`targetTags`, `owner`, `issue_url`, `postmortem_url`) for a cleaner API surface
+- **Enhanced validation**: Includes stricter field validation and length limits for better error handling
 
 **Migration steps:**
 1. Deploy the new v1alpha2 CRD (both CRDs can coexist)
 2. Create equivalent v1alpha2 Silence resources in appropriate namespaces
 3. Verify the new silences are working correctly
 4. Remove old v1alpha1 resources
-5. Eventually remove the v1alpha1 CRD when no longer needed
 
 For detailed migration instructions and examples, see [MIGRATION.md](MIGRATION.md).
 
@@ -157,6 +157,7 @@ spec:
   - name: cluster
     value: test
     isRegex: false
+    isEqual: true
   - name: severity
     value: critical
     isRegex: false
