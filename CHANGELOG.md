@@ -9,24 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Allow filtering of `Silence` custom resources based on a label selector. The operator will only process `Silence` CRs that match the selector provided via the `--silence-selector` command-line flag or the `silenceSelector` Helm chart value. If no selector is provided, all `Silence` CRs are processed.
-- Add namespace selector feature for v2 controller to restrict which namespaces are watched for `observability.giantswarm.io/v1alpha2` Silence resources. Configure via `--namespace-selector` command-line flag or `namespaceSelector` Helm chart value. Supports standard Kubernetes label selectors for better multi-tenancy and resource isolation.
-- Add `observability.giantswarm.io/v1alpha2` API group with namespace-scoped Silence CRD.
-- Add `SilenceV2Reconciler` to handle v1alpha2 resources while maintaining backward compatibility with v1alpha1.
-- Add enhanced printer columns for better `kubectl get silences` output.
-- Add migration documentation for transitioning from v1alpha1 to v1alpha2.
+- Add advanced filtering capabilities for both v1alpha1 and v1alpha2 controllers:
+  - Add silence selector feature to filter `Silence` resources by labels (configure via `--silence-selector` flag).
+  - Add namespace selector for v1alpha2 controller to restrict watched namespaces (configure via `--namespace-selector` flag).
+- Add new `observability.giantswarm.io/v1alpha2` API with namespace-scoped Silence CRD for improved multi-tenancy.
+  - Add `MatchType` enum field using Alertmanager operator symbols (`=`, `!=`, `=~`, `!~`) for intuitive matching logic.
+  - Add `SilenceV2Reconciler` controller to handle v1alpha2 resources while maintaining full backward compatibility with v1alpha1.
+  - Add comprehensive field validation: matcher names (1-256 chars), values (max 1024 chars), minimum 1 matcher required.
+  - Add printer columns to v1alpha2 CRD for better `kubectl get silences` output showing Age.
+- Add automated migration script (`hack/migrate-silences.sh`) for v1alpha1 to v1alpha2 conversion.
+  - Automatically converts boolean matcher fields (`isRegex`/`isEqual`) to enum format (`matchType`).
+  - Intelligently preserves user annotations/labels while filtering out Kubernetes and FluxCD system metadata.
+  - Supports dry-run mode for safe migration testing.
+- Add comprehensive migration documentation (`MIGRATION.md`) with examples and best practices.
+- Add clean service layer architecture (`pkg/service/`) separating business logic from Kubernetes controller concerns.
 
 ### Changed
 
-- New namespace-scoped silences should use `observability.giantswarm.io/v1alpha2` instead of `monitoring.giantswarm.io/v1alpha1`.
-- v1alpha2 removes deprecated `TargetTags` and `PostmortemURL` fields in favor of cleaner API design.
+- **BREAKING** (v1alpha2 only): Replace `isRegex` and `isEqual` boolean fields with single `matchType` enum field using Alertmanager symbols.
+- **BREAKING** (v1alpha2 only): Change from cluster-scoped to namespace-scoped resources for better multi-tenancy and RBAC isolation.
+- Remove deprecated fields in v1alpha2: `targetTags`, `owner`, `postmortem_url`, and `issue_url` for cleaner API design.
+- Improve code organization with dependency injection and clear separation between controller logic and business logic.
 
 ### Deprecated
 
-- The `monitoring.giantswarm.io/v1alpha1` API remains supported but is considered legacy. New deployments should use v1alpha2.
-- Cluster-scoped silences are deprecated in favor of namespace-scoped resources for better multi-tenancy.
+- The `monitoring.giantswarm.io/v1alpha1` API is now considered legacy. New deployments should use `observability.giantswarm.io/v1alpha2`.
+- Cluster-scoped silences are deprecated in favor of namespace-scoped resources for improved security and multi-tenancy.
 
-**Migration Note**: Existing v1alpha1 silences continue to work unchanged. See MIGRATION.md for guidance on migrating to v1alpha2.
+**Migration Note**: Existing v1alpha1 silences continue to work unchanged. Use the automated migration script and see MIGRATION.md for detailed guidance.
 
 ## [0.16.1] - 2025-05-20
 
@@ -178,7 +188,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Make Helm chart CronJob optional
-- Make Helm chart AlertManager address configurable
+- Make Helm chart Alertmanager address configurable
 - Make target tags field optional for when sync is disabled
 - Only install Helm chart sync secret when sync is enabled
 - Only install PodSecurityPolicy on supported Kubernetes versions
