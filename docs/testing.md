@@ -68,22 +68,15 @@ This installs:
 ```bash
 # Run all tests
 make test
-```
 
-#### Enhanced Test Commands
+# Run tests with specific Ginkgo arguments (modify test target as needed)
+$(GINKGO) -focus='Silence Controller' ./...
 
-```bash
-# Run tests with verbose output 
-make test GINKGO_ARGS="-v"
-
-# Run tests without parallelism
-make test GINKGO_ARGS="-p=false"
-
-# Run specific test with focus
-make test GINKGO_ARGS="-focus='Silence Controller'"
+# Run tests with verbose output
+$(GINKGO) -v ./...
 
 # Skip specific tests
-make test GINKGO_ARGS="-skip='Should fail'"
+$(GINKGO) -skip='Should fail' ./...
 ```
 ### Test Configuration
 
@@ -95,14 +88,17 @@ make test GINKGO_ARGS="-skip='Should fail'"
 #### Test Flags
 
 ```bash
-# Run specific test suites using Ginkgo args
-make test GINKGO_ARGS="-focus='Controller'"
+# Run specific test suites using Ginkgo directly
+bin/ginkgo -focus='Controller' ./...
 
 # Skip certain tests
-make test GINKGO_ARGS="-skip='Integration'"
+bin/ginkgo -skip='Integration' ./...
 
 # Set Kubernetes version for envtest
 make test ENVTEST_K8S_VERSION="1.29"
+
+# Run tests with verbose output
+bin/ginkgo -v ./...
 ```
 
 ## Writing Tests
@@ -226,6 +222,82 @@ mockAM.SetResponse("/api/v2/silences", http.StatusOK, silenceList)
 Expect(mockAM.GetRequestCount("POST", "/api/v2/silences")).To(Equal(1))
 ```
 
+### Migration Script Testing
+
+The `hack/migrate-silences.sh` script includes comprehensive testing capabilities for safe migration from v1alpha1 to v1alpha2:
+
+#### Dry-Run Testing
+
+```bash
+# Test migration without making changes
+./hack/migrate-silences.sh --dry-run
+
+# Test migration to specific namespace
+./hack/migrate-silences.sh production --dry-run
+```
+
+#### Script Validation
+
+```bash
+# Check script syntax
+bash -n hack/migrate-silences.sh
+
+# Run shellcheck for code quality
+shellcheck hack/migrate-silences.sh
+```
+
+#### Testing Migration Features
+
+The script provides detailed testing of:
+
+1. **Boolean-to-Enum Conversion**: Verifies correct conversion of `isRegex`/`isEqual` to `matchType`
+2. **Metadata Filtering**: Tests preservation of user annotations while filtering system metadata
+3. **Namespace Targeting**: Validates correct namespace deployment
+4. **Error Handling**: Tests CRD validation and error reporting
+
+#### Expected Output Validation
+
+During dry-run testing, verify:
+
+```bash
+# Look for successful conversions
+📝 alertname: isRegex=false, isEqual=true → matchType='='
+
+# Check metadata preservation
+📎 Copying 2 user annotation(s): motivation, valid-until
+
+# Verify filtering is working
+🏷️  System labels filtered: kustomize.toolkit.fluxcd.io/name
+```
+
+#### Integration Testing
+
+Test the migration script with real v1alpha1 silences:
+
+```bash
+# Create test v1alpha1 silence
+kubectl apply -f - <<EOF
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: test-migration
+  annotations:
+    motivation: "Testing migration"
+    config.kubernetes.io/origin: "test"
+spec:
+  matchers:
+  - name: alertname
+    value: TestAlert
+    isRegex: false
+    isEqual: true
+EOF
+
+# Test migration
+./hack/migrate-silences.sh test-namespace --dry-run
+
+# Verify output shows proper filtering and conversion
+```
+
 ## Coverage Reporting
 
 ### Coverage Collection
@@ -262,20 +334,27 @@ Coverage reports are saved to:
 ### Verbose Output
 
 ```bash
-# Show detailed Ginkgo output
-make test GINKGO_ARGS="-v --trace"
+# Show detailed Ginkgo output by running directly
+bin/ginkgo -v --trace ./...
+
+# Alternative: modify the test target in Makefile temporarily
+# Add -v flag to the GINKGO command
 ```
 
 ### Test Environment Debugging
 
 ```bash
 # Check tool versions  
-./bin/setup-envtest version
-./bin/ginkgo version
-./bin/golangci-lint version
+bin/setup-envtest version
+bin/ginkgo version
+bin/golangci-lint version
 
 # Check envtest binary availability
-./bin/setup-envtest list
+bin/setup-envtest list
+
+# Verify KUBEBUILDER_ASSETS detection
+make test ENVTEST_K8S_VERSION="1.30"
+```
 
 # Verify tools are installed
 make install-tools
@@ -366,16 +445,13 @@ Tests must pass the following quality gates:
 
 ### Code Quality Tools
 
-- **golangci-lint**: Comprehensive Go linting
-- **gosec**: Security vulnerability scanning
-- **gocyclo**: Cyclomatic complexity analysis
-- **staticcheck**: Advanced static analysis
+- **golangci-lint**: Comprehensive Go linting (includes gosec for security scanning)
+- **controller-gen**: Code generation for Kubernetes controllers
 
 ### Coverage Tools
 
-- **go tool cover**: Built-in coverage analysis
-- **gocov**: Enhanced coverage reporting
-- **gocov-html**: HTML coverage visualization
+- **Ginkgo coverage**: Built-in coverage via `--cover` flag
+- **go tool cover**: Built-in coverage analysis and HTML reports
 
 ## Troubleshooting
 

@@ -17,7 +17,7 @@ The silence-operator now supports two API versions:
 | **Scope** | Cluster-scoped | Namespace-scoped |
 | **Matcher Fields** | `isRegex: bool`, `isEqual: bool` | `matchType: string` (enum) |
 | **Validation** | Basic validation | Enhanced validation with field size limits |
-| **Deprecated Fields** | Includes `TargetTags`, `PostmortemURL` | Cleaned up, only essential fields |
+| **Deprecated Fields** | Includes `targetTags`, `owner`, `issue_url`, `postmortem_url` | Cleaned up, only essential fields |
 | **Finalizer** | `monitoring.giantswarm.io/silence-protection` | `observability.giantswarm.io/silence-protection` |
 | **Controller** | `SilenceReconciler` | `SilenceV2Reconciler` |
 
@@ -55,13 +55,17 @@ spec:
 
 ### Removed Fields in v1alpha2
 
+The v1alpha2 API removes several fields that were present in v1alpha1 for a cleaner, more focused API surface:
+
 ```yaml
-# v1alpha1 (deprecated fields)
+# v1alpha1 (deprecated fields removed in v1alpha2)
 spec:
-  targetTags:          # ❌ Removed - was optional
+  targetTags:          # ❌ Removed - legacy field, not commonly used
   - name: "example"
     value: "test"
-  postmortem_url: "..."  # ❌ Removed - use issue_url instead
+  owner: "username"     # ❌ Removed
+  postmortem_url: "..." # ❌ Removed
+  issue_url: "..."      # ❌ Removed
 ```
 
 ### Enhanced Validation in v1alpha2
@@ -132,124 +136,102 @@ kubectl delete silences.monitoring.giantswarm.io example-silence
 
 ### Strategy 2: Bulk Migration Script
 
-For environments with many silences, use this migration script:
+For environments with many silences, use the provided migration script:
 
 ✅ **Automated Conversion**: This script automatically converts boolean fields (`isRegex`/`isEqual`) to the new `matchType` enum format. No manual intervention required!
 
 ```bash
-#!/bin/bash
-# Enhanced migration script with boolean to enum conversion
-# Usage: ./migrate_silences.sh [target-namespace]
+# Run the migration script (located in hack/migrate-silences.sh)
+./hack/migrate-silences.sh [target-namespace] [--dry-run]
 
-set -euo pipefail
+# Example: Test migration to production namespace (dry-run)
+./hack/migrate-silences.sh production --dry-run
 
-TARGET_NAMESPACE="${1:-default}"
+# Example: Migrate all v1alpha1 silences to the production namespace
+./hack/migrate-silences.sh production
 
-echo "🔄 Migrating v1alpha1 silences to v1alpha2 in namespace: $TARGET_NAMESPACE"
-echo "============================================================================"
+# Example: Migrate to default namespace
+./hack/migrate-silences.sh
+```
 
-# Function to convert a single matcher from boolean to enum
-convert_matcher_to_enum() {
-    local matcher_json="$1"
-    
-    local name=$(echo "$matcher_json" | jq -r '.name')
-    local value=$(echo "$matcher_json" | jq -r '.value')
-    local isRegex=$(echo "$matcher_json" | jq -r '.isRegex // false')
-    local isEqual=$(echo "$matcher_json" | jq -r 'if has("isEqual") then .isEqual else true end')
-    
-    # Convert boolean combination to enum
-    local matchType
-    case "${isRegex}-${isEqual}" in
-        "false-true")  matchType="=" ;;
-        "false-false") matchType="!=" ;;
-        "true-true")   matchType="=~" ;;
-        "true-false")  matchType="!~" ;;
-        *)             matchType="=" ;;  # Default fallback
-    esac
-    
-    # Return new matcher format
-    jq -n --arg name "$name" --arg value "$value" --arg matchType "$matchType" \
-        '{name: $name, value: $value, matchType: $matchType}'
-}
+The script will:
+1. Fetch all existing v1alpha1 silences
+2. Convert boolean matcher fields to enum format automatically
+3. Create equivalent v1alpha2 silences in the target namespace
+4. **Intelligently preserve user metadata** while filtering out system annotations/labels
+5. Provide detailed output of the conversion process
 
-# Check prerequisites
-if ! command -v kubectl &> /dev/null; then
-    echo "❌ kubectl is required but not found"
-    exit 1
-fi
+### Metadata Filtering During Migration
 
-if ! command -v jq &> /dev/null; then
-    echo "❌ jq is required but not found"
-    exit 1
-fi
+The migration script **automatically preserves user-defined annotations and labels** while filtering out Kubernetes and FluxCD system metadata:
 
-# Get v1alpha1 silences
-echo "📋 Fetching v1alpha1 silences..."
-if ! kubectl get silences.monitoring.giantswarm.io &> /dev/null; then
-    echo "❌ No v1alpha1 silences found or CRD not installed"
-    exit 1
-fi
+#### ✅ **Preserved** (User Metadata):
+- `motivation` - User-defined reasoning for the silence
+- `valid-until` - User-defined expiry date
+- `issue` - User-defined issue tracker links  
+- `app.example.com/*` - Custom application labels
+- `team.company.com/*` - Custom team labels
+- Any other user-defined annotations/labels
 
-silences_json=$(kubectl get silences.monitoring.giantswarm.io -o json)
-silence_count=$(echo "$silences_json" | jq '.items | length')
+#### ❌ **Filtered Out** (System Metadata):
+- `kubernetes.io/*` - Core Kubernetes metadata
+- `k8s.io/*` - Kubernetes ecosystem 
+- `config.kubernetes.io/*` - Kubernetes configuration origin
+- `app.kubernetes.io/*` - Kubernetes app labeling
+- `fluxcd.io/*` - FluxCD system metadata
+- `helm.sh/*` - Helm metadata
+- `kustomize.toolkit.fluxcd.io/*` - Kustomize FluxCD labels
+- `source.toolkit.fluxcd.io/*` - Source FluxCD
+- `meta.helm.sh/*` - Helm meta
+- `kubectl.kubernetes.io/*` - kubectl metadata
+- `control-plane.alpha.kubernetes.io/*` - Control plane
+- `node.alpha.kubernetes.io/*` - Node metadata
+- `volume.alpha.kubernetes.io/*` - Volume metadata
+- `pod-template-hash`, `controller-revision-hash` - Kubernetes controller metadata
+- Cloud provider specific annotations/labels (GKE, etc.)
 
-if [[ "$silence_count" == "0" ]]; then
-    echo "ℹ️  No v1alpha1 silences found to migrate"
-    exit 0
-fi
+#### Example Filtering:
 
-echo "📝 Found $silence_count v1alpha1 silence(s) to migrate"
-echo ""
+**Real-world example from `common-jobscrapingfailure` silence:**
 
-# Process each silence
-echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silence; do
-    silence=$(echo "$encoded_silence" | base64 --decode)
-    
-    name=$(echo "$silence" | jq -r '.metadata.name')
-    echo "🔄 Processing silence: $name"
-    
-    # Convert all matchers
-    converted_matchers="[]"
-    matchers=$(echo "$silence" | jq '.spec.matchers')
-    matcher_count=$(echo "$matchers" | jq 'length')
-    
-    for i in $(seq 0 $((matcher_count - 1))); do
-        original_matcher=$(echo "$matchers" | jq ".[$i]")
-        converted_matcher=$(convert_matcher_to_enum "$original_matcher")
-        converted_matchers=$(echo "$converted_matchers" | jq ". += [$converted_matcher]")
-        
-        # Log conversion
-        matcher_name=$(echo "$original_matcher" | jq -r '.name')
-        old_isRegex=$(echo "$original_matcher" | jq -r '.isRegex // false')
-        old_isEqual=$(echo "$original_matcher" | jq -r 'if has("isEqual") then .isEqual else true end')
-        new_matchType=$(echo "$converted_matcher" | jq -r '.matchType')
-        
-        echo "   📝 $matcher_name: isRegex=$old_isRegex, isEqual=$old_isEqual → matchType='$new_matchType'"
-    done
-    
-    # Create the v1alpha2 silence
-    echo "   ✨ Creating v1alpha2 silence in namespace $TARGET_NAMESPACE..."
-    
-    kubectl apply -f - <<EOF
-apiVersion: observability.giantswarm.io/v1alpha2
-kind: Silence
+```yaml
+# Original v1alpha1 metadata
 metadata:
-  name: $name
-  namespace: $TARGET_NAMESPACE
-spec:
-  matchers: $converted_matchers
-EOF
-    
-    echo "   ✅ Successfully created v1alpha2 silence: $name"
-    echo ""
-done
+  annotations:
+    config.kubernetes.io/origin: |        # ❌ FILTERED OUT (system annotation)
+      path: bases/silences/jobscrapingfailure.yaml
+      repo: https://github.com/giantswarm/management-cluster-bases
+      ref: main
+    motivation: "We did a review of jobs failing everywhere, let's give teams time to manage them."  # ✅ PRESERVED
+    valid-until: "2025-07-29"              # ✅ PRESERVED
+  labels:
+    kustomize.toolkit.fluxcd.io/name: silences          # ❌ FILTERED OUT (FluxCD system label)
+    kustomize.toolkit.fluxcd.io/namespace: flux-giantswarm  # ❌ FILTERED OUT (FluxCD system label)
+    app.example.com/component: monitoring               # ✅ WOULD BE PRESERVED (user label)
 
-echo "🎉 Migration completed successfully!"
-echo ""
-echo "Next steps:"
-echo "1. Verify the migrated silences: kubectl get silences.observability.giantswarm.io -n $TARGET_NAMESPACE"
-echo "2. Test that silences work as expected"
-echo "3. Remove old v1alpha1 silences when confident: kubectl delete silences.monitoring.giantswarm.io <name>"
+# Migrated v1alpha2 metadata  
+metadata:
+  name: common-jobscrapingfailure
+  namespace: production
+  annotations:
+    motivation: "We did a review of jobs failing everywhere, let's give teams time to manage them."  # ✅ PRESERVED
+    valid-until: "2025-07-29"              # ✅ PRESERVED
+  labels:
+    app.example.com/component: monitoring   # ✅ WOULD BE PRESERVED (user label)
+```
+
+#### Testing the Filtering
+
+Run the script in dry-run mode to see what gets filtered:
+
+```bash
+./hack/migrate-silences.sh --dry-run
+```
+
+Look for lines like:
+```
+📎 Copying 2 user annotation(s): motivation, valid-until
+🏷️  Copying 1 user label(s): app.example.com/component
 ```
 
 ## Practical Conversion Examples
@@ -394,7 +376,7 @@ echo "v1alpha2 count: $(kubectl get silences.observability.giantswarm.io --all-n
 
 ```bash
 # Watch both controllers
-kubectl logs -f deployment/silence-operator -n monitoring | grep -E "(SilenceReconciler|SilenceV2Reconciler)"
+kubectl logs -f deployment/silence-operator -n monitoring
 ```
 
 ## Testing During Migration
@@ -445,8 +427,9 @@ kubectl get silence test-v1alpha1 -o jsonpath='{.metadata.finalizers}'
 kubectl get silence test-v1alpha2 -n default -o jsonpath='{.metadata.finalizers}'
 
 # Check controller logs for both APIs
-kubectl logs -f deployment/silence-operator -n monitoring | grep -E "(SilenceReconciler|SilenceV2Reconciler)"
+kubectl logs -f deployment/silence-operator -n monitoring
 ```
+
 
 ## Support
 
