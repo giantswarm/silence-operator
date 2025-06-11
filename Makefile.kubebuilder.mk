@@ -17,7 +17,7 @@
 # ==================================================================================
 
 # Core tool versions (aligned with kubebuilder defaults and auto-detection)
-CONTROLLER_TOOLS_VERSION ?= v0.17.3
+CONTROLLER_TOOLS_VERSION ?= v0.18.0
 KUSTOMIZE_VERSION ?= v5.6.0
 # Auto-detect ENVTEST version from controller-runtime dependency
 ENVTEST_VERSION ?= $(shell go list -m -f "{{ .Version }}" sigs.k8s.io/controller-runtime 2>/dev/null | awk -F'[v.]' '{printf "release-%d.%d", $$2, $$3}')
@@ -58,15 +58,15 @@ NO_COLOR := $(shell printf '\033[0m')
 
 # Helper functions for output
 define log_info
-	@echo "$(GEN_COLOR)ℹ️  $(1)$(NO_COLOR)"
+@echo "$(GEN_COLOR)ℹ️  $(1)$(NO_COLOR)"
 endef
 
 define log_warn
-	@echo "$(WARN_COLOR)⚠️  $(1)$(NO_COLOR)"
+@echo "$(WARN_COLOR)⚠️  $(1)$(NO_COLOR)"
 endef
 
 define log_build
-	@echo "$(BUILD_COLOR)🔨 $(1)$(NO_COLOR)"
+@echo "$(BUILD_COLOR)🔨 $(1)$(NO_COLOR)"
 endef
 
 # Generated file patterns
@@ -136,9 +136,13 @@ generate-rbac: $(CONTROLLER_GEN) | $(RBAC_DIR) ## Generate RBAC manifests
 .PHONY: generate-webhook
 generate-webhook: $(CONTROLLER_GEN) | $(WEBHOOK_DIR) ## Generate webhook manifests
 	$(call log_build,"Generating webhook configurations")
-	@$(CONTROLLER_GEN) webhook \
-		paths="./internal/webhook/..." \
-		output:webhook:artifacts:config="$(WEBHOOK_DIR)" || true
+	@if [ -d "./internal/webhook" ]; then \
+		$(CONTROLLER_GEN) webhook \
+			paths="./internal/webhook/..." \
+			output:webhook:artifacts:config="$(WEBHOOK_DIR)"; \
+	else \
+		echo "No webhook directory found, skipping webhook generation"; \
+	fi
 	@$(call log_info,"Webhook generation completed")
 
 .PHONY: generate-manifests
@@ -201,14 +205,14 @@ test: ginkgo envtest ## Run tests with Ginkgo and envtest
 
 .PHONY: verify-generate
 verify-generate: ## Verify that generated files are up to date
-	$(call log_build,"Verifying generated files are up to date")
+	@$(call log_build,"Verifying generated files are up to date")
 	@if [ -n "$$(git status --porcelain 2>/dev/null)" ]; then \
-		$(call log_warn,"Working directory has uncommitted changes before verification"); \
+		echo "$(WARN_COLOR)⚠️  Working directory has uncommitted changes before verification$(NO_COLOR)"; \
 	fi
 	@$(MAKE) clean-generated
 	@$(MAKE) generate-all
 	@if [ -n "$$(git status --porcelain 2>/dev/null | grep -E '\.(go|yaml)$$')" ]; then \
-		echo "$(WARN_COLOR)Generated files are not up to date. Please run 'make generate-all'$(NO_COLOR)"; \
+		echo "$(WARN_COLOR)⚠️  Generated files are not up to date. Please run 'make generate-all'$(NO_COLOR)"; \
 		git status --porcelain | grep -E '\.(go|yaml)$$'; \
 		exit 1; \
 	fi

@@ -19,9 +19,3 @@ rules:
   - silences
   verbs:
   - '*'
-- apiGroups:
-  - monitoring.giantswarm.io
-  resources:
-  - silences/status
-  verbs:
-  - get

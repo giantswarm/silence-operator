@@ -21,7 +21,6 @@ import (
 )
 
 // SilenceSpec defines the desired state of Silence.
-// TODO (user): Add fields to SilenceSpec to represent the actual silence api.
 type SilenceSpec struct {
 	TargetTags []TargetTag `json:"targetTags,omitempty"`
 	Matchers   []Matcher   `json:"matchers"`
@@ -49,11 +48,9 @@ type Matcher struct {
 	Value   string `json:"value"`
 }
 
-// +kubebuilder:object:root=true
-// TODO Migrate to scope Namespace
-//+kubebuilder:resource:scope=Cluster
-
 // Silence is the Schema for the silences API.
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type Silence struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`

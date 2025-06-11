@@ -234,11 +234,8 @@ func main() {
 	// Create the silence service
 	silenceService := service.NewSilenceService(amClient)
 
-	if err = (&controller.SilenceReconciler{
-		Client:         mgr.GetClient(),
-		Scheme:         mgr.GetScheme(),
-		SilenceService: silenceService,
-	}).SetupWithManager(mgr); err != nil {
+	if err = controller.NewSilenceReconciler(mgr.GetClient(), silenceService).
+		SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Silence")
 		os.Exit(1)
 	}

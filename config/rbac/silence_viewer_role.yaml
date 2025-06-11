@@ -21,9 +21,3 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - monitoring.giantswarm.io
-  resources:
-  - silences/status
-  verbs:
-  - get
