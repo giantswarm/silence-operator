@@ -50,12 +50,13 @@ var _ = Describe("SilenceV2 Controller", func() {
 			mockServer = testutils.NewMockAlertmanagerServer()
 
 			By("creating the custom resource for the Kind Silence v1alpha2")
-			err := k8sClient.Get(ctx, typeNamespacedName, silence)
+			var err = k8sClient.Get(ctx, typeNamespacedName, silence)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &observabilityv1alpha2.Silence{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
-						Namespace: "default"},
+						Namespace: "default",
+					},
 					Spec: observabilityv1alpha2.SilenceSpec{
 						Matchers: []observabilityv1alpha2.SilenceMatcher{
 							{
@@ -118,7 +119,8 @@ var _ = Describe("SilenceV2 Controller", func() {
 				},
 				Spec: observabilityv1alpha2.SilenceSpec{
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname",
+						{
+							Name:  "alertname",
 							Value: "FinalizerTestAlert",
 						},
 					},

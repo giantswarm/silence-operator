@@ -11,17 +11,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
+	"github.com/giantswarm/silence-operator/pkg/config"
 )
 
 func TestNew(t *testing.T) {
 	tests := []struct {
 		name        string
-		config      Config
+		config      config.Config
 		expectError bool
 	}{
 		{
 			name: "valid config",
-			config: Config{
+			config: config.Config{
 				Address:        "http://localhost:9093",
 				Authentication: false,
 				BearerToken:    "",
@@ -31,7 +32,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name: "valid config with auth",
-			config: Config{
+			config: config.Config{
 				Address:        "http://localhost:9093",
 				Authentication: true,
 				BearerToken:    "test-token",
@@ -41,7 +42,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name: "empty address",
-			config: Config{
+			config: config.Config{
 				Address: "",
 			},
 			expectError: true,
@@ -198,7 +199,7 @@ func TestAlertmanager_ListSilences(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := Config{
+	config := config.Config{
 		Address: server.URL,
 	}
 	am, err := New(config)
@@ -237,7 +238,7 @@ func TestAlertmanager_GetSilenceByComment(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := Config{
+	config := config.Config{
 		Address: server.URL,
 	}
 	am, err := New(config)
@@ -291,7 +292,7 @@ func TestAlertmanager_CreateSilence(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := Config{
+	config := config.Config{
 		Address: server.URL,
 	}
 	am, err := New(config)
@@ -327,7 +328,7 @@ func TestAlertmanager_UpdateSilence(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := Config{
+	config := config.Config{
 		Address: server.URL,
 	}
 	am, err := New(config)
@@ -354,7 +355,7 @@ func TestAlertmanager_UpdateSilence(t *testing.T) {
 }
 
 func TestAlertmanager_UpdateSilence_MissingID(t *testing.T) {
-	config := Config{
+	config := config.Config{
 		Address: "http://localhost:9093",
 	}
 	am, err := New(config)
@@ -383,7 +384,7 @@ func TestAlertmanager_DeleteSilenceByID(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := Config{
+	config := config.Config{
 		Address: server.URL,
 	}
 	am, err := New(config)
@@ -428,7 +429,7 @@ func TestAlertmanager_DeleteSilenceByComment(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := Config{
+	config := config.Config{
 		Address: server.URL,
 	}
 	am, err := New(config)
@@ -453,7 +454,7 @@ func TestAlertmanager_WithAuthentication(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := Config{
+	config := config.Config{
 		Address:        server.URL,
 		Authentication: true,
 		BearerToken:    "test-token",
@@ -479,7 +480,7 @@ func TestAlertmanager_WithTenantID(t *testing.T) {
 	}))
 	defer server.Close()
 
-	config := Config{
+	config := config.Config{
 		Address:  server.URL,
 		TenantId: "test-tenant",
 	}
