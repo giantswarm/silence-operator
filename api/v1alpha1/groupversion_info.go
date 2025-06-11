@@ -16,7 +16,6 @@ limitations under the License.
 
 // Package v1alpha1 contains API Schema definitions for the monitoring v1alpha1 API group.
 // +kubebuilder:object:generate=true
-// TODO Move this to the observability.giantswarm.io to match the rest of the API
 // +groupName=monitoring.giantswarm.io
 package v1alpha1
 

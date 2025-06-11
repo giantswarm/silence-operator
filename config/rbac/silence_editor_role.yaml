@@ -25,9 +25,3 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - monitoring.giantswarm.io
-  resources:
-  - silences/status
-  verbs:
-  - get

@@ -53,9 +53,8 @@ var _ = Describe("Silence Controller", func() {
 		// Create service and reconciler
 		silenceService := service.NewSilenceService(mockAlertmanager)
 		reconciler = &SilenceReconciler{
-			Client:         k8sClient,
-			Scheme:         k8sClient.Scheme(),
-			SilenceService: silenceService,
+			client:         k8sClient,
+			silenceService: silenceService,
 		}
 
 		ctx = context.Background()
