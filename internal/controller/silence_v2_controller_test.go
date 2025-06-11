@@ -30,7 +30,7 @@ import (
 
 	observabilityv1alpha2 "github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/internal/controller/testutils"
-	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/service"
 )
 
 var _ = Describe("SilenceV2 Controller", func() {
@@ -38,8 +38,7 @@ var _ = Describe("SilenceV2 Controller", func() {
 		const resourceName = "test-resource-v2"
 
 		ctx := context.Background()
-		var mockServer *testutils.MockAlertManagerServer
-		var mockAlertManager *alertmanager.AlertManager
+		var mockServer *testutils.MockAlertmanagerServer
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
@@ -48,14 +47,11 @@ var _ = Describe("SilenceV2 Controller", func() {
 		silence := &observabilityv1alpha2.Silence{}
 
 		BeforeEach(func() {
-			// Set up mock AlertManager server
-			mockServer = testutils.NewMockAlertManagerServer()
-			var err error
-			mockAlertManager, err = mockServer.GetAlertManager()
-			Expect(err).NotTo(HaveOccurred())
+			// Set up mock Alertmanager server
+			mockServer = testutils.NewMockAlertmanagerServer()
 
 			By("creating the custom resource for the Kind Silence v1alpha2")
-			err = k8sClient.Get(ctx, typeNamespacedName, silence)
+			var err = k8sClient.Get(ctx, typeNamespacedName, silence)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &observabilityv1alpha2.Silence{
 					ObjectMeta: metav1.ObjectMeta{
@@ -69,8 +65,6 @@ var _ = Describe("SilenceV2 Controller", func() {
 								Value: "TestAlertV2",
 							},
 						},
-						Owner:    "test-owner-v2",
-						IssueURL: "https://github.com/example/test-issue-v2",
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -94,16 +88,19 @@ var _ = Describe("SilenceV2 Controller", func() {
 
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &SilenceV2Reconciler{
-				Client:       k8sClient,
-				Scheme:       k8sClient.Scheme(),
-				Alertmanager: mockAlertManager,
-			}
+			alertManager, err := mockServer.GetAlertmanager()
+			Expect(err).NotTo(HaveOccurred())
 
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+			silenceService := service.NewSilenceService(alertManager)
+			controllerReconciler := NewSilenceV2Reconciler(
+				k8sClient,
+				silenceService,
+			)
+
+			_, reconcileErr := controllerReconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: typeNamespacedName,
 			})
-			Expect(err).NotTo(HaveOccurred())
+			Expect(reconcileErr).NotTo(HaveOccurred())
 			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
 			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
@@ -128,18 +125,19 @@ var _ = Describe("SilenceV2 Controller", func() {
 							Value: "FinalizerTestAlert",
 						},
 					},
-					Owner:    "finalizer-test-owner",
-					IssueURL: "https://github.com/example/finalizer-test-issue",
 				},
 			}
 			Expect(k8sClient.Create(ctx, finalizerTestResource)).To(Succeed())
 
 			By("Reconciling to add finalizer")
-			controllerReconciler := &SilenceV2Reconciler{
-				Client:       k8sClient,
-				Scheme:       k8sClient.Scheme(),
-				Alertmanager: mockAlertManager,
-			}
+			alertManager, err2 := mockServer.GetAlertmanager()
+			Expect(err2).NotTo(HaveOccurred())
+
+			silenceService := service.NewSilenceService(alertManager)
+			controllerReconciler := NewSilenceV2Reconciler(
+				k8sClient,
+				silenceService,
+			)
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: finalizerTestNamespacedName,
@@ -165,45 +163,58 @@ var _ = Describe("SilenceV2 Controller", func() {
 			err = k8sClient.Get(ctx, finalizerTestNamespacedName, createdSilence)
 			Expect(errors.IsNotFound(err)).To(BeTrue())
 		})
+	})
 
-		It("should convert v1alpha2 to v1alpha1 format correctly", func() {
-			By("Creating a v1alpha2 silence")
-			v2Silence := &observabilityv1alpha2.Silence{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "conversion-test",
-					Namespace: "default",
-				},
-				Spec: observabilityv1alpha2.SilenceSpec{
-					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{
-							Name:    "alertname",
-							Value:   "TestAlert",
-							IsRegex: true,
-						},
-						{
-							Name:  "severity",
-							Value: "critical",
-						},
-					},
-					Owner:    "test-owner",
-					IssueURL: "https://github.com/test/issue",
-				},
+	Context("MatchType Conversion", func() {
+		var reconciler *SilenceV2Reconciler
+
+		BeforeEach(func() {
+			reconciler = &SilenceV2Reconciler{}
+		})
+
+		It("should convert MatchType enum to correct boolean values", func() {
+			testCases := []struct {
+				matchType       observabilityv1alpha2.MatchType
+				expectedIsRegex bool
+				expectedIsEqual bool
+				description     string
+			}{
+				{observabilityv1alpha2.MatchEqual, false, true, "exact match (=)"},
+				{observabilityv1alpha2.MatchNotEqual, false, false, "exact non-match (!=)"},
+				{observabilityv1alpha2.MatchRegexMatch, true, true, "regex match (=~)"},
+				{observabilityv1alpha2.MatchRegexNotMatch, true, false, "regex non-match (!~)"},
+				{"", false, true, "empty/default should be exact match"},
 			}
 
-			By("Converting to v1alpha1 format")
-			v1Silence := convertToV1Alpha1(v2Silence)
+			for _, tc := range testCases {
+				silence := &observabilityv1alpha2.Silence{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-silence",
+						Namespace: "default",
+					},
+					Spec: observabilityv1alpha2.SilenceSpec{
+						Matchers: []observabilityv1alpha2.SilenceMatcher{
+							{
+								Name:      "alertname",
+								Value:     "TestAlert",
+								MatchType: tc.matchType,
+							},
+						},
+					},
+				}
 
-			By("Verifying conversion")
-			Expect(v1Silence.ObjectMeta.Name).To(Equal("conversion-test"))
-			Expect(v1Silence.ObjectMeta.Namespace).To(Equal("default"))
-			Expect(v1Silence.Spec.Matchers).To(HaveLen(2))
-			Expect(v1Silence.Spec.Matchers[0].Name).To(Equal("alertname"))
-			Expect(v1Silence.Spec.Matchers[0].Value).To(Equal("TestAlert"))
-			Expect(v1Silence.Spec.Matchers[0].IsRegex).To(BeTrue())
-			Expect(v1Silence.Spec.Matchers[1].Name).To(Equal("severity"))
-			Expect(v1Silence.Spec.Matchers[1].Value).To(Equal("critical"))
-			Expect(v1Silence.Spec.Owner).To(Equal("test-owner"))
-			Expect(v1Silence.Spec.IssueURL).To(Equal("https://github.com/test/issue"))
+				result, err := reconciler.getSilenceFromCR(silence)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result.Matchers).To(HaveLen(1))
+
+				matcher := result.Matchers[0]
+				Expect(matcher.IsRegex).To(Equal(tc.expectedIsRegex),
+					"IsRegex mismatch for %s", tc.description)
+				Expect(matcher.IsEqual).To(Equal(tc.expectedIsEqual),
+					"IsEqual mismatch for %s", tc.description)
+				Expect(matcher.Name).To(Equal("alertname"))
+				Expect(matcher.Value).To(Equal("TestAlert"))
+			}
 		})
 
 		It("should respect namespace selector when configured", func() {
@@ -228,7 +239,7 @@ var _ = Describe("SilenceV2 Controller", func() {
 			namespaceSelectorLabels, err := metav1.LabelSelectorAsSelector(namespaceSelector)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Test that the namespace selector matches the test namespace labels
+			// Test can the namespace selector matches the test namespace labels
 			Expect(namespaceSelectorLabels.Matches(labels.Set{
 				"environment": "production",
 				"team":        "platform",
@@ -245,19 +256,9 @@ var _ = Describe("SilenceV2 Controller", func() {
 				"team":        "platform",
 			})).To(BeFalse())
 
-			By("Testing that controller with namespace selector can be created")
-			controllerReconciler := &SilenceV2Reconciler{
-				Client:            k8sClient,
-				Scheme:            k8sClient.Scheme(),
-				Alertmanager:      mockAlertManager,
-				NamespaceSelector: namespaceSelectorLabels,
-			}
-
-			// Note: We can't easily test the actual filtering behavior in unit tests
-			// since it would require creating actual namespaces in the test environment.
-			// This test verifies the configuration is properly set up.
-			Expect(controllerReconciler.NamespaceSelector).ToNot(BeNil())
-			Expect(controllerReconciler.NamespaceSelector.String()).To(Equal("environment=production"))
+			By("Testing that namespace selector logic works correctly")
+			Expect(namespaceSelectorLabels).ToNot(BeNil())
+			Expect(namespaceSelectorLabels.String()).To(Equal("environment=production"))
 		})
 	})
 })

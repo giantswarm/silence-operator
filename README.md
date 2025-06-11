@@ -155,16 +155,16 @@ If you're currently using the cluster-scoped `monitoring.giantswarm.io/v1alpha1`
 
 **Key differences in v1alpha2:**
 - **Namespace-scoped**: Silences are scoped to specific namespaces instead of cluster-wide
-- **Enhanced status**: Comprehensive status tracking with conditions and phase information
-- **Additional fields**: Support for `owner` and `issue_url` fields for better traceability
 - **New API group**: Uses `observability.giantswarm.io` instead of `monitoring.giantswarm.io`
+- **Simplified matcher syntax**: Uses enum-based `matchType` field (`=`, `!=`, `=~`, `!~`) instead of boolean `isRegex`/`isEqual` fields
+- **Streamlined spec**: Removes legacy fields (`targetTags`, `owner`, `issue_url`, `postmortem_url`) for a cleaner API surface
+- **Enhanced validation**: Includes stricter field validation and length limits for better error handling
 
 **Migration steps:**
 1. Deploy the new v1alpha2 CRD (both CRDs can coexist)
 2. Create equivalent v1alpha2 Silence resources in appropriate namespaces
 3. Verify the new silences are working correctly
 4. Remove old v1alpha1 resources
-5. Eventually remove the v1alpha1 CRD when no longer needed
 
 For detailed migration instructions and examples, see [MIGRATION.md](MIGRATION.md).
 
@@ -195,7 +195,15 @@ The operator provides two filtering mechanisms:
 
 2. **Namespace Filtering (`namespaceSelector`):** Restricts which namespaces the v2 controller watches for `Silence` CRs. Only applies to the namespace-scoped v1alpha2 API. Set via `namespaceSelector` in the Helm chart (e.g., `namespaceSelector: "environment=production"`). If empty, the v2 controller watches all namespaces.
 
-Sample CRs:
+The operator follows a layered architecture:
+
+- **Controller Layer** (`internal/controller/`): Handles Kubernetes-specific concerns such as CR reconciliation, finalizers, and status updates
+- **Service Layer** (`pkg/service/`): Contains business logic for silence synchronization, including creation, updates, and deletion
+- **Alertmanager Client** (`pkg/alertmanager/`): Provides interface and implementation for Alertmanager API interactions
+
+This separation ensures clean code organization, improved testability, and easier maintenance.
+
+Sample CR:
 
 **v1alpha1 (legacy, cluster-scoped):**
 ```yaml
@@ -208,6 +216,13 @@ spec:
   - name: cluster
     value: test
     isRegex: false
+    isEqual: true
+  - name: severity
+    value: critical
+    isRegex: false
+    isEqual: true
+  owner: example-user
+  issue_url: https://github.com/example/issue/123
 ```
 
 **v1alpha2 (recommended, namespace-scoped):**
@@ -221,16 +236,90 @@ spec:
   matchers:
   - name: cluster
     value: test
-    isRegex: false
-  owner: team-platform
-  issue_url: https://github.com/example/issues/123
+    matchType: "="
+  - name: severity
+    value: critical
+    matchType: "="
 ```
 
 - `matchers` field corresponds to the Alertmanager silence `matchers` each of which consists of:
   - `name` - name of tag on an alert to match
   - `value` - fixed string or expression to match against the value of the tag named by `name` above on an alert
-  - `isRegex` - a boolean specifying whether to treat `value` as a regex (`=~`) or a fixed string (`=`)
-  - `isEqual` - a boolean specifying whether to use equal signs (`=` or `=~`) or to negate the matcher (`!=` or `!~`)
+  - `matchType` - the type of matching to perform using Alertmanager operator symbols:
+    - `"="` - exact string match
+    - `"!="` - exact string non-match
+    - `"=~"` - regex match
+    - `"!~"` - regex non-match
+
+## Architecture
+
+The silence-operator follows a clean architecture pattern with clear separation of concerns:
+
+### Components
+
+- **Controllers**: Handle Kubernetes-specific reconciliation logic and lifecycle management
+  - `SilenceReconciler`: Manages v1alpha1 cluster-scoped silences (legacy)
+  - `SilenceV2Reconciler`: Manages v1alpha2 namespace-scoped silences (recommended)
+- **Service Layer**: Contains business logic agnostic to Kubernetes concepts
+  - `SilenceService`: Core business logic for creating, updating, and deleting silences
+- **Alertmanager Client**: Handles communication with Alertmanager API
+  - `alertmanager.Client`: Interface for Alertmanager operations
+  - `Alertmanager`: Concrete implementation
+
+### Data Flow
+
+1. **Conversion**: Controllers convert Kubernetes CRs to `alertmanager.Silence` objects using `getSilenceFromCR()` methods
+2. **Business Logic**: Controllers call `SilenceService` methods (`CreateOrUpdateSilence`, `DeleteSilence`)
+3. **Alertmanager Operations**: Service layer uses the `alertmanager.Client` interface to interact with Alertmanager
+4. **Error Handling**: Simple error returns propagate back through the layers for Kubernetes to handle retries
+
+### Dependency Injection
+
+The service is instantiated in `main.go` and injected into controllers via constructor dependency injection, enabling:
+- Shared business logic between v1alpha1 and v1alpha2 controllers
+- Easier testing through interface mocking
+- Clear separation between Kubernetes concerns and business logic
+
+## Architecture Documentation
+
+### Project Structure
+
+```
+silence-operator/
+├── api/                             # API definitions and schemas
+│   ├── v1alpha1/                   # Legacy cluster-scoped API
+│   └── v1alpha2/                   # New namespace-scoped API
+├── internal/controller/            # Kubernetes controllers
+│   ├── silence_controller.go       # v1alpha1 controller (legacy)
+│   ├── silence_v2_controller.go    # v1alpha2 controller (recommended)
+│   └── testutils/                  # Test utilities and mocks
+├── pkg/                            # Reusable packages
+│   ├── alertmanager/              # Alertmanager client implementation
+│   └── service/                   # Business logic layer
+├── config/                        # Kubernetes manifests and CRDs
+├── helm/                          # Helm chart for deployment
+└── docs/                          # Documentation
+```
+
+### Design Principles
+
+1. **Clean Architecture**: Clear separation between controllers, services, and external clients
+2. **Dual API Support**: Maintains backward compatibility while providing improved v2 API
+3. **Dependency Injection**: Services are injected into controllers for better testability
+4. **Interface-Based Design**: Uses interfaces for external dependencies (Alertmanager client)
+5. **Shared Business Logic**: Common operations are handled by the service layer
+
+### Controller Responsibilities
+
+**SilenceReconciler (v1alpha1)**:
+- Manages cluster-scoped silences
+- Handles legacy boolean matcher fields (`isRegex`, `isEqual`)
+- Maintains backward compatibility
+
+**SilenceV2Reconciler (v1alpha2)**:
+- Manages namespace-scoped silences
+- Uses enum-based matcher types (`matchType: =, !=, =~, !~`)
+- Provides enhanced validation and user experience
 
 ## Getting the Project
 
