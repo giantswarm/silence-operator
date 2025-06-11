@@ -68,31 +68,15 @@ This installs:
 ```bash
 # Run all tests
 make test
-```
 
-#### Enhanced Test Commands
+# Run tests with specific Ginkgo arguments (modify test target as needed)
+$(GINKGO) -focus='Silence Controller' ./...
 
-```bash
-# Run tests with verbose output 
-make test GINKGO_ARGS="-v"
-
-# Run tests without parallelism
-make test GINKGO_ARGS="-p=false"
-
-# Run specific test with focus
-make test GINKGO_ARGS="-focus='Silence Controller'"
+# Run tests with verbose output
+$(GINKGO) -v ./...
 
 # Skip specific tests
-make test GINKGO_ARGS="-skip='Should fail'"
-
-# Run V2 controller tests specifically
-make test GINKGO_ARGS="-focus='SilenceV2 Controller'"
-
-# Run config package tests
-go test ./pkg/config/ -v
-
-# Run all controller tests
-KUBEBUILDER_ASSETS="$(./bin/setup-envtest use 1.31.0 -p path)" ./bin/ginkgo run -v ./internal/controller/
+$(GINKGO) -skip='Should fail' ./...
 ```
 ### Test Configuration
 
@@ -104,34 +88,22 @@ KUBEBUILDER_ASSETS="$(./bin/setup-envtest use 1.31.0 -p path)" ./bin/ginkgo run 
 #### Test Flags
 
 ```bash
-# Run specific test suites using Ginkgo args
-make test GINKGO_ARGS="-focus='Controller'"
+# Run specific test suites using Ginkgo directly
+bin/ginkgo -focus='Controller' ./...
 
 # Skip certain tests
-make test GINKGO_ARGS="-skip='Integration'"
+bin/ginkgo -skip='Integration' ./...
 
 # Set Kubernetes version for envtest
 make test ENVTEST_K8S_VERSION="1.29"
+
+# Run tests with verbose output
+bin/ginkgo -v ./...
 ```
 
 ## Writing Tests
 
-### Controller Tests
-
-The project includes comprehensive tests for both API versions:
-
-#### V1 Controller Tests (`silence_controller_test.go`)
-Tests for the `monitoring.giantswarm.io/v1alpha1` API:
-- Basic reconciliation functionality
-- Resource creation and cleanup
-- Alertmanager integration
-
-#### V2 Controller Tests (`silence_v2_controller_test.go`)
-Tests for the `observability.giantswarm.io/v1alpha2` API:
-- Basic reconciliation functionality
-- Finalizer handling and deletion
-- API conversion between v1alpha2 and v1alpha1
-- Enhanced error handling
+### Controller Tests Example
 
 The silence-operator includes comprehensive test suites for both API versions:
 
@@ -171,14 +143,6 @@ var _ = Describe("Silence Controller", func() {
     Context("When creating a Silence", func() {
         It("Should create silence in Alertmanager", func() {
             // Test implementation
-        })
-
-        It("should handle deletion with finalizer", func() {
-            // Tests finalizer addition and removal during resource deletion
-        })
-
-        It("should convert v1alpha2 to v1alpha1 format correctly", func() {
-            // Tests API conversion functionality
         })
     })
 })
@@ -223,48 +187,6 @@ var _ = Describe("SilenceV2 Controller", func() {
 })
 ```
 
-### Config Package Tests
-
-The `pkg/config` package includes comprehensive tests for configuration parsing:
-
-```go
-func TestParseSilenceSelector(t *testing.T) {
-    tests := []struct {
-        name           string
-        silenceSelector string
-        expectError    bool
-        expectNil      bool
-    }{
-        {"empty selector returns nil", "", false, true},
-        {"valid single label selector", "app=nginx", false, false},
-        {"valid multiple label selector", "app=nginx,env=prod", false, false},
-        {"invalid selector returns error", "invalid=", true, false},
-    }
-    // Test implementation covers various selector scenarios
-}
-```
-
-Coverage includes:
-- Empty selector handling
-- Valid single and multiple label selectors
-- Complex selectors with set-based requirements
-- Invalid selector error handling
-- Label matching validation
-
-#### Key Test Scenarios for ParseSilenceSelector
-
-The helper function `ParseSilenceSelector` is thoroughly tested with:
-
-1. **Empty selectors**: Returns `nil` without error for empty strings
-2. **Single label selectors**: `"app=nginx"` - basic equality matching
-3. **Multiple label selectors**: `"app=nginx,env=prod"` - comma-separated labels
-4. **Set-based selectors**: `"env notin (test,staging)"` - advanced matching
-5. **Invalid syntax**: Malformed selectors return proper error messages
-6. **Label validation**: Ensures selectors can match expected label sets
-
-This testing ensures robust configuration parsing for silence selector functionality extracted from `main.go` into reusable helper functions.
-
-### Mock Alertmanager Usage
 ### Service Layer Testing
 
 The refactored architecture enables easier testing of business logic:
@@ -300,30 +222,81 @@ mockAM.SetResponse("/api/v2/silences", http.StatusOK, silenceList)
 Expect(mockAM.GetRequestCount("POST", "/api/v2/silences")).To(Equal(1))
 ```
 
-## Recent Testing Improvements
+### Migration Script Testing
 
-### V2 API Controller Testing (June 2025)
+The `hack/migrate-silences.sh` script includes comprehensive testing capabilities for safe migration from v1alpha1 to v1alpha2:
 
-Added comprehensive test coverage for the new `observability.giantswarm.io/v1alpha2` API:
-- **Basic reconciliation testing**: Validates V2 controller functionality
-- **Finalizer management testing**: Ensures proper resource cleanup
-- **API conversion testing**: Validates conversion between v1alpha2 and v1alpha1 formats
-- **Resource isolation**: Each test creates its own resources to avoid conflicts
+#### Dry-Run Testing
 
-### Configuration Testing Enhancement
+```bash
+# Test migration without making changes
+./hack/migrate-silences.sh --dry-run
 
-Extracted silence selector parsing logic from `main.go` into `pkg/config/config.go` with comprehensive testing:
-- **ParseSilenceSelector function**: Helper function with 7 test scenarios
-- **Error handling**: Proper error wrapping and context
-- **Label selector validation**: Kubernetes-compatible selector parsing
-- **Edge case coverage**: Empty selectors, malformed syntax, complex requirements
+# Test migration to specific namespace
+./hack/migrate-silences.sh production --dry-run
+```
 
-### Testing Infrastructure Updates
+#### Script Validation
 
-- **Enhanced mock Alertmanager**: Improved testutils with better error simulation
-- **Automatic binary detection**: Tests automatically find required K8s binaries
-- **Parallel test execution**: Safe parallel execution where applicable
-- **Better resource cleanup**: Improved test isolation and cleanup
+```bash
+# Check script syntax
+bash -n hack/migrate-silences.sh
+
+# Run shellcheck for code quality
+shellcheck hack/migrate-silences.sh
+```
+
+#### Testing Migration Features
+
+The script provides detailed testing of:
+
+1. **Boolean-to-Enum Conversion**: Verifies correct conversion of `isRegex`/`isEqual` to `matchType`
+2. **Metadata Filtering**: Tests preservation of user annotations while filtering system metadata
+3. **Namespace Targeting**: Validates correct namespace deployment
+4. **Error Handling**: Tests CRD validation and error reporting
+
+#### Expected Output Validation
+
+During dry-run testing, verify:
+
+```bash
+# Look for successful conversions
+📝 alertname: isRegex=false, isEqual=true → matchType='='
+
+# Check metadata preservation
+📎 Copying 2 user annotation(s): motivation, valid-until
+
+# Verify filtering is working
+🏷️  System labels filtered: kustomize.toolkit.fluxcd.io/name
+```
+
+#### Integration Testing
+
+Test the migration script with real v1alpha1 silences:
+
+```bash
+# Create test v1alpha1 silence
+kubectl apply -f - <<EOF
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: test-migration
+  annotations:
+    motivation: "Testing migration"
+    config.kubernetes.io/origin: "test"
+spec:
+  matchers:
+  - name: alertname
+    value: TestAlert
+    isRegex: false
+    isEqual: true
+EOF
+
+# Test migration
+./hack/migrate-silences.sh test-namespace --dry-run
+
+# Verify output shows proper filtering and conversion
+```
 
 ## Coverage Reporting
 
@@ -361,20 +334,27 @@ Coverage reports are saved to:
 ### Verbose Output
 
 ```bash
-# Show detailed Ginkgo output
-make test GINKGO_ARGS="-v --trace"
+# Show detailed Ginkgo output by running directly
+bin/ginkgo -v --trace ./...
+
+# Alternative: modify the test target in Makefile temporarily
+# Add -v flag to the GINKGO command
 ```
 
 ### Test Environment Debugging
 
 ```bash
 # Check tool versions  
-./bin/setup-envtest version
-./bin/ginkgo version
-./bin/golangci-lint version
+bin/setup-envtest version
+bin/ginkgo version
+bin/golangci-lint version
 
 # Check envtest binary availability
-./bin/setup-envtest list
+bin/setup-envtest list
+
+# Verify KUBEBUILDER_ASSETS detection
+make test ENVTEST_K8S_VERSION="1.30"
+```
 
 # Verify tools are installed
 make install-tools
@@ -430,25 +410,6 @@ Tests must pass the following quality gates:
 5. **Separate API version tests** - keep v1alpha1 and v1alpha2 tests in separate files
 6. **Test conversion logic** between different matcher field formats
 
-#### Current Test Structure
-
-```
-internal/controller/
-├── suite_test.go              # Test suite setup and configuration
-├── silence_controller_test.go # V1 API tests (monitoring.giantswarm.io/v1alpha1)
-├── silence_v2_controller_test.go # V2 API tests (observability.giantswarm.io/v1alpha2)
-└── testutils/                 # Mock utilities and test helpers
-
-pkg/config/
-└── config_test.go            # Configuration parsing tests
-```
-
-Each test file follows a consistent pattern:
-- **Suite setup**: Shared test environment initialization
-- **Mock setup**: Alertmanager server mocking for external dependencies  
-- **Resource lifecycle**: Creation, reconciliation, and cleanup testing
-- **Error scenarios**: Validation of error handling and edge cases
-
 ### Mocking Strategy
 
 1. **Mock external dependencies** like Alertmanager API calls
@@ -484,16 +445,13 @@ Each test file follows a consistent pattern:
 
 ### Code Quality Tools
 
-- **golangci-lint**: Comprehensive Go linting
-- **gosec**: Security vulnerability scanning
-- **gocyclo**: Cyclomatic complexity analysis
-- **staticcheck**: Advanced static analysis
+- **golangci-lint**: Comprehensive Go linting (includes gosec for security scanning)
+- **controller-gen**: Code generation for Kubernetes controllers
 
 ### Coverage Tools
 
-- **go tool cover**: Built-in coverage analysis
-- **gocov**: Enhanced coverage reporting
-- **gocov-html**: HTML coverage visualization
+- **Ginkgo coverage**: Built-in coverage via `--cover` flag
+- **go tool cover**: Built-in coverage analysis and HTML reports
 
 ## Troubleshooting
 

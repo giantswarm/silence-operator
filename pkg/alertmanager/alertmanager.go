@@ -9,9 +9,10 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/giantswarm/silence-operator/pkg/config"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/giantswarm/silence-operator/pkg/config"
 )
 
 const (
