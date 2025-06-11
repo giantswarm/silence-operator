@@ -72,6 +72,7 @@ func main() {
 
 	var cfg config.Config
 	var silenceSelector string
+	var namespaceSelector string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -93,6 +94,7 @@ func main() {
 	flag.StringVar(&cfg.TenantId, "alertmanager-default-tenant-id", "", "Alertmanager tenant id.")
 	flag.BoolVar(&cfg.Authentication, "alertmanager-authentication", false, "Enable Alertmanager authentication using Service Account token.")
 	flag.StringVar(&silenceSelector, "silence-selector", "", "Label selector to filter Silence custom resources (e.g., 'environment=production,tier=frontend').")
+	flag.StringVar(&namespaceSelector, "namespace-selector", "", "Label selector to restrict which namespaces the v2 controller watches (e.g., 'environment=production'). If empty, all namespaces are watched.")
 
 	opts := zap.Options{
 		Development: false,
@@ -100,12 +102,18 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	selector, err := config.ParseSilenceSelector(silenceSelector)
+	var err error
+	cfg.SilenceSelector, err = config.ParseSilenceSelector(silenceSelector)
 	if err != nil {
 		setupLog.Error(err, "failed to parse silence selector", "selector", silenceSelector)
 		os.Exit(1)
 	}
-	cfg.SilenceSelector = selector
+
+	cfg.NamespaceSelector, err = config.ParseNamespaceSelector(namespaceSelector)
+	if err != nil {
+		setupLog.Error(err, "failed to parse namespace selector", "selector", namespaceSelector)
+		os.Exit(1)
+	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
