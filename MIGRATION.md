@@ -101,7 +101,7 @@ For each existing v1alpha1 silence, create a corresponding v1alpha2 silence:
 
 ```bash
 # List existing v1alpha1 silences
-kubectl get silences.monitoring.giantswarm.io
+kubectl get silences.monitoring.giantswarm.io example-silence
 
 # Create v1alpha2 equivalent in target namespace
 kubectl apply -f - <<EOF
