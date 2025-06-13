@@ -176,8 +176,8 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
     ')"
     
     # Log annotations and labels being copied
-    annotation_count=$(echo "$annotations" | jq 'length')
-    label_count=$(echo "$labels" | jq 'length')
+    annotation_count="$(echo "$annotations" | jq 'length')"
+    label_count="$(echo "$labels" | jq 'length')"
     
     if [[ "$annotation_count" -gt 0 ]]; then
         echo "   📎 Copying $annotation_count user annotation(s): $(echo "$annotations" | jq -r 'keys | join(", ")')"
