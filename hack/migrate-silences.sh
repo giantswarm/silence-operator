@@ -32,22 +32,30 @@ For more information, see MIGRATION.md
 EOF
 }
 
-# Check for help flag
-if [[ "${1:-}" == "--help" ]] || [[ "${2:-}" == "--help" ]]; then
-    show_help
-    exit 0
-fi
-
-TARGET_NAMESPACE="${1:-default}"
 DRY_RUN=false
 
-# Check for dry-run flag
-if [[ "${2:-}" == "--dry-run" ]] || [[ "${1:-}" == "--dry-run" ]]; then
-    DRY_RUN=true
-    if [[ "${1:-}" == "--dry-run" ]]; then
-        TARGET_NAMESPACE="default"
-    fi
-fi
+positional_args=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --help)
+      # Display help message and exit.
+      show_help
+      exit 0;;
+    --dry-run)
+      # Enable dry run mode
+      DRY_RUN=true;;
+    -?*)
+      echo "❌ Unknown option $1" >&2
+      exit 1;;
+    *)
+      positional_args+=("$1");;
+  esac
+  shift
+done
+
+set -- "${positional_args[@]}" # Reset positional arguments to remaining arguments.
+
+TARGET_NAMESPACE="${1:-default}"
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "🔍 DRY RUN MODE: No resources will be created"
