@@ -18,7 +18,7 @@ Arguments:
   --help              Show this help message
 
 Features:
-  ✅ Automatic boolean-to-enum conversion (isRegex/isEqual → matchType)
+  ✅ Automatic matchers conversion (isRegex/isEqual → matchType)
   ✅ User annotation/label preservation with system metadata filtering
   ✅ Comprehensive validation and error handling
   ✅ Detailed migration logging
