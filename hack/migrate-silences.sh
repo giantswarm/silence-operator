@@ -9,7 +9,7 @@ show_help() {
     cat << EOF
 Usage: $0 [target-namespace] [--dry-run|--help]
 
-Migrates v1alpha1 silences to v1alpha2 format with automatic boolean-to-enum conversion.
+Migrates v1alpha1 silences to v1alpha2 format with automatic matchers conversion.
 
 Arguments:
   target-namespace    Target namespace for v1alpha2 silences (default: default)
