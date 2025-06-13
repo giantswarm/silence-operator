@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **BREAKING** (v1alpha2 only): Replace `isRegex` and `isEqual` boolean fields with single `matchType` enum field using Alertmanager symbols.
 - **BREAKING** (v1alpha2 only): Change from cluster-scoped to namespace-scoped resources for better multi-tenancy and RBAC isolation.
-- Remove deprecated fields in v1alpha2: `targetTags`, `owner`, `postmortem_url`, and `issue_url` for cleaner API design.
+- **BREAKING** (v1alpha2 only): Remove deprecated fields in v1alpha2: `targetTags`, `owner`, `postmortem_url`, and `issue_url` for cleaner API design.
 - Improve code organization with dependency injection and clear separation between controller logic and business logic.
 
 ### Deprecated
