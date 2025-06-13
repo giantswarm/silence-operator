@@ -194,8 +194,8 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
     
     # Add labels if present
     if [[ "$label_count" -gt 0 ]]; then
-        metadata_base=$(echo "$metadata_base" | jq --argjson labels "$labels" \
-            '. + {labels: $labels}')
+        metadata_base="$(echo "$metadata_base" | jq --argjson labels "$labels" \
+            '. + {labels: $labels}')"
     fi
     
     # Create the full silence YAML using jq
