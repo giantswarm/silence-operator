@@ -135,9 +135,9 @@ echo ""
 
 # Process each silence
 echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silence; do
-    silence=$(echo "$encoded_silence" | base64 --decode)
+    silence="$(echo "$encoded_silence" | base64 --decode)"
     
-    name=$(echo "$silence" | jq -r '.metadata.name')
+    name="$(echo "$silence" | jq -r '.metadata.name')"
     echo "🔄 Processing silence: $name"
     
     # Convert all matchers
