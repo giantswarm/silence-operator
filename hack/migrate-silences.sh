@@ -233,7 +233,7 @@ if [[ "$DRY_RUN" == "true" ]]; then
     echo "🔍 DRY RUN completed successfully!"
     echo ""
     echo "To actually perform the migration:"
-    echo "1. Run this script without --dry-run: ./hack/migrate-silences.sh $TARGET_NAMESPACE"
+    echo "1. Run this script without --dry-run: $0 $TARGET_NAMESPACE"
     echo "2. Verify the migrated silences: kubectl get silences.observability.giantswarm.io -n $TARGET_NAMESPACE"
     echo "3. Test that silences work as expected"
     echo "4. Remove old v1alpha1 silences when confident: kubectl delete silences.monitoring.giantswarm.io --all"
