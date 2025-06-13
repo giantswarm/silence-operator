@@ -158,22 +158,22 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
     
     # Extract annotations and labels, excluding Kubernetes and FluxCD system metadata
     # This regex pattern excludes common system annotations/labels
-    annotations=$(echo "$silence" | jq '
+    annotations="$(echo "$silence" | jq '
         .metadata.annotations // {} | 
         with_entries(
             select(
                 .key | test("^(kubernetes\\.io|k8s\\.io|config\\.kubernetes\\.io|app\\.kubernetes\\.io|fluxcd\\.io|helm\\.sh|kustomize\\.toolkit\\.fluxcd\\.io|source\\.toolkit\\.fluxcd\\.io|meta\\.helm\\.sh|kubectl\\.kubernetes\\.io|control-plane\\.alpha\\.kubernetes\\.io|node\\.alpha\\.kubernetes\\.io|volume\\.alpha\\.kubernetes\\.io|admission\\.gke\\.io|autopilot\\.gke\\.io|cloud\\.google\\.com|container\\.googleapis\\.com)") | not
             )
         )
-    ')
-    labels=$(echo "$silence" | jq '
+    ')"
+    labels="$(echo "$silence" | jq '
         .metadata.labels // {} | 
         with_entries(
             select(
                 .key | test("^(kubernetes\\.io|k8s\\.io|app\\.kubernetes\\.io|pod-template-hash|controller-revision-hash|fluxcd\\.io|helm\\.sh|kustomize\\.toolkit\\.fluxcd\\.io|source\\.toolkit\\.fluxcd\\.io|meta\\.helm\\.sh|kubectl\\.kubernetes\\.io|control-plane\\.alpha\\.kubernetes\\.io|node\\.alpha\\.kubernetes\\.io|volume\\.alpha\\.kubernetes\\.io|admission\\.gke\\.io|autopilot\\.gke\\.io|cloud\\.google\\.com|container\\.googleapis\\.com)") | not
             )
         )
-    ')
+    ')"
     
     # Log annotations and labels being copied
     annotation_count=$(echo "$annotations" | jq 'length')
