@@ -31,8 +31,14 @@ _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documen
 CRDs are not created by this chart and should be manually deployed:
 
 ```console
+# For existing cluster-scoped silences (legacy)
 kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/monitoring.giantswarm.io_silences.yaml
+
+# For new namespace-scoped silences (recommended)
+kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/observability.giantswarm.io_silences.yaml
 ```
+
+**Note**: The operator supports both API versions for backward compatibility. New deployments should use the namespace-scoped `observability.giantswarm.io/v1alpha2` API. See [MIGRATION.md](MIGRATION.md) for migration guidance.
 
 ## Uninstall Helm Chart
 
@@ -47,7 +53,11 @@ _See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command doc
 CRDs are not removed by default and should be manually cleaned up:
 
 ```console
+# Remove legacy cluster-scoped CRD
 kubectl delete crd silences.monitoring.giantswarm.io
+
+# Remove namespace-scoped CRD
+kubectl delete crd silences.observability.giantswarm.io
 ```
 
 ## Upgrading Chart
@@ -59,21 +69,56 @@ helm upgrade [RELEASE_NAME] giantswarm/silence-operator
 CRDs should be manually updated:
 
 ```
+# Update legacy cluster-scoped CRD (if using v1alpha1)
 kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/monitoring.giantswarm.io_silences.yaml
+
+# Update namespace-scoped CRD (if using v1alpha2)
+kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/observability.giantswarm.io_silences.yaml
 ```
 
 _See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
 
 ## Overview
 
+### API Versions and Migration
+
+The silence-operator supports two API versions:
+
+- **`monitoring.giantswarm.io/v1alpha1`** - Legacy cluster-scoped API (deprecated)
+- **`observability.giantswarm.io/v1alpha2`** - New namespace-scoped API (recommended)
+
+**Migration Notice**: The v1alpha1 API is deprecated but remains fully supported for backward compatibility. New deployments should use the v1alpha2 API for better multi-tenancy and namespace isolation. Existing v1alpha1 silences continue to work unchanged. For migration guidance, see [MIGRATION.md](MIGRATION.md).
+
+### Migration from v1alpha1 to v1alpha2
+
+If you're currently using the cluster-scoped `monitoring.giantswarm.io/v1alpha1` API, we recommend migrating to the namespace-scoped `observability.giantswarm.io/v1alpha2` API for improved multi-tenancy and security isolation.
+
+**Key differences in v1alpha2:**
+- **Namespace-scoped**: Silences are scoped to specific namespaces instead of cluster-wide
+- **New API group**: Uses `observability.giantswarm.io` instead of `monitoring.giantswarm.io`
+- **Simplified matcher syntax**: Uses enum-based `matchType` field (`=`, `!=`, `=~`, `!~`) instead of boolean `isRegex`/`isEqual` fields
+- **Streamlined spec**: Removes legacy fields (`targetTags`, `owner`, `issue_url`, `postmortem_url`) for a cleaner API surface
+- **Enhanced validation**: Includes stricter field validation and length limits for better error handling
+
+**Migration steps:**
+1. Deploy the new v1alpha2 CRD (both CRDs can coexist)
+2. Create equivalent v1alpha2 Silence resources in appropriate namespaces
+3. Verify the new silences are working correctly
+4. Remove old v1alpha1 resources
+
+For detailed migration instructions and examples, see [MIGRATION.md](MIGRATION.md).
+
 ### CustomResourceDefinition
 
 The silence-operator monitors the Kubernetes API server for changes
 to `Silence` objects and ensures that the current Alertmanager silences match these objects.
 The Operator reconciles the `Silence` [Custom Resource Definition (CRD)][crd] which
-can be found [here][silence-crd].
+supports two API versions:
 
-The `Silence` CRD generated at [config/crd/monitoring.giantswarm.io_silences.yaml](config/crd/monitoring.giantswarm.io_silences.yaml) is deployed via [management-cluster-bases](https://github.com/giantswarm/management-cluster-bases/blob/9e17d416dd324e07d7784054237302707ba42dc3/bases/crds/giantswarm/kustomization.yaml#L6C1-L7C1) repository.
+- **v1alpha1** (legacy): [monitoring.giantswarm.io_silences.yaml](config/crd/bases/monitoring.giantswarm.io_silences.yaml)
+- **v1alpha2** (recommended): [observability.giantswarm.io_silences.yaml](config/crd/bases/observability.giantswarm.io_silences.yaml)
+
+The v1alpha1 CRD is deployed via [management-cluster-bases](https://github.com/giantswarm/management-cluster-bases/blob/9e17d416dd324e07d7784054237302707ba42dc3/bases/crds/giantswarm/kustomization.yaml#L6C1-L7C1) repository.
 
 [crd]: https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/
 [silence-crd]: api/v1alpha1/silence_types.go
@@ -92,6 +137,7 @@ This separation ensures clean code organization, improved testability, and easie
 
 Sample CR:
 
+**v1alpha1 (legacy, cluster-scoped):**
 ```yaml
 apiVersion: monitoring.giantswarm.io/v1alpha1
 kind: Silence
@@ -102,13 +148,110 @@ spec:
   - name: cluster
     value: test
     isRegex: false
+    isEqual: true
+  - name: severity
+    value: critical
+    isRegex: false
+    isEqual: true
+  owner: example-user
+  issue_url: https://github.com/example/issue/123
+```
+
+**v1alpha2 (recommended, namespace-scoped):**
+```yaml
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: test-silence1
+  namespace: my-namespace
+spec:
+  matchers:
+  - name: cluster
+    value: test
+    matchType: "="
+  - name: severity
+    value: critical
+    matchType: "="
 ```
 
 - `matchers` field corresponds to the Alertmanager silence `matchers` each of which consists of:
   - `name` - name of tag on an alert to match
   - `value` - fixed string or expression to match against the value of the tag named by `name` above on an alert
-  - `isRegex` - a boolean specifying whether to treat `value` as a regex (`=~`) or a fixed string (`=`)
-  - `isEqual` - a boolean specifying whether to use equal signs (`=` or `=~`) or to negate the matcher (`!=` or `!~`)
+  - `matchType` - the type of matching to perform using Alertmanager operator symbols:
+    - `"="` - exact string match
+    - `"!="` - exact string non-match
+    - `"=~"` - regex match
+    - `"!~"` - regex non-match
+
+## Architecture
+
+The silence-operator follows a clean architecture pattern with clear separation of concerns:
+
+### Components
+
+- **Controllers**: Handle Kubernetes-specific reconciliation logic and lifecycle management
+  - `SilenceReconciler`: Manages v1alpha1 cluster-scoped silences (legacy)
+  - `SilenceV2Reconciler`: Manages v1alpha2 namespace-scoped silences (recommended)
+- **Service Layer**: Contains business logic agnostic to Kubernetes concepts
+  - `SilenceService`: Core business logic for creating, updating, and deleting silences
+- **Alertmanager Client**: Handles communication with Alertmanager API
+  - `alertmanager.Client`: Interface for Alertmanager operations
+  - `Alertmanager`: Concrete implementation
+
+### Data Flow
+
+1. **Conversion**: Controllers convert Kubernetes CRs to `alertmanager.Silence` objects using `getSilenceFromCR()` methods
+2. **Business Logic**: Controllers call `SilenceService` methods (`CreateOrUpdateSilence`, `DeleteSilence`)
+3. **Alertmanager Operations**: Service layer uses the `alertmanager.Client` interface to interact with Alertmanager
+4. **Error Handling**: Simple error returns propagate back through the layers for Kubernetes to handle retries
+
+### Dependency Injection
+
+The service is instantiated in `main.go` and injected into controllers via constructor dependency injection, enabling:
+- Shared business logic between v1alpha1 and v1alpha2 controllers
+- Easier testing through interface mocking
+- Clear separation between Kubernetes concerns and business logic
+
+## Architecture Documentation
+
+### Project Structure
+
+```
+silence-operator/
+├── api/                             # API definitions and schemas
+│   ├── v1alpha1/                   # Legacy cluster-scoped API
+│   └── v1alpha2/                   # New namespace-scoped API
+├── internal/controller/            # Kubernetes controllers
+│   ├── silence_controller.go       # v1alpha1 controller (legacy)
+│   ├── silence_v2_controller.go    # v1alpha2 controller (recommended)
+│   └── testutils/                  # Test utilities and mocks
+├── pkg/                            # Reusable packages
+│   ├── alertmanager/              # Alertmanager client implementation
+│   └── service/                   # Business logic layer
+├── config/                        # Kubernetes manifests and CRDs
+├── helm/                          # Helm chart for deployment
+└── docs/                          # Documentation
+```
+
+### Design Principles
+
+1. **Clean Architecture**: Clear separation between controllers, services, and external clients
+2. **Dual API Support**: Maintains backward compatibility while providing improved v2 API
+3. **Dependency Injection**: Services are injected into controllers for better testability
+4. **Interface-Based Design**: Uses interfaces for external dependencies (Alertmanager client)
+5. **Shared Business Logic**: Common operations are handled by the service layer
+
+### Controller Responsibilities
+
+**SilenceReconciler (v1alpha1)**:
+- Manages cluster-scoped silences
+- Handles legacy boolean matcher fields (`isRegex`, `isEqual`)
+- Maintains backward compatibility
+
+**SilenceV2Reconciler (v1alpha2)**:
+- Manages namespace-scoped silences
+- Uses enum-based matcher types (`matchType: =, !=, =~, !~`)
+- Provides enhanced validation and user experience
 
 ## Getting the Project
 
