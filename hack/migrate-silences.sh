@@ -189,8 +189,8 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
     
     # Create the v1alpha2 silence with preserved user annotations and labels
     # Build metadata object with preserved annotations and labels
-    metadata_base=$(jq -n --arg name "$name" --arg namespace "$TARGET_NAMESPACE" \
-        '{name: $name, namespace: $namespace}')
+    metadata_base="$(jq -n --arg name "$name" --arg namespace "$TARGET_NAMESPACE" \
+        '{name: $name, namespace: $namespace}')"
     
     # Add annotations if present
     if [[ "$annotation_count" -gt 0 ]]; then
