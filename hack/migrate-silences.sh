@@ -13,8 +13,8 @@ Migrates v1alpha1 silences to v1alpha2 format with automatic boolean-to-enum con
 
 Arguments:
   target-namespace    Target namespace for v1alpha2 silences (default: default)
-  --dry-run          Show what would be migrated without creating resources
-  --help            Show this help message
+  --dry-run           Show what would be migrated without creating resources
+  --help              Show this help message
 
 Features:
   ✅ Automatic boolean-to-enum conversion (isRegex/isEqual → matchType)
