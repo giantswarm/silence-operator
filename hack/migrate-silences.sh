@@ -154,7 +154,7 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
         matcher_name="$(echo "$original_matcher" | jq -r '.name')"
         old_isRegex=$(echo "$original_matcher" | jq -r '.isRegex // false')
         old_isEqual=$(echo "$original_matcher" | jq -r 'if has("isEqual") then .isEqual else true end')
-        new_matchType=$(echo "$converted_matcher" | jq -r '.matchType')
+        new_matchType="$(echo "$converted_matcher" | jq -r '.matchType')"
         
         echo "   📝 $matcher_name: isRegex=$old_isRegex, isEqual=$old_isEqual → matchType='$new_matchType'"
     done
