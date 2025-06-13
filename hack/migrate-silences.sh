@@ -74,10 +74,10 @@ convert_matcher_to_enum() {
     local isRegex
     local isEqual
     
-    name=$(echo "$matcher_json" | jq -r '.name')
-    value=$(echo "$matcher_json" | jq -r '.value')
-    isRegex=$(echo "$matcher_json" | jq -r '.isRegex // false')
-    isEqual=$(echo "$matcher_json" | jq -r 'if has("isEqual") then .isEqual else true end')
+    name="$(echo "$matcher_json" | jq -r '.name')"
+    value="$(echo "$matcher_json" | jq -r '.value')"
+    isRegex="$(echo "$matcher_json" | jq -r '.isRegex // false')"
+    isEqual="$(echo "$matcher_json" | jq -r 'if has("isEqual") then .isEqual else true end')"
     
     # Convert boolean combination to enum
     local matchType
