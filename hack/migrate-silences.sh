@@ -188,8 +188,8 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
     
     # Add annotations if present
     if [[ "$annotation_count" -gt 0 ]]; then
-        metadata_base=$(echo "$metadata_base" | jq --argjson annotations "$annotations" \
-            '. + {annotations: $annotations}')
+        metadata_base="$(echo "$metadata_base" | jq --argjson annotations "$annotations" \
+            '. + {annotations: $annotations}')"
     fi
     
     # Add labels if present
