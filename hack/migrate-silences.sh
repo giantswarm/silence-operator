@@ -24,10 +24,10 @@ Features:
   ✅ Detailed migration logging
 
 Examples:
-  $0 --dry-run                    # Test migration to default namespace
-  $0 production --dry-run         # Test migration to production namespace
-  $0 monitoring                   # Migrate to monitoring namespace
-  $0                             # Migrate to default namespace
+  $bin --dry-run                    # Test migration to default namespace
+  $bin production --dry-run         # Test migration to production namespace
+  $bin monitoring                   # Migrate to monitoring namespace
+  $bin                              # Migrate to default namespace
 
 For more information, see MIGRATION.md
 EOF
