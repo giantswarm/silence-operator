@@ -142,13 +142,10 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
     
     # Convert all matchers
     converted_matchers="[]"
-    matchers=$(echo "$silence" | jq '.spec.matchers')
-    matcher_count=$(echo "$matchers" | jq 'length')
-    
-    for i in $(seq 0 $((matcher_count - 1))); do
-        original_matcher=$(echo "$matchers" | jq ".[$i]")
-        converted_matcher=$(convert_matcher_to_enum "$original_matcher")
-        converted_matchers=$(echo "$converted_matchers" | jq ". += [$converted_matcher]")
+    echo "$silence" | jq -r '.spec.matchers[] | @base64' | while read -r matcher; do
+        original_matcher="$(echo "$matcher" | base64 --decode)"
+        converted_matcher="$(convert_matcher_to_enum "$original_matcher")"
+        converted_matchers="$(echo "$converted_matchers" | jq ". += [$converted_matcher]")"
         
         # Log conversion
         matcher_name="$(echo "$original_matcher" | jq -r '.name')"
