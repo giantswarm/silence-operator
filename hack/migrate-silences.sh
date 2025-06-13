@@ -199,7 +199,7 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
     fi
     
     # Create the full silence YAML using jq
-    silence_yaml=$(jq -n \
+    silence_yaml="$(jq -n \
         --argjson metadata "$metadata_base" \
         --argjson matchers "$converted_matchers" \
         '{
@@ -209,7 +209,7 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
             spec: {
                 matchers: $matchers
             }
-        }')
+        }')"
     
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "   🔍 DRY RUN: Would create v1alpha2 silence in namespace $TARGET_NAMESPACE"
