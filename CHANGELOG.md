@@ -31,7 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 - The `monitoring.giantswarm.io/v1alpha1` API is now considered legacy. New deployments should use `observability.giantswarm.io/v1alpha2`.
-- Cluster-scoped silences are deprecated in favor of namespace-scoped resources for improved security and multi-tenancy.
 
 **Migration Note**: Existing v1alpha1 silences continue to work unchanged. Use the automated migration script and see MIGRATION.md for detailed guidance.
 
