@@ -122,8 +122,8 @@ if ! kubectl get silences.monitoring.giantswarm.io &> /dev/null; then
     exit 1
 fi
 
-silences_json=$(kubectl get silences.monitoring.giantswarm.io -o json)
-silence_count=$(echo "$silences_json" | jq '.items | length')
+silences_json="$(kubectl get silences.monitoring.giantswarm.io -o json)"
+silence_count="$(echo "$silences_json" | jq '.items | length')"
 
 if [[ "$silence_count" == "0" ]]; then
     echo "ℹ️  No v1alpha1 silences found to migrate"
