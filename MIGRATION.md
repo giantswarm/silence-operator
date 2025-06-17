@@ -121,7 +121,6 @@ EOF
 #### Step 3: Verify v1alpha2 Silences Work
 
 The best way to make sure the new silence works is to verify it was created on Alertmanager.
-```
 
 #### Step 4: Remove v1alpha1 Silences
 
