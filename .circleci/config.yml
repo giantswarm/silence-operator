@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  architect: giantswarm/architect@dev:db8eb96d1b6b458aede005cf661dc84f81d968fa
+  architect: giantswarm/architect@dev:8cbe63f86e45d6122c445c2033fc522d0a3247c4
 
 jobs:
   go-tests:
@@ -22,15 +22,13 @@ workflows:
             only: /^v.*/
 
     - architect/go-build:
-        name: go-build-<<matrix.architectures>>
         matrix:
           parameters:
             architecture: ["linux/amd64", "linux/arm64"]
-            resource_class: ["large", "arm.medium"]
         binary: silence-operator
+        resource_class: large
         requires:
         - go-tests
-        resource_class: <<matrix.resource_class>>
         path: ./cmd
         filters:
           tags:
@@ -39,10 +37,10 @@ workflows:
     - architect/push-to-registries-multiarch:
         context: architect
         name: push-to-registries
-        platforms: linux/amd64,linux/arm64
         requires:
-        - go-build-linux/amd64
-        - go-build-linux/arm64
+          - architect/go-build
+        image: giantswarm/silence-operator
+        platforms: "linux/amd64,linux/arm64"
         filters:
           tags:
             only: /^v.*/
