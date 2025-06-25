@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add service layer for business logic separation and improved testability
 - Add `Client` interface for alertmanager operations to enable dependency injection
 - Add comprehensive test coverage for alertmanager and service components
+- Add ARM64 support
 
 ### Changed
 
