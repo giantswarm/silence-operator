@@ -101,7 +101,7 @@ For each existing v1alpha1 silence, create a corresponding v1alpha2 silence:
 
 ```bash
 # List existing v1alpha1 silences
-kubectl get silences.monitoring.giantswarm.io
+kubectl get silences.monitoring.giantswarm.io example-silence
 
 # Create v1alpha2 equivalent in target namespace
 kubectl apply -f - <<EOF
@@ -120,10 +120,7 @@ EOF
 
 #### Step 3: Verify v1alpha2 Silences Work
 
-```bash
-kubectl get silences.observability.giantswarm.io -n production
-kubectl describe silence example-silence -n production
-```
+The best way to make sure the new silence works is to verify it was created on Alertmanager.
 
 #### Step 4: Remove v1alpha1 Silences
 

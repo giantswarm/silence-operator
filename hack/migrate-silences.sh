@@ -6,48 +6,57 @@ set -euo pipefail
 
 # Help function
 show_help() {
+    local bin="$(basename "$0")"
     cat << EOF
-Usage: $0 [target-namespace] [--dry-run|--help]
+Usage: $bin [target-namespace] [--dry-run|--help]
 
-Migrates v1alpha1 silences to v1alpha2 format with automatic boolean-to-enum conversion.
+Migrates v1alpha1 silences to v1alpha2 format with automatic matchers conversion.
 
 Arguments:
   target-namespace    Target namespace for v1alpha2 silences (default: default)
-  --dry-run          Show what would be migrated without creating resources
-  --help            Show this help message
+  --dry-run           Show what would be migrated without creating resources
+  --help              Show this help message
 
 Features:
-  ✅ Automatic boolean-to-enum conversion (isRegex/isEqual → matchType)
+  ✅ Automatic matchers conversion (isRegex/isEqual → matchType)
   ✅ User annotation/label preservation with system metadata filtering
   ✅ Comprehensive validation and error handling
   ✅ Detailed migration logging
 
 Examples:
-  $0 --dry-run                    # Test migration to default namespace
-  $0 production --dry-run         # Test migration to production namespace
-  $0 monitoring                   # Migrate to monitoring namespace
-  $0                             # Migrate to default namespace
+  $bin --dry-run                    # Test migration to default namespace
+  $bin production --dry-run         # Test migration to production namespace
+  $bin monitoring                   # Migrate to monitoring namespace
+  $bin                              # Migrate to default namespace
 
 For more information, see MIGRATION.md
 EOF
 }
 
-# Check for help flag
-if [[ "${1:-}" == "--help" ]] || [[ "${2:-}" == "--help" ]]; then
-    show_help
-    exit 0
-fi
-
-TARGET_NAMESPACE="${1:-default}"
 DRY_RUN=false
 
-# Check for dry-run flag
-if [[ "${2:-}" == "--dry-run" ]] || [[ "${1:-}" == "--dry-run" ]]; then
-    DRY_RUN=true
-    if [[ "${1:-}" == "--dry-run" ]]; then
-        TARGET_NAMESPACE="default"
-    fi
-fi
+positional_args=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --help)
+      # Display help message and exit.
+      show_help
+      exit 0;;
+    --dry-run)
+      # Enable dry run mode
+      DRY_RUN=true;;
+    -?*)
+      echo "❌ Unknown option $1" >&2
+      exit 1;;
+    *)
+      positional_args+=("$1");;
+  esac
+  shift
+done
+
+set -- "${positional_args[@]}" # Reset positional arguments to remaining arguments.
+
+TARGET_NAMESPACE="${1:-default}"
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "🔍 DRY RUN MODE: No resources will be created"
@@ -65,10 +74,10 @@ convert_matcher_to_enum() {
     local isRegex
     local isEqual
     
-    name=$(echo "$matcher_json" | jq -r '.name')
-    value=$(echo "$matcher_json" | jq -r '.value')
-    isRegex=$(echo "$matcher_json" | jq -r '.isRegex // false')
-    isEqual=$(echo "$matcher_json" | jq -r 'if has("isEqual") then .isEqual else true end')
+    name="$(echo "$matcher_json" | jq -r '.name')"
+    value="$(echo "$matcher_json" | jq -r '.value')"
+    isRegex="$(echo "$matcher_json" | jq -r '.isRegex // false')"
+    isEqual="$(echo "$matcher_json" | jq -r 'if has("isEqual") then .isEqual else true end')"
     
     # Convert boolean combination to enum
     local matchType
@@ -113,8 +122,8 @@ if ! kubectl get silences.monitoring.giantswarm.io &> /dev/null; then
     exit 1
 fi
 
-silences_json=$(kubectl get silences.monitoring.giantswarm.io -o json)
-silence_count=$(echo "$silences_json" | jq '.items | length')
+silences_json="$(kubectl get silences.monitoring.giantswarm.io -o json)"
+silence_count="$(echo "$silences_json" | jq '.items | length')"
 
 if [[ "$silence_count" == "0" ]]; then
     echo "ℹ️  No v1alpha1 silences found to migrate"
@@ -126,52 +135,49 @@ echo ""
 
 # Process each silence
 echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silence; do
-    silence=$(echo "$encoded_silence" | base64 --decode)
+    silence="$(echo "$encoded_silence" | base64 --decode)"
     
-    name=$(echo "$silence" | jq -r '.metadata.name')
+    name="$(echo "$silence" | jq -r '.metadata.name')"
     echo "🔄 Processing silence: $name"
     
     # Convert all matchers
     converted_matchers="[]"
-    matchers=$(echo "$silence" | jq '.spec.matchers')
-    matcher_count=$(echo "$matchers" | jq 'length')
-    
-    for i in $(seq 0 $((matcher_count - 1))); do
-        original_matcher=$(echo "$matchers" | jq ".[$i]")
-        converted_matcher=$(convert_matcher_to_enum "$original_matcher")
-        converted_matchers=$(echo "$converted_matchers" | jq ". += [$converted_matcher]")
+    echo "$silence" | jq -r '.spec.matchers[] | @base64' | while read -r matcher; do
+        original_matcher="$(echo "$matcher" | base64 --decode)"
+        converted_matcher="$(convert_matcher_to_enum "$original_matcher")"
+        converted_matchers="$(echo "$converted_matchers" | jq ". += [$converted_matcher]")"
         
         # Log conversion
-        matcher_name=$(echo "$original_matcher" | jq -r '.name')
-        old_isRegex=$(echo "$original_matcher" | jq -r '.isRegex // false')
-        old_isEqual=$(echo "$original_matcher" | jq -r 'if has("isEqual") then .isEqual else true end')
-        new_matchType=$(echo "$converted_matcher" | jq -r '.matchType')
+        matcher_name="$(echo "$original_matcher" | jq -r '.name')"
+        old_isRegex="$(echo "$original_matcher" | jq -r '.isRegex')"
+        old_isEqual="$(echo "$original_matcher" | jq -r '.isEqual')"
+        new_matchType="$(echo "$converted_matcher" | jq -r '.matchType')"
         
         echo "   📝 $matcher_name: isRegex=$old_isRegex, isEqual=$old_isEqual → matchType='$new_matchType'"
     done
     
     # Extract annotations and labels, excluding Kubernetes and FluxCD system metadata
     # This regex pattern excludes common system annotations/labels
-    annotations=$(echo "$silence" | jq '
+    annotations="$(echo "$silence" | jq '
         .metadata.annotations // {} | 
         with_entries(
             select(
                 .key | test("^(kubernetes\\.io|k8s\\.io|config\\.kubernetes\\.io|app\\.kubernetes\\.io|fluxcd\\.io|helm\\.sh|kustomize\\.toolkit\\.fluxcd\\.io|source\\.toolkit\\.fluxcd\\.io|meta\\.helm\\.sh|kubectl\\.kubernetes\\.io|control-plane\\.alpha\\.kubernetes\\.io|node\\.alpha\\.kubernetes\\.io|volume\\.alpha\\.kubernetes\\.io|admission\\.gke\\.io|autopilot\\.gke\\.io|cloud\\.google\\.com|container\\.googleapis\\.com)") | not
             )
         )
-    ')
-    labels=$(echo "$silence" | jq '
+    ')"
+    labels="$(echo "$silence" | jq '
         .metadata.labels // {} | 
         with_entries(
             select(
                 .key | test("^(kubernetes\\.io|k8s\\.io|app\\.kubernetes\\.io|pod-template-hash|controller-revision-hash|fluxcd\\.io|helm\\.sh|kustomize\\.toolkit\\.fluxcd\\.io|source\\.toolkit\\.fluxcd\\.io|meta\\.helm\\.sh|kubectl\\.kubernetes\\.io|control-plane\\.alpha\\.kubernetes\\.io|node\\.alpha\\.kubernetes\\.io|volume\\.alpha\\.kubernetes\\.io|admission\\.gke\\.io|autopilot\\.gke\\.io|cloud\\.google\\.com|container\\.googleapis\\.com)") | not
             )
         )
-    ')
+    ')"
     
     # Log annotations and labels being copied
-    annotation_count=$(echo "$annotations" | jq 'length')
-    label_count=$(echo "$labels" | jq 'length')
+    annotation_count="$(echo "$annotations" | jq 'length')"
+    label_count="$(echo "$labels" | jq 'length')"
     
     if [[ "$annotation_count" -gt 0 ]]; then
         echo "   📎 Copying $annotation_count user annotation(s): $(echo "$annotations" | jq -r 'keys | join(", ")')"
@@ -183,23 +189,23 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
     
     # Create the v1alpha2 silence with preserved user annotations and labels
     # Build metadata object with preserved annotations and labels
-    metadata_base=$(jq -n --arg name "$name" --arg namespace "$TARGET_NAMESPACE" \
-        '{name: $name, namespace: $namespace}')
+    metadata_base="$(jq -n --arg name "$name" --arg namespace "$TARGET_NAMESPACE" \
+        '{name: $name, namespace: $namespace}')"
     
     # Add annotations if present
     if [[ "$annotation_count" -gt 0 ]]; then
-        metadata_base=$(echo "$metadata_base" | jq --argjson annotations "$annotations" \
-            '. + {annotations: $annotations}')
+        metadata_base="$(echo "$metadata_base" | jq --argjson annotations "$annotations" \
+            '. + {annotations: $annotations}')"
     fi
     
     # Add labels if present
     if [[ "$label_count" -gt 0 ]]; then
-        metadata_base=$(echo "$metadata_base" | jq --argjson labels "$labels" \
-            '. + {labels: $labels}')
+        metadata_base="$(echo "$metadata_base" | jq --argjson labels "$labels" \
+            '. + {labels: $labels}')"
     fi
     
     # Create the full silence YAML using jq
-    silence_yaml=$(jq -n \
+    silence_yaml="$(jq -n \
         --argjson metadata "$metadata_base" \
         --argjson matchers "$converted_matchers" \
         '{
@@ -209,7 +215,7 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
             spec: {
                 matchers: $matchers
             }
-        }')
+        }')"
     
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "   🔍 DRY RUN: Would create v1alpha2 silence in namespace $TARGET_NAMESPACE"
@@ -233,7 +239,7 @@ if [[ "$DRY_RUN" == "true" ]]; then
     echo "🔍 DRY RUN completed successfully!"
     echo ""
     echo "To actually perform the migration:"
-    echo "1. Run this script without --dry-run: ./hack/migrate-silences.sh $TARGET_NAMESPACE"
+    echo "1. Run this script without --dry-run: $0 $TARGET_NAMESPACE"
     echo "2. Verify the migrated silences: kubectl get silences.observability.giantswarm.io -n $TARGET_NAMESPACE"
     echo "3. Test that silences work as expected"
     echo "4. Remove old v1alpha1 silences when confident: kubectl delete silences.monitoring.giantswarm.io --all"
