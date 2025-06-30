@@ -47,6 +47,7 @@ while [[ $# -gt 0 ]]; do
       DRY_RUN=true;;
     -?*)
       echo "❌ Unknown option $1" >&2
+      show_help
       exit 1;;
     *)
       positional_args+=("$1");;
