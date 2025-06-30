@@ -420,8 +420,8 @@ kubectl get silences.monitoring.giantswarm.io
 kubectl get silences.observability.giantswarm.io --all-namespaces
 
 # Verify finalizers are properly set
-kubectl get silence test-v1alpha1 -o jsonpath='{.metadata.finalizers}'
-kubectl get silence test-v1alpha2 -n default -o jsonpath='{.metadata.finalizers}'
+kubectl get silences.monitoring.giantswarm.io test-v1alpha1 -o jsonpath='{.metadata.finalizers}'
+kubectl get silences.observability.giantswarm.io test-v1alpha2 -n default -o jsonpath='{.metadata.finalizers}'
 
 # Check controller logs for both APIs
 kubectl logs -f deployment/silence-operator -n monitoring
