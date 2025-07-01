@@ -50,11 +50,11 @@ fi
 
 # Ensure TARGET_NAMESPACE is set and non-empty
 if [ -z "${TARGET_NAMESPACE+x}" ]; then
-  echo ":x: ERROR: TARGET_NAMESPACE is not set. Please set it to a valid namespace."
+  echo "❌ ERROR: TARGET_NAMESPACE is not set. Please set it to a valid namespace."
   exit 1
 fi
 if [ -z "$TARGET_NAMESPACE" ]; then
-  echo ":x: ERROR: TARGET_NAMESPACE is set but empty. It must be non-empty."
+  echo "❌ ERROR: TARGET_NAMESPACE is set but empty. It must be non-empty."
   exit 1
 fi
 
