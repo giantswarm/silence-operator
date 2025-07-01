@@ -139,17 +139,16 @@ For environments with many silences, use the provided migration script:
 
 ```bash
 # Run the migration script (located in hack/migrate-silences.sh)
-./hack/migrate-silences.sh [target-namespace] [--dry-run]
+./hack/migrate-silences.sh <target-namespace> [--dry-run]
 
 # Example: Test migration to production namespace (dry-run)
 ./hack/migrate-silences.sh production --dry-run
 
 # Example: Migrate all v1alpha1 silences to the production namespace
 ./hack/migrate-silences.sh production
-
-# Example: Migrate to default namespace
-./hack/migrate-silences.sh
 ```
+
+> **Note:** The `<target-namespace>` argument is **required**. Running the script without specifying a namespace will result in an error.
 
 The script will:
 1. Fetch all existing v1alpha1 silences

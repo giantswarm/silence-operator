@@ -8,12 +8,20 @@ set -euo pipefail
 show_help() {
     local bin="$(basename "$0")"
     cat << EOF
+<<<<<<< Updated upstream
 Usage: $bin [target-namespace] [--dry-run|--help]
+=======
+Usage: $0 <target-namespace> [--dry-run|--help]
+>>>>>>> Stashed changes
 
 Migrates v1alpha1 silences to v1alpha2 format with automatic matchers conversion.
 
 Arguments:
+<<<<<<< Updated upstream
   target-namespace    Target namespace for v1alpha2 silences (default: default)
+=======
+  target-namespace    (required) Target namespace for v1alpha2 silences
+>>>>>>> Stashed changes
   --dry-run           Show what would be migrated without creating resources
   --help              Show this help message
 
@@ -24,15 +32,21 @@ Features:
   ✅ Detailed migration logging
 
 Examples:
+<<<<<<< Updated upstream
   $bin --dry-run                    # Test migration to default namespace
   $bin production --dry-run         # Test migration to production namespace
   $bin monitoring                   # Migrate to monitoring namespace
   $bin                              # Migrate to default namespace
+=======
+  $0 monitoring --dry-run         # Test migration to monitoring namespace
+  $0 production                  # Migrate to production namespace
+>>>>>>> Stashed changes
 
 For more information, see MIGRATION.md
 EOF
 }
 
+<<<<<<< Updated upstream
 DRY_RUN=false
 
 positional_args=()
@@ -58,6 +72,34 @@ done
 set -- "${positional_args[@]}" # Reset positional arguments to remaining arguments.
 
 TARGET_NAMESPACE="${1:-default}"
+=======
+# Check for help flag
+if [[ "${1:-}" == "--help" ]] || [[ "${2:-}" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+TARGET_NAMESPACE="${1:-}"
+DRY_RUN=false
+
+# Check for dry-run flag
+if [[ "${2:-}" == "--dry-run" ]] || [[ "${1:-}" == "--dry-run" ]]; then
+    DRY_RUN=true
+    if [[ "${1:-}" == "--dry-run" ]]; then
+        TARGET_NAMESPACE=""
+    fi
+fi
+>>>>>>> Stashed changes
+
+# Ensure TARGET_NAMESPACE is set and non-empty
+if [ -z "${TARGET_NAMESPACE+x}" ]; then
+  echo ":x: ERROR: TARGET_NAMESPACE is not set. Please set it to a valid namespace."
+  exit 1
+fi
+if [ -z "$TARGET_NAMESPACE" ]; then
+  echo ":x: ERROR: TARGET_NAMESPACE is set but empty. It must be non-empty."
+  exit 1
+fi
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "🔍 DRY RUN MODE: No resources will be created"
