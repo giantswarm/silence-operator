@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	monitoringv1alpha1 "github.com/giantswarm/silence-operator/api/v1alpha1"
+	observabilityv1alpha2 "github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/internal/controller"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/pkg/service"
@@ -53,6 +54,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(monitoringv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(observabilityv1alpha2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -237,6 +239,11 @@ func main() {
 	if err = controller.NewSilenceReconciler(mgr.GetClient(), silenceService).
 		SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Silence")
+		os.Exit(1)
+	}
+	if err = controller.NewSilenceV2Reconciler(mgr.GetClient(), silenceService).
+		SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "SilenceV2")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

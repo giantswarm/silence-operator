@@ -1,10 +1,17 @@
 # Testing Guide for Silence Operator
 
-This document explains the testing infrastructure and practices for the Silence Operator project.
+This document explains the testing infrastructure and practices for the Silence Operator project, which supports both v1alpha1 (legacy) and v1alpha2 (recommended) APIs.
 
 ## Overview
 
 The Silence Operator uses a comprehensive testing strategy that includes unit tests, integration tests, and end-to-end tests. The testing infrastructure is built on top of Kubebuilder's testing framework with enhancements for better developer experience.
+
+**Key Testing Areas:**
+- **Controller Logic**: Tests for both `SilenceReconciler` (v1alpha1) and `SilenceV2Reconciler` (v1alpha2) 
+- **Service Layer**: Business logic testing with mock Alertmanager clients
+- **API Conversion**: Testing the conversion between different matcher formats (boolean vs enum)
+- **Finalizer Handling**: Proper cleanup and deletion testing
+- **Error Scenarios**: Network failures, invalid configurations, etc.
 
 ## Testing Infrastructure
 
@@ -61,22 +68,15 @@ This installs:
 ```bash
 # Run all tests
 make test
-```
 
-#### Enhanced Test Commands
+# Run tests with specific Ginkgo arguments (modify test target as needed)
+$(GINKGO) -focus='Silence Controller' ./...
 
-```bash
-# Run tests with verbose output 
-make test GINKGO_ARGS="-v"
-
-# Run tests without parallelism
-make test GINKGO_ARGS="-p=false"
-
-# Run specific test with focus
-make test GINKGO_ARGS="-focus='Silence Controller'"
+# Run tests with verbose output
+$(GINKGO) -v ./...
 
 # Skip specific tests
-make test GINKGO_ARGS="-skip='Should fail'"
+$(GINKGO) -skip='Should fail' ./...
 ```
 ### Test Configuration
 
@@ -88,47 +88,56 @@ make test GINKGO_ARGS="-skip='Should fail'"
 #### Test Flags
 
 ```bash
-# Run specific test suites using Ginkgo args
-make test GINKGO_ARGS="-focus='Controller'"
+# Run specific test suites using Ginkgo directly
+bin/ginkgo -focus='Controller' ./...
 
 # Skip certain tests
-make test GINKGO_ARGS="-skip='Integration'"
+bin/ginkgo -skip='Integration' ./...
 
 # Set Kubernetes version for envtest
 make test ENVTEST_K8S_VERSION="1.29"
+
+# Run tests with verbose output
+bin/ginkgo -v ./...
 ```
 
 ## Writing Tests
 
 ### Controller Tests Example
 
+The silence-operator includes comprehensive test suites for both API versions:
+
 ```go
 var _ = Describe("Silence Controller", func() {
     var (
-        ctx           context.Context
-        cancel        context.CancelFunc
-        mockAM        *testutils.MockAlertmanager
-        reconciler    *SilenceReconciler
+        mockServer       *testutils.MockAlertmanagerServer
+        mockAlertmanager *alertmanager.Alertmanager
+        reconciler       *SilenceReconciler
+        ctx              context.Context
     )
 
     BeforeEach(func() {
-        ctx, cancel = context.WithCancel(context.Background())
-        
-        // Setup mock Alertmanager
-        mockAM = testutils.NewMockAlertmanager()
-        mockAM.Start()
-        
-        // Create reconciler with mock
-        reconciler = &SilenceReconciler{
-            Client:            k8sClient,
-            Scheme:            k8sManager.GetScheme(),
-            AlertmanagerURL:   mockAM.URL,
-        }
+        // Set up mock Alertmanager server
+        mockServer = testutils.NewMockAlertmanagerServer()
+		    var err error
+		    mockAlertmanager, err = mockServer.GetAlertmanager()
+		    Expect(err).NotTo(HaveOccurred())
+
+		    // Create service and reconciler
+    		silenceService := service.NewSilenceService(mockAlertmanager)
+		    reconciler = &SilenceReconciler{
+			      client:         k8sClient,
+			      silenceService: silenceService,
+		    }
+
+		    ctx = context.Background()
     })
 
     AfterEach(func() {
-        mockAM.Stop()
-        cancel()
+		    // Clean up mock server
+		    if mockServer != nil {
+			      mockServer.Close()
+		    }
     })
 
     Context("When creating a Silence", func() {
@@ -137,6 +146,65 @@ var _ = Describe("Silence Controller", func() {
         })
     })
 })
+
+var _ = Describe("SilenceV2 Controller", func() {
+    Context("When reconciling a resource", func() {
+        It("should successfully reconcile the resource", func() {
+            // Test implementation for v1alpha2 API
+        })
+        
+        It("should handle deletion with finalizer", func() {
+            // Test finalizer logic for v1alpha2
+        })
+    })
+
+    Context("MatchType Conversion", func() {
+        It("should convert MatchType enum to correct boolean values", func() {
+            testCases := []struct {
+                matchType       observabilityv1alpha2.MatchType
+                expectedIsRegex bool
+                expectedIsEqual bool
+                description     string
+            }{
+                {observabilityv1alpha2.MatchEqual, false, true, "exact match (=)"},
+                {observabilityv1alpha2.MatchNotEqual, false, false, "exact non-match (!=)"},
+                {observabilityv1alpha2.MatchRegexMatch, true, true, "regex match (=~)"},
+                {observabilityv1alpha2.MatchRegexNotMatch, true, false, "regex non-match (!~)"},
+                {"", false, true, "empty/default should be exact match"},
+            }
+            
+            for _, tc := range testCases {
+                // Test the conversion logic for each match type
+                silence := createTestSilenceWithMatchType(tc.matchType)
+                result, err := reconciler.getSilenceFromCR(silence)
+                
+                Expect(err).NotTo(HaveOccurred())
+                Expect(result.Matchers[0].IsRegex).To(Equal(tc.expectedIsRegex))
+                Expect(result.Matchers[0].IsEqual).To(Equal(tc.expectedIsEqual))
+            }
+        })
+    })
+})
+```
+
+### Service Layer Testing
+
+The refactored architecture enables easier testing of business logic:
+
+```go
+// Test the service layer directly
+func TestSilenceService_CreateOrUpdateSilence(t *testing.T) {
+    // Setup mock Alertmanager client
+    mockClient := &MockAlertmanagerClient{}
+    service := NewSilenceService(mockClient)
+    
+    // Test business logic without Kubernetes dependencies
+    err := service.CreateOrUpdateSilence(ctx, "test-comment", silence)
+    assert.NoError(t, err)
+    
+    // Verify expected Alertmanager operations
+    mockClient.AssertCreateSilenceCalled(t, silence)
+}
 ```
 
 ### Mock Alertmanager Usage
@@ -152,6 +220,82 @@ mockAM.SetResponse("/api/v2/silences", http.StatusOK, silenceList)
 
 // Verify calls
 Expect(mockAM.GetRequestCount("POST", "/api/v2/silences")).To(Equal(1))
+```
+
+### Migration Script Testing
+
+The `hack/migrate-silences.sh` script includes comprehensive testing capabilities for safe migration from v1alpha1 to v1alpha2:
+
+#### Dry-Run Testing
+
+```bash
+# Test migration without making changes
+./hack/migrate-silences.sh --dry-run
+
+# Test migration to specific namespace
+./hack/migrate-silences.sh production --dry-run
+```
+
+#### Script Validation
+
+```bash
+# Check script syntax
+bash -n hack/migrate-silences.sh
+
+# Run shellcheck for code quality
+shellcheck hack/migrate-silences.sh
+```
+
+#### Testing Migration Features
+
+The script provides detailed testing of:
+
+1. **Boolean-to-Enum Conversion**: Verifies correct conversion of `isRegex`/`isEqual` to `matchType`
+2. **Metadata Filtering**: Tests preservation of user annotations while filtering system metadata
+3. **Namespace Targeting**: Validates correct namespace deployment
+4. **Error Handling**: Tests CRD validation and error reporting
+
+#### Expected Output Validation
+
+During dry-run testing, verify:
+
+```bash
+# Look for successful conversions
+📝 alertname: isRegex=false, isEqual=true → matchType='='
+
+# Check metadata preservation
+📎 Copying 2 user annotation(s): motivation, valid-until
+
+# Verify filtering is working
+🏷️  System labels filtered: kustomize.toolkit.fluxcd.io/name
+```
+
+#### Integration Testing
+
+Test the migration script with real v1alpha1 silences:
+
+```bash
+# Create test v1alpha1 silence
+kubectl apply -f - <<EOF
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: Silence
+metadata:
+  name: test-migration
+  annotations:
+    motivation: "Testing migration"
+    config.kubernetes.io/origin: "test"
+spec:
+  matchers:
+  - name: alertname
+    value: TestAlert
+    isRegex: false
+    isEqual: true
+EOF
+
+# Test migration
+./hack/migrate-silences.sh test-namespace --dry-run
+
+# Verify output shows proper filtering and conversion
 ```
 
 ## Coverage Reporting
@@ -190,20 +334,27 @@ Coverage reports are saved to:
 ### Verbose Output
 
 ```bash
-# Show detailed Ginkgo output
-make test GINKGO_ARGS="-v --trace"
+# Show detailed Ginkgo output by running directly
+bin/ginkgo -v --trace ./...
+
+# Alternative: modify the test target in Makefile temporarily
+# Add -v flag to the GINKGO command
 ```
 
 ### Test Environment Debugging
 
 ```bash
 # Check tool versions  
-./bin/setup-envtest version
-./bin/ginkgo version
-./bin/golangci-lint version
+bin/setup-envtest version
+bin/ginkgo version
+bin/golangci-lint version
 
 # Check envtest binary availability
-./bin/setup-envtest list
+bin/setup-envtest list
+
+# Verify KUBEBUILDER_ASSETS detection
+make test ENVTEST_K8S_VERSION="1.30"
+```
 
 # Verify tools are installed
 make install-tools
@@ -256,6 +407,8 @@ Tests must pass the following quality gates:
 2. **Group related tests** using Ginkgo's `Context` and `Describe` blocks
 3. **Setup and cleanup** properly in `BeforeEach`/`AfterEach` hooks
 4. **Use table-driven tests** for testing multiple scenarios
+5. **Separate API version tests** - keep v1alpha1 and v1alpha2 tests in separate files
+6. **Test conversion logic** between different matcher field formats
 
 ### Mocking Strategy
 
@@ -263,6 +416,7 @@ Tests must pass the following quality gates:
 2. **Use real Kubernetes API** for testing controller logic
 3. **Prefer HTTP mocks** over interface mocks for external services
 4. **Make mocks configurable** for different test scenarios
+5. **Share mock setup** between v1alpha1 and v1alpha2 tests when appropriate
 
 ### Coverage Guidelines
 
@@ -270,6 +424,8 @@ Tests must pass the following quality gates:
 2. **Exclude generated code** from coverage calculations
 3. **Test error paths** and edge cases
 4. **Document untested code** with justification
+5. **Cover both API versions** - ensure feature parity testing
+6. **Test migration scenarios** where both APIs interact
 
 ### Performance Considerations
 
@@ -289,16 +445,13 @@ Tests must pass the following quality gates:
 
 ### Code Quality Tools
 
-- **golangci-lint**: Comprehensive Go linting
-- **gosec**: Security vulnerability scanning
-- **gocyclo**: Cyclomatic complexity analysis
-- **staticcheck**: Advanced static analysis
+- **golangci-lint**: Comprehensive Go linting (includes gosec for security scanning)
+- **controller-gen**: Code generation for Kubernetes controllers
 
 ### Coverage Tools
 
-- **go tool cover**: Built-in coverage analysis
-- **gocov**: Enhanced coverage reporting
-- **gocov-html**: HTML coverage visualization
+- **Ginkgo coverage**: Built-in coverage via `--cover` flag
+- **go tool cover**: Built-in coverage analysis and HTML reports
 
 ## Troubleshooting
 
@@ -323,3 +476,73 @@ make test GINKGO_ARGS="-v" 2>&1 | grep "controller"
 ```
 
 For more specific troubleshooting, refer to the individual test files and the Kubebuilder documentation.
+
+## API Version Testing
+
+### v1alpha1 vs v1alpha2 Testing Differences
+
+The silence-operator supports two API versions with different matcher field formats:
+
+**v1alpha1 (Legacy)**:
+- Uses boolean fields: `isRegex: bool`, `isEqual: *bool`
+- Cluster-scoped resources
+- Tested in `silence_controller_test.go`
+
+**v1alpha2 (Recommended)**:
+- Uses enum field: `matchType: MatchType` with values `=`, `!=`, `=~`, `!~`
+- Namespace-scoped resources  
+- Tested in `silence_v2_controller_test.go`
+
+### MatchType Conversion Testing
+
+The v1alpha2 controller includes specific tests for converting the new enum-based `matchType` field to the boolean fields expected by the Alertmanager API:
+
+```go
+Context("MatchType Conversion", func() {
+    It("should convert MatchType enum to correct boolean values", func() {
+        testCases := []struct {
+            matchType       observabilityv1alpha2.MatchType
+            expectedIsRegex bool
+            expectedIsEqual bool
+            description     string
+        }{
+            {observabilityv1alpha2.MatchEqual, false, true, "exact match (=)"},
+            {observabilityv1alpha2.MatchNotEqual, false, false, "exact non-match (!=)"},
+            {observabilityv1alpha2.MatchRegexMatch, true, true, "regex match (=~)"},
+            {observabilityv1alpha2.MatchRegexNotMatch, true, false, "regex non-match (!~)"},
+            {"", false, true, "empty/default should be exact match"},
+        }
+        
+        for _, tc := range testCases {
+            // Test conversion logic
+        }
+    })
+})
+```
+
+This ensures the new user-friendly enum values are correctly converted to the internal boolean representation.
+
+## Test File Structure
+
+The test suite is organized across multiple files for better maintainability:
+
+```
+internal/controller/
+├── suite_test.go                    # Test suite setup and shared utilities
+├── silence_controller_test.go       # Tests for v1alpha1 SilenceReconciler
+├── silence_v2_controller_test.go    # Tests for v1alpha2 SilenceV2Reconciler
+└── testutils/
+    ├── mock_alertmanager.go         # Mock Alertmanager HTTP server
+    └── ...                          # Other test utilities
+
+pkg/alertmanager/
+└── alertmanager_test.go             # Unit tests for Alertmanager client
+```
+
+### Test Suite Features
+
+- **Shared Test Environment**: `suite_test.go` sets up a common Kubernetes test environment
+- **Automatic Binary Detection**: Automatically finds required Kubernetes testing binaries
+- **Mock Alertmanager**: Sophisticated HTTP server mock for realistic testing
+- **API Version Separation**: Dedicated test files for each API version
+- **Conversion Testing**: Specific tests for field format conversion between APIs

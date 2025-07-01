@@ -207,6 +207,9 @@ func (am *Alertmanager) DeleteSilenceByID(id string) error {
 }
 
 func SilenceComment(silence client.Object) string {
+	if silence.GetNamespace() != "" {
+		return fmt.Sprintf("%s-%s-%s", CreatedBy, silence.GetNamespace(), silence.GetName())
+	}
 	return fmt.Sprintf("%s-%s", CreatedBy, silence.GetName())
 }
 

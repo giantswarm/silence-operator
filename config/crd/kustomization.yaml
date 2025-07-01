@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/monitoring.giantswarm.io_silences.yaml
+- bases/observability.giantswarm.io_silences.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches: []
