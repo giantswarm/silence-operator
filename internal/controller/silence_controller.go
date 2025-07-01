@@ -20,13 +20,16 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/config"
 	"github.com/giantswarm/silence-operator/pkg/service"
 )
 
@@ -167,7 +170,6 @@ func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alph
 	return nil
 }
 
-// getSilenceFromCR converts a v1alpha1.Silence to alertmanager.Silence
 func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
 	for _, matcher := range silence.Spec.Matchers {
@@ -200,10 +202,27 @@ func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) 
 	return newSilence, nil
 }
 
-// sets up the controller with the Manager.
-func (r *SilenceReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+// SetupWithManager sets up the controller with the Manager.
+func (r *SilenceReconciler) SetupWithManager(mgr ctrl.Manager, cfg config.Config) error {
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Silence{}).
-		Named("silence").
-		Complete(r)
+		Named("silence")
+
+	if cfg.SilenceSelector != nil && !cfg.SilenceSelector.Empty() {
+		// Convert labels.Selector to metav1.LabelSelector string representation
+		selectorStr := cfg.SilenceSelector.String()
+		// Parse the string into metav1.LabelSelector
+		metaLabelSelector, err := metav1.ParseToLabelSelector(selectorStr)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse silence selector for predicate")
+		}
+		// Create the predicate using controller-runtime's LabelSelectorPredicate
+		labelPredicate, err := predicate.LabelSelectorPredicate(*metaLabelSelector)
+		if err != nil {
+			return errors.Wrap(err, "failed to create label selector predicate")
+		}
+		controllerBuilder = controllerBuilder.WithEventFilter(labelPredicate)
+	}
+
+	return controllerBuilder.Complete(r)
 }

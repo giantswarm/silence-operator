@@ -21,6 +21,11 @@ alertmanagerAuthentication: false
 # -- Default alertmanager tenant
 alertmanagerDefaultTenant: ""
 
+# Label selector to filter Silence custom resources.
+# If empty, all Silence CRs are processed.
+# Example: 'environment=production,tier=frontend'
+silenceSelector: ""
+
 # -- Configures the pod security context
 podSecurityContext:
   runAsNonRoot: true

@@ -20,13 +20,16 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/config"
 	"github.com/giantswarm/silence-operator/pkg/service"
 )
 
@@ -117,8 +120,17 @@ func (r *SilenceV2Reconciler) reconcileCreate(ctx context.Context, silence *v1al
 }
 
 func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1alpha2.Silence) error {
+	logger := log.FromContext(ctx)
+	logger.Info("Deleting silence from Alertmanager as part of finalization")
+
 	comment := alertmanager.SilenceComment(silence)
-	return r.silenceService.DeleteSilence(ctx, comment)
+	err := r.silenceService.DeleteSilence(ctx, comment)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete silence from Alertmanager")
+	}
+
+	logger.Info("Successfully deleted silence from Alertmanager")
+	return nil
 }
 
 // getSilenceFromCR converts a v1alpha2.Silence to alertmanager.Silence
@@ -174,9 +186,26 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SilenceV2Reconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+func (r *SilenceV2Reconciler) SetupWithManager(mgr ctrl.Manager, cfg config.Config) error {
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha2.Silence{}).
-		Named("silence-v2").
-		Complete(r)
+		Named("silence-v2")
+
+	if cfg.SilenceSelector != nil && !cfg.SilenceSelector.Empty() {
+		// Convert labels.Selector to metav1.LabelSelector string representation
+		selectorStr := cfg.SilenceSelector.String()
+		// Parse the string into metav1.LabelSelector
+		metaLabelSelector, err := metav1.ParseToLabelSelector(selectorStr)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse silence selector for predicate")
+		}
+		// Create the predicate using controller-runtime's LabelSelectorPredicate
+		labelPredicate, err := predicate.LabelSelectorPredicate(*metaLabelSelector)
+		if err != nil {
+			return errors.Wrap(err, "failed to create label selector predicate")
+		}
+		controllerBuilder = controllerBuilder.WithEventFilter(labelPredicate)
+	}
+
+	return controllerBuilder.Complete(r)
 }
