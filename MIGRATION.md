@@ -101,7 +101,7 @@ For each existing v1alpha1 silence, create a corresponding v1alpha2 silence:
 
 ```bash
 # List existing v1alpha1 silences
-kubectl get silences.monitoring.giantswarm.io
+kubectl get silences.monitoring.giantswarm.io example-silence
 
 # Create v1alpha2 equivalent in target namespace
 kubectl apply -f - <<EOF
@@ -120,10 +120,7 @@ EOF
 
 #### Step 3: Verify v1alpha2 Silences Work
 
-```bash
-kubectl get silences.observability.giantswarm.io -n production
-kubectl describe silence example-silence -n production
-```
+The best way to make sure the new silence works is to verify it was created on Alertmanager. The new one contains the namespace in its name.
 
 #### Step 4: Remove v1alpha1 Silences
 
@@ -142,17 +139,16 @@ For environments with many silences, use the provided migration script:
 
 ```bash
 # Run the migration script (located in hack/migrate-silences.sh)
-./hack/migrate-silences.sh [target-namespace] [--dry-run]
+./hack/migrate-silences.sh <target-namespace> [--dry-run]
 
 # Example: Test migration to production namespace (dry-run)
 ./hack/migrate-silences.sh production --dry-run
 
 # Example: Migrate all v1alpha1 silences to the production namespace
 ./hack/migrate-silences.sh production
-
-# Example: Migrate to default namespace
-./hack/migrate-silences.sh
 ```
+
+> **Note:** The `<target-namespace>` argument is **required**. Running the script without specifying a namespace will result in an error.
 
 The script will:
 1. Fetch all existing v1alpha1 silences
@@ -423,8 +419,8 @@ kubectl get silences.monitoring.giantswarm.io
 kubectl get silences.observability.giantswarm.io --all-namespaces
 
 # Verify finalizers are properly set
-kubectl get silence test-v1alpha1 -o jsonpath='{.metadata.finalizers}'
-kubectl get silence test-v1alpha2 -n default -o jsonpath='{.metadata.finalizers}'
+kubectl get silences.monitoring.giantswarm.io test-v1alpha1 -o jsonpath='{.metadata.finalizers}'
+kubectl get silences.observability.giantswarm.io test-v1alpha2 -n default -o jsonpath='{.metadata.finalizers}'
 
 # Check controller logs for both APIs
 kubectl logs -f deployment/silence-operator -n monitoring
