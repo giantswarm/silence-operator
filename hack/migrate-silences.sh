@@ -8,12 +8,12 @@ set -euo pipefail
 show_help() {
     local bin="$(basename "$0")"
     cat << EOF
-Usage: $bin [target-namespace] [--dry-run|--help]
+Usage: $0 <target-namespace> [--dry-run|--help]
 
 Migrates v1alpha1 silences to v1alpha2 format with automatic matchers conversion.
 
 Arguments:
-  target-namespace    Target namespace for v1alpha2 silences (default: default)
+  target-namespace    (required) Target namespace for v1alpha2 silences
   --dry-run           Show what would be migrated without creating resources
   --help              Show this help message
 
@@ -24,20 +24,19 @@ Features:
   ✅ Detailed migration logging
 
 Examples:
-  $bin --dry-run                    # Test migration to default namespace
-  $bin production --dry-run         # Test migration to production namespace
-  $bin monitoring                   # Migrate to monitoring namespace
-  $bin                              # Migrate to default namespace
+  $0 monitoring --dry-run         # Test migration to monitoring namespace
+  $0 production                  # Migrate to production namespace
 
 For more information, see MIGRATION.md
 EOF
 }
 
+# Initialize variables
+free_args=()
 DRY_RUN=false
 
-positional_args=()
 while [[ $# -gt 0 ]]; do
-  case $1 in
+  case "$1" in
     --help)
       # Display help message and exit.
       show_help
@@ -47,16 +46,22 @@ while [[ $# -gt 0 ]]; do
       DRY_RUN=true;;
     -?*)
       echo "❌ Unknown option $1" >&2
+      show_help
       exit 1;;
     *)
-      positional_args+=("$1");;
+      free_args+=("$1");;
   esac
   shift
 done
 
-set -- "${positional_args[@]}" # Reset positional arguments to remaining arguments.
+TARGET_NAMESPACE="${free_args[0]:-}"
 
-TARGET_NAMESPACE="${1:-default}"
+# Ensure TARGET_NAMESPACE is set and non-empty
+if [ -z "$TARGET_NAMESPACE" ]; then
+  echo "❌ ERROR: TARGET_NAMESPACE must be provided."
+  show_help
+  exit 1
+fi
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "🔍 DRY RUN MODE: No resources will be created"
