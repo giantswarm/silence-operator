@@ -186,6 +186,7 @@ The v1alpha1 CRD is deployed via [management-cluster-bases](https://github.com/g
 ### How does it work
 
 Deployment runs the Kubernetes controller, which reconciles `Silence` CRs.
+The operator can be configured to only process `Silence` CRs that match a specific label selector. This is done by setting the `silenceSelector` value in the Helm chart (e.g., `silenceSelector: "team=alpha"`). If left empty or not provided, the operator will process all `Silence` CRs in the cluster.
 
 **Filtering Options:**
 

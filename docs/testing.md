@@ -103,22 +103,7 @@ bin/ginkgo -v ./...
 
 ## Writing Tests
 
-### Controller Tests
-
-The project includes comprehensive tests for both API versions:
-
-#### V1 Controller Tests (`silence_controller_test.go`)
-Tests for the `monitoring.giantswarm.io/v1alpha1` API:
-- Basic reconciliation functionality
-- Resource creation and cleanup
-- Alertmanager integration
-
-#### V2 Controller Tests (`silence_v2_controller_test.go`)
-Tests for the `observability.giantswarm.io/v1alpha2` API:
-- Basic reconciliation functionality
-- Finalizer handling and deletion
-- API conversion between v1alpha2 and v1alpha1
-- Enhanced error handling
+### Controller Tests Example
 
 The silence-operator includes comprehensive test suites for both API versions:
 
@@ -158,14 +143,6 @@ var _ = Describe("Silence Controller", func() {
     Context("When creating a Silence", func() {
         It("Should create silence in Alertmanager", func() {
             // Test implementation
-        })
-
-        It("should handle deletion with finalizer", func() {
-            // Tests finalizer addition and removal during resource deletion
-        })
-
-        It("should convert v1alpha2 to v1alpha1 format correctly", func() {
-            // Tests API conversion functionality
         })
     })
 })
@@ -210,48 +187,6 @@ var _ = Describe("SilenceV2 Controller", func() {
 })
 ```
 
-### Config Package Tests
-
-The `pkg/config` package includes comprehensive tests for configuration parsing:
-
-```go
-func TestParseSilenceSelector(t *testing.T) {
-    tests := []struct {
-        name           string
-        silenceSelector string
-        expectError    bool
-        expectNil      bool
-    }{
-        {"empty selector returns nil", "", false, true},
-        {"valid single label selector", "app=nginx", false, false},
-        {"valid multiple label selector", "app=nginx,env=prod", false, false},
-        {"invalid selector returns error", "invalid=", true, false},
-    }
-    // Test implementation covers various selector scenarios
-}
-```
-
-Coverage includes:
-- Empty selector handling
-- Valid single and multiple label selectors
-- Complex selectors with set-based requirements
-- Invalid selector error handling
-- Label matching validation
-
-#### Key Test Scenarios for ParseSilenceSelector
-
-The helper function `ParseSilenceSelector` is thoroughly tested with:
-
-1. **Empty selectors**: Returns `nil` without error for empty strings
-2. **Single label selectors**: `"app=nginx"` - basic equality matching
-3. **Multiple label selectors**: `"app=nginx,env=prod"` - comma-separated labels
-4. **Set-based selectors**: `"env notin (test,staging)"` - advanced matching
-5. **Invalid syntax**: Malformed selectors return proper error messages
-6. **Label validation**: Ensures selectors can match expected label sets
-
-This testing ensures robust configuration parsing for silence selector functionality extracted from `main.go` into reusable helper functions.
-
-### Mock Alertmanager Usage
 ### Service Layer Testing
 
 The refactored architecture enables easier testing of business logic:
@@ -474,25 +409,6 @@ Tests must pass the following quality gates:
 4. **Use table-driven tests** for testing multiple scenarios
 5. **Separate API version tests** - keep v1alpha1 and v1alpha2 tests in separate files
 6. **Test conversion logic** between different matcher field formats
-
-#### Current Test Structure
-
-```
-internal/controller/
-├── suite_test.go              # Test suite setup and configuration
-├── silence_controller_test.go # V1 API tests (monitoring.giantswarm.io/v1alpha1)
-├── silence_v2_controller_test.go # V2 API tests (observability.giantswarm.io/v1alpha2)
-└── testutils/                 # Mock utilities and test helpers
-
-pkg/config/
-└── config_test.go            # Configuration parsing tests
-```
-
-Each test file follows a consistent pattern:
-- **Suite setup**: Shared test environment initialization
-- **Mock setup**: Alertmanager server mocking for external dependencies  
-- **Resource lifecycle**: Creation, reconciliation, and cleanup testing
-- **Error scenarios**: Validation of error handling and edge cases
 
 ### Mocking Strategy
 
