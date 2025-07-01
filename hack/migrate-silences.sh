@@ -31,22 +31,28 @@ For more information, see MIGRATION.md
 EOF
 }
 
-# Check for help flag
-if [[ "${1:-}" == "--help" ]] || [[ "${2:-}" == "--help" ]]; then
-    show_help
-    exit 0
-fi
+set -a free_args
 
-TARGET_NAMESPACE="${1:-}"
-DRY_RUN=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --help)
+      # Display help message and exit.
+      show_help
+      exit 0;;
+    --dry-run)
+      # Enable dry run mode
+      DRY_RUN=true;;
+    -?*)
+      echo "❌ Unknown option $1" >&2
+      show_help
+      exit 1;;
+    *)
+      free_args+=("$1");;
+  esac
+  shift
+done
 
-# Check for dry-run flag
-if [[ "${2:-}" == "--dry-run" ]] || [[ "${1:-}" == "--dry-run" ]]; then
-    DRY_RUN=true
-    if [[ "${1:-}" == "--dry-run" ]]; then
-        TARGET_NAMESPACE=""
-    fi
-fi
+TARGET_NAMESPACE="${free_args[0]:-}"
 
 # Ensure TARGET_NAMESPACE is set and non-empty
 if [ -z "${TARGET_NAMESPACE+x}" ]; then
