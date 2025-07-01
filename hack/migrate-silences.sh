@@ -58,7 +58,7 @@ TARGET_NAMESPACE="${free_args[0]:-}"
 
 # Ensure TARGET_NAMESPACE is set and non-empty
 if [ -z "$TARGET_NAMESPACE" ]; then
-  echo "❌ ERROR: TARGET_NAMESPACE must be provided as the first argument."
+  echo "❌ ERROR: TARGET_NAMESPACE must be provided."
   show_help
   exit 1
 fi
