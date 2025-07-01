@@ -8,11 +8,7 @@ set -euo pipefail
 show_help() {
     local bin="$(basename "$0")"
     cat << EOF
-<<<<<<< Updated upstream
-Usage: $bin [target-namespace] [--dry-run|--help]
-=======
 Usage: $0 <target-namespace> [--dry-run|--help]
->>>>>>> Stashed changes
 
 Migrates v1alpha1 silences to v1alpha2 format with automatic matchers conversion.
 
