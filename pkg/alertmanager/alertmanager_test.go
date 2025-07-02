@@ -205,7 +205,7 @@ func TestAlertmanager_ListSilences(t *testing.T) {
 	am, err := New(config)
 	require.NoError(t, err)
 
-	silences, err := am.ListSilences()
+	silences, err := am.ListSilences("")
 
 	assert.NoError(t, err)
 	assert.Len(t, silences, 1) // Only non-expired silences should be returned
@@ -265,7 +265,7 @@ func TestAlertmanager_GetSilenceByComment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			silence, err := am.GetSilenceByComment(tt.comment)
+			silence, err := am.GetSilenceByComment(tt.comment, "")
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -313,7 +313,7 @@ func TestAlertmanager_CreateSilence(t *testing.T) {
 		},
 	}
 
-	err = am.CreateSilence(silence)
+	err = am.CreateSilence(silence, "")
 	assert.NoError(t, err)
 }
 
@@ -350,7 +350,7 @@ func TestAlertmanager_UpdateSilence(t *testing.T) {
 		},
 	}
 
-	err = am.UpdateSilence(silence)
+	err = am.UpdateSilence(silence, "")
 	assert.NoError(t, err)
 }
 
@@ -368,7 +368,7 @@ func TestAlertmanager_UpdateSilence_MissingID(t *testing.T) {
 		EndsAt:    time.Now().Add(time.Hour),
 	}
 
-	err = am.UpdateSilence(silence)
+	err = am.UpdateSilence(silence, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "missing ID")
 }
@@ -390,7 +390,7 @@ func TestAlertmanager_DeleteSilenceByID(t *testing.T) {
 	am, err := New(config)
 	require.NoError(t, err)
 
-	err = am.DeleteSilenceByID("test-id")
+	err = am.DeleteSilenceByID("test-id", "")
 	assert.NoError(t, err)
 }
 
@@ -435,7 +435,7 @@ func TestAlertmanager_DeleteSilenceByComment(t *testing.T) {
 	am, err := New(config)
 	require.NoError(t, err)
 
-	err = am.DeleteSilenceByComment("test-comment")
+	err = am.DeleteSilenceByComment("test-comment", "")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, callCount) // Should have made both calls
 }
@@ -487,6 +487,185 @@ func TestAlertmanager_WithTenantID(t *testing.T) {
 	am, err := New(config)
 	require.NoError(t, err)
 
+	_, err = am.ListSilences()
+	assert.NoError(t, err)
+}
+
+// Tenant-aware method tests
+
+func TestAlertmanager_CreateSilenceWithTenant(t *testing.T) {
+	// Create test server that checks for X-Scope-OrgID header
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v2/silences", r.URL.Path)
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, "test-tenant", r.Header.Get("X-Scope-OrgID"))
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	config := config.Config{
+		Address: server.URL,
+	}
+	am, err := New(config)
+	require.NoError(t, err)
+
+	silence := &Silence{
+		Comment:   "test-comment",
+		CreatedBy: CreatedBy,
+		StartsAt:  time.Now(),
+		EndsAt:    time.Now().Add(time.Hour),
+		Matchers: []Matcher{
+			{
+				Name:    "alertname",
+				Value:   "test-alert",
+				IsRegex: false,
+				IsEqual: true,
+			},
+		},
+	}
+
+	err = am.CreateSilenceWithTenant(silence, "test-tenant")
+	assert.NoError(t, err)
+}
+
+func TestAlertmanager_ListSilencesWithTenant(t *testing.T) {
+	// Create test server that checks for X-Scope-OrgID header
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v2/silences", r.URL.Path)
+		assert.Equal(t, "GET", r.Method)
+		assert.Equal(t, "test-tenant", r.Header.Get("X-Scope-OrgID"))
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`[
+			{
+				"id": "test-id-1",
+				"comment": "test-comment-1",
+				"createdBy": "silence-operator",
+				"startsAt": "2023-01-01T10:00:00Z",
+				"endsAt": "2023-01-01T11:00:00Z",
+				"matchers": [],
+				"status": {
+					"state": "active"
+				}
+			}
+		]`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	config := config.Config{
+		Address: server.URL,
+	}
+	am, err := New(config)
+	require.NoError(t, err)
+
+	silences, err := am.ListSilencesWithTenant("test-tenant")
+	assert.NoError(t, err)
+	assert.Len(t, silences, 1)
+	assert.Equal(t, "test-id-1", silences[0].ID)
+}
+
+func TestAlertmanager_GetSilenceByCommentWithTenant(t *testing.T) {
+	// Create test server that checks for X-Scope-OrgID header
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v2/silences", r.URL.Path)
+		assert.Equal(t, "GET", r.Method)
+		assert.Equal(t, "test-tenant", r.Header.Get("X-Scope-OrgID"))
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`[
+			{
+				"id": "test-id-1",
+				"comment": "silence-operator-test-silence",
+				"createdBy": "silence-operator",
+				"startsAt": "2023-01-01T10:00:00Z",
+				"endsAt": "2023-01-01T11:00:00Z",
+				"matchers": [],
+				"status": {
+					"state": "active"
+				}
+			}
+		]`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	config := config.Config{
+		Address: server.URL,
+	}
+	am, err := New(config)
+	require.NoError(t, err)
+
+	silence, err := am.GetSilenceByCommentWithTenant("silence-operator-test-silence", "test-tenant")
+	assert.NoError(t, err)
+	assert.NotNil(t, silence)
+	assert.Equal(t, "test-id-1", silence.ID)
+	assert.Equal(t, "silence-operator-test-silence", silence.Comment)
+}
+
+func TestAlertmanager_DeleteSilenceByIDWithTenant(t *testing.T) {
+	// Create test server that checks for X-Scope-OrgID header
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v2/silence/test-id", r.URL.Path)
+		assert.Equal(t, "DELETE", r.Method)
+		assert.Equal(t, "test-tenant", r.Header.Get("X-Scope-OrgID"))
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	config := config.Config{
+		Address: server.URL,
+	}
+	am, err := New(config)
+	require.NoError(t, err)
+
+	err = am.DeleteSilenceByIDWithTenant("test-id", "test-tenant")
+	assert.NoError(t, err)
+}
+
+func TestAlertmanager_TenantPrecedence(t *testing.T) {
+	// Test that parameter tenant takes precedence over instance tenant
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Should get the parameter tenant, not the instance tenant
+		assert.Equal(t, "param-tenant", r.Header.Get("X-Scope-OrgID"))
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+
+	config := config.Config{
+		Address:  server.URL,
+		TenantId: "instance-tenant", // This should be overridden
+	}
+	am, err := New(config)
+	require.NoError(t, err)
+
+	_, err = am.ListSilencesWithTenant("param-tenant")
+	assert.NoError(t, err)
+}
+
+func TestAlertmanager_BackwardCompatibilityUsesInstanceTenant(t *testing.T) {
+	// Test that old methods still use the instance tenantId
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "instance-tenant", r.Header.Get("X-Scope-OrgID"))
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+
+	config := config.Config{
+		Address:  server.URL,
+		TenantId: "instance-tenant",
+	}
+	am, err := New(config)
+	require.NoError(t, err)
+
+	// Old method should still use instance tenant
 	_, err = am.ListSilences()
 	assert.NoError(t, err)
 }
