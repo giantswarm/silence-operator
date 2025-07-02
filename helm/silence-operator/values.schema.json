@@ -136,6 +136,43 @@
                 }
             }
         },
+        "affinity": {
+            "type": "object",
+            "description": "Affinity configuration for pod scheduling"
+        },
+        "nodeAffinity": {
+            "type": "object",
+            "description": "Node affinity configuration for pod scheduling"
+        },
+        "nodeSelector": {
+            "type": "object",
+            "description": "Node selector for pod scheduling"
+        },
+        "tolerations": {
+            "type": "array",
+            "description": "Tolerations for pod scheduling",
+            "items": {
+                "type": "object"
+            }
+        },
+        "priorityClassName": {
+            "type": "string",
+            "description": "Priority class name for pod scheduling"
+        },
+        "livenessProbe": {
+            "type": "object",
+            "description": "Configures liveness probe"
+        },
+        "readinessProbe": {
+            "type": "object",
+            "description": "Configures readiness probe"
+        },
+        "restartPolicy": {
+            "type": "string",
+            "description": "Restart policy for the pod",
+            "enum": ["Always", "OnFailure", "Never"],
+            "default": "Always"
+        },
         "crds": {
             "type": "object",
             "properties": {
