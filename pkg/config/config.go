@@ -14,6 +14,11 @@ type Config struct {
 	TenantId       string
 	// SilenceSelector is used to filter silences based on label selectors.
 	SilenceSelector labels.Selector
+
+	// Tenancy configuration
+	TenancyEnabled       bool
+	TenancyLabelKey      string // Single label key to extract tenant from (e.g., "observability.giantswarm.io/tenant")
+	TenancyDefaultTenant string
 }
 
 // ParseSilenceSelector parses a silence selector string into a labels.Selector.

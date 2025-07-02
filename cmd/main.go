@@ -93,6 +93,10 @@ func main() {
 	flag.StringVar(&cfg.TenantId, "alertmanager-default-tenant-id", "", "Alertmanager tenant id.")
 	flag.BoolVar(&cfg.Authentication, "alertmanager-authentication", false, "Enable Alertmanager authentication using Service Account token.")
 	flag.StringVar(&silenceSelector, "silence-selector", "", "Label selector to filter Silence custom resources (e.g., 'environment=production,tier=frontend').")
+	// Tenancy flags (not wired up yet - for future PRs)
+	flag.BoolVar(&cfg.TenancyEnabled, "tenancy-enabled", false, "Enable tenancy support for multi-tenant Alertmanager setups.")
+	flag.StringVar(&cfg.TenancyLabelKey, "tenancy-label-key", "observability.giantswarm.io/tenant", "Label key to extract tenant information from Silence resources.")
+	flag.StringVar(&cfg.TenancyDefaultTenant, "tenancy-default-tenant", "", "Default tenant to use when no tenant label is found on a Silence resource.")
 
 	opts := zap.Options{
 		Development: false,

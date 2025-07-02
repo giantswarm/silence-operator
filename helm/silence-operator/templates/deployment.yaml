@@ -36,8 +36,20 @@ spec:
         - --metrics-bind-address=:8080
         - --alertmanager-address={{ .Values.alertmanagerAddress }}
         - --alertmanager-authentication={{ .Values.alertmanagerAuthentication }}
-        {{ with .Values.alertmanagerDefaultTenant }}
-        - --alertmanager-default-tenant-id={{ . }}
+        {{ if or .Values.tenancy.enabled .Values.alertmanagerDefaultTenant }}
+        - --tenancy-enabled=true
+        {{ if .Values.alertmanagerDefaultTenant }}
+        - --tenancy-default-tenant={{ .Values.alertmanagerDefaultTenant }}
+        {{ else }}
+        {{ with .Values.tenancy.defaultTenant}}
+        - --tenancy-default-tenant={{ . }}
+        {{ end }}
+        {{ with .Values.tenancy.labelKey }}
+        - --tenancy-label-key={{ . }}
+        {{ end }}
+        {{ end }}
+        {{ else }}
+        - --tenancy-enabled=false
         {{ end }}
         {{- if .Values.silenceSelector }}
         - --silence-selector={{ .Values.silenceSelector }}

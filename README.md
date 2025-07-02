@@ -192,6 +192,92 @@ spec:
     - `"=~"` - regex match
     - `"!~"` - regex non-match
 
+## Multi-Tenancy Configuration
+
+The silence-operator supports multi-tenant Alertmanager configurations, allowing different teams or environments to manage their own silences independently. This is particularly useful in shared Alertmanager deployments where different tenants need isolated silence management.
+
+### Tenancy Configuration
+
+Multi-tenancy can be enabled via Helm values or command-line flags:
+
+**Helm Configuration:**
+```yaml
+# Enable tenancy support
+tenancy:
+  enabled: true
+  labelKey: "observability.giantswarm.io/tenant"
+  defaultTenant: "default"
+
+# Legacy configuration (deprecated but supported)
+alertmanagerDefaultTenant: "legacy-tenant"
+```
+
+**Command-line Flags:**
+```bash
+--tenancy-enabled=true
+--tenancy-label-key="observability.giantswarm.io/tenant"
+--tenancy-default-tenant="default"
+
+# Legacy flag (deprecated but supported)
+--alertmanager-default-tenant-id="legacy-tenant"
+```
+
+### How Tenancy Works
+
+When tenancy is enabled, the operator:
+
+1. **Extracts tenant information** from the Silence resource using the configured label key
+2. **Uses tenant-specific Alertmanager clients** that include the `X-Scope-OrgID` header
+3. **Falls back to the default tenant** when no tenant label is found on the resource
+
+**Example with tenant label:**
+```yaml
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: team-alpha-silence
+  namespace: team-alpha
+  labels:
+    observability.giantswarm.io/tenant: "team-alpha"
+spec:
+  matchers:
+  - name: team
+    value: alpha
+    matchType: "="
+```
+
+**Example without tenant label (uses default tenant):**
+```yaml
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: shared-silence
+  namespace: monitoring
+spec:
+  matchers:
+  - name: severity
+    value: warning
+    matchType: "="
+```
+
+### Backward Compatibility
+
+The operator maintains full backward compatibility with existing configurations:
+
+- Setting `alertmanagerDefaultTenant` automatically enables tenancy and uses that value as the default tenant
+- Existing silences without tenant labels continue to work unchanged
+- The legacy `alertmanagerDefaultTenant` setting is preserved and mapped to the new tenancy configuration
+
+### Multi-Tenant Alertmanager Setup
+
+For proper multi-tenancy, your Alertmanager should be configured to support tenant-specific configurations. This typically involves:
+
+1. **Tenant-aware routing** based on the `X-Scope-OrgID` header
+2. **Separate silence storage** per tenant
+3. **Isolated notification configurations** per tenant
+
+Consult your Alertmanager documentation for specific multi-tenancy setup instructions.
+
 ## Architecture
 
 The silence-operator follows a clean architecture pattern with clear separation of concerns:
