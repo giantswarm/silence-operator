@@ -19,42 +19,42 @@ type Config struct {
 	NamespaceSelector labels.Selector
 }
 
-// ParseSilenceSelector parses a silence selector string into a labels.Selector.
-// Returns nil if the selector is empty, which means no filtering will be applied.
-func ParseSilenceSelector(silenceSelector string) (labels.Selector, error) {
-	if silenceSelector == "" {
+// parseSelector is a generic helper function that parses a selector string into a labels.Selector.
+// Returns nil if the selector is empty.
+func parseSelector(selectorString string) (labels.Selector, error) {
+	if selectorString == "" {
 		return nil, nil
 	}
 
-	parsedSelector, err := metav1.ParseToLabelSelector(silenceSelector)
+	parsedSelector, err := metav1.ParseToLabelSelector(selectorString)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to parse silence-selector string: %q", silenceSelector)
+		return nil, err
 	}
 
 	selector, err := metav1.LabelSelectorAsSelector(parsedSelector)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to convert silence-selector to labels.Selector")
+		return nil, err
 	}
 
+	return selector, nil
+}
+
+// ParseSilenceSelector parses a silence selector string into a labels.Selector.
+// Returns nil if the selector is empty, which means no filtering will be applied.
+func ParseSilenceSelector(silenceSelector string) (labels.Selector, error) {
+	selector, err := parseSelector(silenceSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to parse silence-selector string: %q", silenceSelector)
+	}
 	return selector, nil
 }
 
 // ParseNamespaceSelector parses a namespace selector string into a labels.Selector.
 // Returns nil if the selector is empty, which means all namespaces will be watched.
 func ParseNamespaceSelector(namespaceSelector string) (labels.Selector, error) {
-	if namespaceSelector == "" {
-		return nil, nil
-	}
-
-	parsedSelector, err := metav1.ParseToLabelSelector(namespaceSelector)
+	selector, err := parseSelector(namespaceSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to parse namespace-selector string: %q", namespaceSelector)
 	}
-
-	selector, err := metav1.LabelSelectorAsSelector(parsedSelector)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to convert namespace-selector to labels.Selector")
-	}
-
 	return selector, nil
 }
