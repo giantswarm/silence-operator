@@ -71,3 +71,68 @@ func TestParseSilenceSelector(t *testing.T) {
 		g.Expect(selector.Matches(nonMatchingLabels)).To(gomega.BeFalse())
 	})
 }
+
+func TestParseNamespaceSelector(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	t.Run("empty selector returns nil", func(t *testing.T) {
+		selector, err := ParseNamespaceSelector("")
+		g.Expect(err).ToNot(gomega.HaveOccurred())
+		g.Expect(selector).To(gomega.BeNil())
+	})
+
+	t.Run("valid single label selector", func(t *testing.T) {
+		selector, err := ParseNamespaceSelector("environment=production")
+		g.Expect(err).ToNot(gomega.HaveOccurred())
+		g.Expect(selector).ToNot(gomega.BeNil())
+		g.Expect(selector.String()).To(gomega.Equal("environment=production"))
+	})
+
+	t.Run("valid multiple label selector", func(t *testing.T) {
+		selector, err := ParseNamespaceSelector("environment=production,tier=monitoring")
+		g.Expect(err).ToNot(gomega.HaveOccurred())
+		g.Expect(selector).ToNot(gomega.BeNil())
+		g.Expect(selector.String()).To(gomega.Equal("environment=production,tier=monitoring"))
+	})
+
+	t.Run("valid complex selector with not in", func(t *testing.T) {
+		selector, err := ParseNamespaceSelector("environment notin (dev)")
+		g.Expect(err).ToNot(gomega.HaveOccurred())
+		g.Expect(selector).ToNot(gomega.BeNil())
+		g.Expect(selector.String()).To(gomega.Equal("environment notin (dev)"))
+	})
+
+	t.Run("invalid selector returns error", func(t *testing.T) {
+		selector, err := ParseNamespaceSelector("invalid=namespace=selector")
+		g.Expect(err).To(gomega.HaveOccurred())
+		g.Expect(selector).To(gomega.BeNil())
+		g.Expect(err.Error()).To(gomega.ContainSubstring("unable to parse namespace-selector string"))
+	})
+
+	t.Run("selector with set-based requirements", func(t *testing.T) {
+		selector, err := ParseNamespaceSelector("environment in (production,staging)")
+		g.Expect(err).ToNot(gomega.HaveOccurred())
+		g.Expect(selector).ToNot(gomega.BeNil())
+		g.Expect(selector.String()).To(gomega.Equal("environment in (production,staging)"))
+	})
+
+	t.Run("selector matches expected namespace labels", func(t *testing.T) {
+		selector, err := ParseNamespaceSelector("environment=production,team=platform")
+		g.Expect(err).ToNot(gomega.HaveOccurred())
+
+		// Test matching namespace labels
+		matchingLabels := labels.Set{
+			"environment": "production",
+			"team":        "platform",
+			"managed-by":  "argocd",
+		}
+		g.Expect(selector.Matches(matchingLabels)).To(gomega.BeTrue())
+
+		// Test non-matching namespace labels
+		nonMatchingLabels := labels.Set{
+			"environment": "staging", // Different value
+			"team":        "platform",
+		}
+		g.Expect(selector.Matches(nonMatchingLabels)).To(gomega.BeFalse())
+	})
+}

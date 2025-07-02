@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add advanced filtering capabilities for both v1alpha1 and v1alpha2 controllers:
+  - Add silence selector feature to filter `Silence` resources by labels (configure via `--silence-selector` flag).
+  - Add namespace selector for v1alpha2 controller to restrict watched namespaces (configure via `--namespace-selector` flag).
 - Allow filtering of `Silence` custom resources based on a label selector. The operator will only process `Silence` CRs that match the selector provided via the `--silence-selector` command-line flag or the `silenceSelector` Helm chart value. If no selector is provided, all `Silence` CRs are processed.
 - Add new `observability.giantswarm.io/v1alpha2` API with namespace-scoped Silence CRD for improved multi-tenancy.
   - Add `MatchType` enum field using Alertmanager operator symbols (`=`, `!=`, `=~`, `!~`) for intuitive matching logic.

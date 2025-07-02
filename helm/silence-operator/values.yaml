@@ -26,6 +26,11 @@ alertmanagerDefaultTenant: ""
 # Example: 'environment=production,tier=frontend'
 silenceSelector: ""
 
+# Label selector to restrict which namespaces the v2 controller watches.
+# If empty, the v2 controller will watch all namespaces.
+# Example: 'environment=production' or 'team=platform,tier=monitoring'
+namespaceSelector: ""
+
 # -- Configures the pod security context
 podSecurityContext:
   runAsNonRoot: true
