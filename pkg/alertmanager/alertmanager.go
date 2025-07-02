@@ -88,7 +88,7 @@ func (am *Alertmanager) CreateSilence(s *Silence, tenant string) error {
 		return errors.WithStack(err)
 	}
 
-	req, err := am.newRequestWithTenant(http.MethodPost, endpoint, bytes.NewBuffer(jsonValues), tenant)
+	req, err := am.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonValues), tenant)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -133,39 +133,12 @@ func (am *Alertmanager) DeleteSilenceByComment(comment string, tenant string) er
 	return errors.WithMessagef(ErrSilenceNotFound, "failed to delete silence by comment %#q", comment)
 }
 
-func (am *Alertmanager) DeleteSilenceByID(id string, tenant string) error {
-	endpoint := fmt.Sprintf("%s%s/%s", am.address, apiV2SilencePath, url.PathEscape(id))
-
-	req, err := am.newRequestWithTenant(http.MethodDelete, endpoint, nil, tenant)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-
-	if am.authentication {
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
-	}
-
-	resp, err := am.client.Do(req)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	defer resp.Body.Close() //nolint: errcheck
-
-	if resp.StatusCode != 200 {
-		return errors.WithMessagef(errors.WithStack(err), "failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode)
-	}
-
-	return nil
-}
-
 func (am *Alertmanager) ListSilences(tenant string) ([]Silence, error) {
 	endpoint := fmt.Sprintf("%s%s", am.address, apiV2SilencesPath)
 
 	var silences []Silence
 
-	req, err := am.newRequestWithTenant(http.MethodGet, endpoint, nil, tenant)
+	req, err := am.NewRequest(http.MethodGet, endpoint, nil, tenant)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -200,25 +173,31 @@ func (am *Alertmanager) ListSilences(tenant string) ([]Silence, error) {
 	return filteredSilences, nil
 }
 
-// newRequestWithTenant creates an HTTP request with tenant-specific headers
-func (am *Alertmanager) newRequestWithTenant(method, url string, body io.Reader, tenant string) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, body)
+func (am *Alertmanager) DeleteSilenceByID(id string, tenant string) error {
+	endpoint := fmt.Sprintf("%s%s/%s", am.address, apiV2SilencePath, url.PathEscape(id))
+
+	req, err := am.NewRequest(http.MethodDelete, endpoint, nil, tenant)
 	if err != nil {
-		return nil, err
+		return errors.WithStack(err)
 	}
 
-	// Determine which tenant to use: parameter takes precedence over instance field
-	effectiveTenant := tenant
-	if effectiveTenant == "" {
-		effectiveTenant = am.tenantId
+	req.Header.Add("Content-Type", "application/json")
+
+	if am.authentication {
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", am.token))
 	}
 
-	// Add tenant header if tenant is specified
-	if effectiveTenant != "" {
-		req.Header.Add("X-Scope-OrgID", effectiveTenant)
+	resp, err := am.client.Do(req)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer resp.Body.Close() //nolint: errcheck
+
+	if resp.StatusCode != 200 {
+		return errors.WithMessagef(errors.WithStack(err), "failed to delete silence %#q, expected code 200, got %d", id, resp.StatusCode)
 	}
 
-	return req, nil
+	return nil
 }
 
 func SilenceComment(silence client.Object) string {
