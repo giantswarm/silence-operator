@@ -43,6 +43,7 @@ import (
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/pkg/config"
 	"github.com/giantswarm/silence-operator/pkg/service"
+	"github.com/giantswarm/silence-operator/pkg/tenancy"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -240,14 +241,17 @@ func main() {
 		}
 	}
 
+	// Create the tenancy helper
+	tenancyHelper := tenancy.NewHelper(cfg)
+
 	// Create the silence service
 	silenceService := service.NewSilenceService(amClient)
-	if err = controller.NewSilenceReconciler(mgr.GetClient(), silenceService).
+	if err = controller.NewSilenceReconciler(mgr.GetClient(), silenceService, tenancyHelper).
 		SetupWithManager(mgr, cfg); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Silence")
 		os.Exit(1)
 	}
-	if err = controller.NewSilenceV2Reconciler(mgr.GetClient(), silenceService).
+	if err = controller.NewSilenceV2Reconciler(mgr.GetClient(), silenceService, tenancyHelper).
 		SetupWithManager(mgr, cfg); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SilenceV2")
 		os.Exit(1)

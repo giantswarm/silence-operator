@@ -32,7 +32,9 @@ import (
 	monitoringv1alpha1 "github.com/giantswarm/silence-operator/api/v1alpha1"
 	"github.com/giantswarm/silence-operator/internal/controller/testutils"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
+	"github.com/giantswarm/silence-operator/pkg/config"
 	"github.com/giantswarm/silence-operator/pkg/service"
+	"github.com/giantswarm/silence-operator/pkg/tenancy"
 )
 
 var _ = Describe("Silence Controller", func() {
@@ -52,9 +54,15 @@ var _ = Describe("Silence Controller", func() {
 
 		// Create service and reconciler
 		silenceService := service.NewSilenceService(mockAlertmanager)
+
+		// Create tenancy helper with default config
+		cfg := config.Config{}
+		tenancyHelper := tenancy.NewHelper(cfg)
+
 		reconciler = &SilenceReconciler{
 			client:         k8sClient,
 			silenceService: silenceService,
+			tenancyHelper:  tenancyHelper,
 		}
 
 		ctx = context.Background()
