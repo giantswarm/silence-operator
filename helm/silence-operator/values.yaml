@@ -36,6 +36,11 @@ tenancy:
 # Example: 'environment=production,tier=frontend'
 silenceSelector: ""
 
+# Label selector to restrict which namespaces the v2 controller watches.
+# If empty, the v2 controller will watch all namespaces.
+# Example: 'environment=production' or 'team=platform,tier=monitoring'
+namespaceSelector: ""
+
 # -- Configures the pod security context
 podSecurityContext:
   runAsNonRoot: true
@@ -67,6 +72,56 @@ resources:
   limits:
     cpu: 50m
     memory: 100Mi
+
+# -- Affinity configuration for pod scheduling
+# Since this operator runs as a single instance, anti-affinity is disabled by default
+affinity: {}
+
+# -- Node affinity configuration for pod scheduling
+# Example:
+# nodeAffinity:
+#   requiredDuringSchedulingIgnoredDuringExecution:
+#     nodeSelectorTerms:
+#     - matchExpressions:
+#       - key: kubernetes.io/arch
+#         operator: In
+#         values: ["amd64", "arm64"]
+nodeAffinity: {}
+
+# -- Node selector for pod scheduling
+nodeSelector: {}
+
+# -- Tolerations for pod scheduling
+tolerations: []
+
+# -- Priority class name for pod scheduling
+# Example: system-cluster-critical, system-node-critical
+priorityClassName: ""
+
+# -- Configures liveness probe
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http-healthz
+  initialDelaySeconds: 30
+  timeoutSeconds: 1
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
+
+# -- Configures readiness probe
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: http-healthz
+  initialDelaySeconds: 5
+  timeoutSeconds: 1
+  periodSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# -- Restart policy for the pod (Always for single-instance reliability)
+restartPolicy: Always
 
 rbac:
   create: true

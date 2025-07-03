@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add multi-tenancy infrastructure and configuration support for Alertmanager with configurable tenant extraction and backward compatibility.
+
+## [0.17.0] - 2025-07-02
+
+### Added
+
+- Add advanced filtering capabilities for both v1alpha1 and v1alpha2 controllers:
+  - Add silence selector feature to filter `Silence` resources by labels (configure via `--silence-selector` flag).
+  - Add namespace selector for v1alpha2 controller to restrict watched namespaces (configure via `--namespace-selector` flag).
 - Allow filtering of `Silence` custom resources based on a label selector. The operator will only process `Silence` CRs that match the selector provided via the `--silence-selector` command-line flag or the `silenceSelector` Helm chart value. If no selector is provided, all `Silence` CRs are processed.
 - Add new `observability.giantswarm.io/v1alpha2` API with namespace-scoped Silence CRD for improved multi-tenancy.
   - Add `MatchType` enum field using Alertmanager operator symbols (`=`, `!=`, `=~`, `!~`) for intuitive matching logic.
@@ -322,7 +330,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/giantswarm/silence-operator/compare/v0.16.1...v0.17.0
 [0.16.1]: https://github.com/giantswarm/silence-operator/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/giantswarm/silence-operator/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/giantswarm/silence-operator/compare/v0.14.1...v0.15.0
