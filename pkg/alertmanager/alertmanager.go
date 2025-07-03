@@ -11,6 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/giantswarm/silence-operator/pkg/config"
 )
 
 const (
@@ -41,13 +43,6 @@ type Client interface {
 // Ensure Alertmanager implements Client
 var _ Client = (*Alertmanager)(nil)
 
-type Config struct {
-	Address        string
-	Authentication bool
-	BearerToken    string
-	TenantId       string
-}
-
 type Alertmanager struct {
 	address        string
 	authentication bool
@@ -56,7 +51,7 @@ type Alertmanager struct {
 	client         *http.Client
 }
 
-func New(config Config) (*Alertmanager, error) {
+func New(config config.Config) (*Alertmanager, error) {
 	if config.Address == "" {
 		return nil, errors.Errorf("%T.Address must not be empty", config)
 	}
@@ -207,6 +202,9 @@ func (am *Alertmanager) DeleteSilenceByID(id string) error {
 }
 
 func SilenceComment(silence client.Object) string {
+	if silence.GetNamespace() != "" {
+		return fmt.Sprintf("%s-%s-%s", CreatedBy, silence.GetNamespace(), silence.GetName())
+	}
 	return fmt.Sprintf("%s-%s", CreatedBy, silence.GetName())
 }
 

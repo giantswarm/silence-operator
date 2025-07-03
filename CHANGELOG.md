@@ -9,16 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add service layer for business logic separation and improved testability
-- Add `Client` interface for alertmanager operations to enable dependency injection
-- Add comprehensive test coverage for alertmanager and service components
 - Add ARM64 support
+
+## [0.17.0] - 2025-07-02
+
+### Added
+
+- Add advanced filtering capabilities for both v1alpha1 and v1alpha2 controllers:
+  - Add silence selector feature to filter `Silence` resources by labels (configure via `--silence-selector` flag).
+  - Add namespace selector for v1alpha2 controller to restrict watched namespaces (configure via `--namespace-selector` flag).
+- Allow filtering of `Silence` custom resources based on a label selector. The operator will only process `Silence` CRs that match the selector provided via the `--silence-selector` command-line flag or the `silenceSelector` Helm chart value. If no selector is provided, all `Silence` CRs are processed.
+- Add new `observability.giantswarm.io/v1alpha2` API with namespace-scoped Silence CRD for improved multi-tenancy.
+  - Add `MatchType` enum field using Alertmanager operator symbols (`=`, `!=`, `=~`, `!~`) for intuitive matching logic.
+  - Add `SilenceV2Reconciler` controller to handle v1alpha2 resources while maintaining full backward compatibility with v1alpha1.
+  - Add comprehensive field validation: matcher names (1-256 chars), values (max 1024 chars), minimum 1 matcher required.
+  - Add printer columns to v1alpha2 CRD for better `kubectl get silences` output showing Age.
+- Add automated migration script (`hack/migrate-silences.sh`) for v1alpha1 to v1alpha2 conversion.
+  - Automatically converts boolean matcher fields (`isRegex`/`isEqual`) to enum format (`matchType`).
+  - Intelligently preserves user annotations/labels while filtering out Kubernetes and FluxCD system metadata.
+  - Supports dry-run mode for safe migration testing.
+- Add comprehensive migration documentation (`MIGRATION.md`) with examples and best practices.
+- Add clean service layer architecture (`pkg/service/`) separating business logic from Kubernetes controller concerns.
 
 ### Changed
 
-- Refactor controller to use service layer pattern instead of direct alertmanager calls
-- Improve code organization with clean separation between controller logic and business logic
-- Update main application to use dependency injection pattern
+- **BREAKING** (v1alpha2 only): Replace `isRegex` and `isEqual` boolean fields with single `matchType` enum field using Alertmanager symbols.
+- **BREAKING** (v1alpha2 only): Change from cluster-scoped to namespace-scoped resources for better multi-tenancy and RBAC isolation.
+- **BREAKING** (v1alpha2 only): Remove deprecated fields in v1alpha2: `targetTags`, `owner`, `postmortem_url`, and `issue_url` for cleaner API design.
+- Improve code organization with dependency injection and clear separation between controller logic and business logic.
+
+### Deprecated
+
+- The `monitoring.giantswarm.io/v1alpha1` API is now considered legacy. New deployments should use `observability.giantswarm.io/v1alpha2`.
+
+**Migration Note**: Existing v1alpha1 silences continue to work unchanged. Use the automated migration script and see MIGRATION.md for detailed guidance.
 
 ## [0.16.1] - 2025-05-20
 
@@ -306,7 +330,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/giantswarm/silence-operator/compare/v0.16.1...v0.17.0
 [0.16.1]: https://github.com/giantswarm/silence-operator/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/giantswarm/silence-operator/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/giantswarm/silence-operator/compare/v0.14.1...v0.15.0

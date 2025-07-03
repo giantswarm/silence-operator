@@ -20,59 +20,59 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/giantswarm/silence-operator/api/v1alpha1"
+	"github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/pkg/config"
 	"github.com/giantswarm/silence-operator/pkg/service"
 )
 
-// Define the finalizer name
-const silenceFinalizer = "monitoring.giantswarm.io/silence-protection"
-const legacySilenceFinalizer = "operatorkit.giantswarm.io/silence-operator-silence-controller"
+const (
+	// FinalizerName is the finalizer added to Silence resources
+	FinalizerName = "observability.giantswarm.io/silence-protection"
+)
 
-// SilenceReconciler reconciles a Silence object
-type SilenceReconciler struct {
+// SilenceV2Reconciler reconciles a Silence object in the observability.giantswarm.io API group
+// +kubebuilder:rbac:groups=observability.giantswarm.io,resources=silences,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=observability.giantswarm.io,resources=silences/finalizers,verbs=update
+type SilenceV2Reconciler struct {
 	client client.Client
 
 	silenceService *service.SilenceService
 }
 
-// NewSilenceReconciler creates a new SilenceReconciler with the provided silence service
-func NewSilenceReconciler(client client.Client, silenceService *service.SilenceService) *SilenceReconciler {
-	return &SilenceReconciler{
+// NewSilenceV2Reconciler creates a new SilenceV2Reconciler with the provided silence service
+func NewSilenceV2Reconciler(client client.Client, silenceService *service.SilenceService) *SilenceV2Reconciler {
+	return &SilenceV2Reconciler{
 		client:         client,
 		silenceService: silenceService,
 	}
 }
 
-// +kubebuilder:rbac:groups=monitoring.giantswarm.io,resources=silences,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=monitoring.giantswarm.io,resources=silences/finalizers,verbs=update
-
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *SilenceV2Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	logger.Info("Started reconciling silence")
-	defer logger.Info("Finished reconciling silence")
+	logger.Info("Started reconciling silence", "namespace", req.Namespace, "name", req.Name)
+	defer logger.Info("Finished reconciling silence", "namespace", req.Namespace, "name", req.Name)
 
-	silence := &v1alpha1.Silence{}
+	silence := &v1alpha2.Silence{}
 	err := r.client.Get(ctx, req.NamespacedName, silence)
 	if err != nil {
-		// Ignore not-found errors, since they can't be fixed by an immediate
-		// requeue (we'll need to wait for a new notification).
 		return ctrl.Result{}, errors.WithStack(client.IgnoreNotFound(err))
 	}
 
 	if !silence.DeletionTimestamp.IsZero() {
-		if controllerutil.ContainsFinalizer(silence, silenceFinalizer) {
+		if controllerutil.ContainsFinalizer(silence, FinalizerName) {
 			// Our finalizer is present, so let's handle external dependency deletion
 			if err := r.reconcileDelete(ctx, silence); err != nil {
 				// If fail to delete the external dependency here, return error
@@ -84,79 +84,44 @@ func (r *SilenceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			// Once the external dependency is deleted, remove the finalizer.
 			// This allows the Kubernetes API server to finalize the object deletion.
 			logger.Info("Removing finalizer after successful Alertmanager silence deletion")
-			controllerutil.RemoveFinalizer(silence, silenceFinalizer)
+			controllerutil.RemoveFinalizer(silence, FinalizerName)
 			if err := r.client.Update(ctx, silence); err != nil {
 				logger.Error(err, "Failed to remove finalizer")
 				return ctrl.Result{}, errors.WithStack(err)
 			}
 		}
 
-		// If the legacy finalizer is present, remove it after the new finalizer has been removed.
-		if err = r.cleanUpLegacyFinalizer(ctx, silence); err != nil {
-			logger.Error(err, "Failed to remove legacy finalizer")
-			return ctrl.Result{}, errors.WithStack(err)
-		}
-
 		// Stop reconciliation as the item is being deleted
 		return ctrl.Result{}, nil
 	}
 
-	// Ensure finalizer is present: The object is not being deleted
-	if !controllerutil.ContainsFinalizer(silence, silenceFinalizer) {
-		logger.Info("Adding finalizer")
-		controllerutil.AddFinalizer(silence, silenceFinalizer)
+	// Add finalizer if not present
+	if !controllerutil.ContainsFinalizer(silence, FinalizerName) {
+		controllerutil.AddFinalizer(silence, FinalizerName)
 		if err := r.client.Update(ctx, silence); err != nil {
-			logger.Error(err, "Failed to add finalizer")
 			return ctrl.Result{}, errors.WithStack(err)
 		}
 	}
 
-	// If the legacy finalizer is present, remove it after the new finalizer has been added.
-	if err = r.cleanUpLegacyFinalizer(ctx, silence); err != nil {
-		logger.Error(err, "Failed to remove legacy finalizer")
-		return ctrl.Result{}, errors.WithStack(err)
-	}
-
-	// Reconcile the creation/update of the silence
 	return r.reconcileCreate(ctx, silence)
 }
 
-func (r *SilenceReconciler) cleanUpLegacyFinalizer(ctx context.Context, silence *v1alpha1.Silence) error {
-	logger := log.FromContext(ctx)
-
-	if controllerutil.ContainsFinalizer(silence, legacySilenceFinalizer) {
-		logger.Info("Removing legacy finalizer")
-		controllerutil.RemoveFinalizer(silence, legacySilenceFinalizer)
-		if err := r.client.Update(ctx, silence); err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
-	return nil
-}
-
-func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alpha1.Silence) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
-
-	newSilence, err := getSilenceFromCR(silence)
+func (r *SilenceV2Reconciler) reconcileCreate(ctx context.Context, silence *v1alpha2.Silence) (ctrl.Result, error) {
+	// Convert the Kubernetes CR to alertmanager.Silence
+	alertmanagerSilence, err := r.getSilenceFromCR(silence)
 	if err != nil {
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
-	logger.Info("Syncing silence with Alertmanager")
-
-	err = r.silenceService.SyncSilence(ctx, newSilence)
+	err = r.silenceService.SyncSilence(ctx, alertmanagerSilence)
 	if err != nil {
-		logger.Error(err, "Failed to sync silence with Alertmanager")
-		return ctrl.Result{}, errors.WithStack(err)
+		return ctrl.Result{}, err
 	}
 
-	logger.Info("Successfully synced silence with Alertmanager")
 	return ctrl.Result{}, nil
 }
 
-// reconcileDelete handles the deletion of the external Alertmanager silence.
-func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alpha1.Silence) error {
+func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1alpha2.Silence) error {
 	logger := log.FromContext(ctx)
 	logger.Info("Deleting silence from Alertmanager as part of finalization")
 
@@ -170,20 +135,40 @@ func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alph
 	return nil
 }
 
-func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) {
+// getSilenceFromCR converts a v1alpha2.Silence to alertmanager.Silence
+func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
 	for _, matcher := range silence.Spec.Matchers {
-		isEqual := true
-		if matcher.IsEqual != nil {
-			isEqual = *matcher.IsEqual
+		// Convert MatchType enum to boolean fields for alertmanager compatibility
+		var isRegex, isEqual bool
+
+		// Default to exact match if MatchType is not specified
+		matchType := matcher.MatchType
+		if matchType == "" {
+			matchType = v1alpha2.MatchEqual
 		}
-		newMatcher := alertmanager.Matcher{
+
+		switch matchType {
+		case v1alpha2.MatchEqual:
+			isRegex = false
+			isEqual = true
+		case v1alpha2.MatchNotEqual:
+			isRegex = false
+			isEqual = false
+		case v1alpha2.MatchRegexMatch:
+			isRegex = true
+			isEqual = true
+		case v1alpha2.MatchRegexNotMatch:
+			isRegex = true
+			isEqual = false
+		}
+
+		matchers = append(matchers, alertmanager.Matcher{
+			IsRegex: isRegex,
 			IsEqual: isEqual,
-			IsRegex: matcher.IsRegex,
 			Name:    matcher.Name,
 			Value:   matcher.Value,
-		}
-		matchers = append(matchers, newMatcher)
+		})
 	}
 
 	endsAt, err := alertmanager.SilenceEndsAt(silence)
@@ -203,10 +188,10 @@ func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SilenceReconciler) SetupWithManager(mgr ctrl.Manager, cfg config.Config) error {
+func (r *SilenceV2Reconciler) SetupWithManager(mgr ctrl.Manager, cfg config.Config) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Silence{}).
-		Named("silence")
+		For(&v1alpha2.Silence{}).
+		Named("silence-v2")
 
 	if cfg.SilenceSelector != nil && !cfg.SilenceSelector.Empty() {
 		// Convert labels.Selector to metav1.LabelSelector string representation
@@ -222,6 +207,32 @@ func (r *SilenceReconciler) SetupWithManager(mgr ctrl.Manager, cfg config.Config
 			return errors.Wrap(err, "failed to create label selector predicate")
 		}
 		controllerBuilder = controllerBuilder.WithEventFilter(labelPredicate)
+	}
+
+	// Add namespace selector predicate if configured
+	if cfg.NamespaceSelector != nil && !cfg.NamespaceSelector.Empty() {
+		// Create a predicate that filters by namespace labels
+		namespacePredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
+			namespace := obj.GetNamespace()
+			if namespace == "" {
+				// Skip cluster-scoped resources
+				return false
+			}
+
+			// Get the namespace object to check its labels
+			ctx := context.Background()
+			namespaceObj := &corev1.Namespace{}
+			err := mgr.GetClient().Get(ctx, client.ObjectKey{Name: namespace}, namespaceObj)
+			if err != nil {
+				// If we can't get the namespace, log and skip this object
+				ctrl.Log.WithName("silence-v2-controller").Error(err, "Failed to get namespace for namespace selector check", "namespace", namespace)
+				return false
+			}
+
+			// Check if the namespace matches the selector
+			return cfg.NamespaceSelector.Matches(labels.Set(namespaceObj.Labels))
+		})
+		controllerBuilder = controllerBuilder.WithEventFilter(namespacePredicate)
 	}
 
 	return controllerBuilder.Complete(r)

@@ -15,6 +15,7 @@ metadata:
 rules:
 - apiGroups:
   - monitoring.giantswarm.io
+  - observability.giantswarm.io
   resources:
   - silences
   verbs:
