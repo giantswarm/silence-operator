@@ -14,6 +14,8 @@ type Config struct {
 	TenantId       string
 
 	// SilenceSelector is used to filter silences based on label selectors.
+	// If nil, the controller will watch all silences.
+	SilenceSelector labels.Selector
 	// NamespaceSelector is used to restrict which namespaces the v2 controller watches.
 	// If nil, the controller will watch all namespaces.
 	NamespaceSelector labels.Selector
