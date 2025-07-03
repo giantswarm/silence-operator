@@ -42,15 +42,15 @@ func NewSilenceService(alertmanager alertmanager.Client) *SilenceService {
 func (s *SilenceService) SyncSilence(ctx context.Context, newSilence *alertmanager.Silence) error {
 	now := time.Now()
 
-	// Get existing silence by comment
-	existingSilence, err := s.alertmanager.GetSilenceByComment(newSilence.Comment)
+	// Get existing silence by comment (use empty tenant for backward compatibility)
+	existingSilence, err := s.alertmanager.GetSilenceByComment(newSilence.Comment, "")
 	if err != nil && !errors.Is(err, alertmanager.ErrSilenceNotFound) {
 		return errors.Wrap(err, "failed to get silence from Alertmanager")
 	}
 
 	if errors.Is(err, alertmanager.ErrSilenceNotFound) {
 		if newSilence.EndsAt.After(now) {
-			err := s.alertmanager.CreateSilence(newSilence)
+			err := s.alertmanager.CreateSilence(newSilence, "")
 			if err != nil {
 				return errors.Wrap(err, "failed to create silence in Alertmanager")
 			}
@@ -59,7 +59,7 @@ func (s *SilenceService) SyncSilence(ctx context.Context, newSilence *alertmanag
 	}
 
 	if newSilence.EndsAt.Before(now) {
-		err := s.alertmanager.DeleteSilenceByID(existingSilence.ID)
+		err := s.alertmanager.DeleteSilenceByID(existingSilence.ID, "")
 		if err != nil {
 			return errors.Wrap(err, "failed to delete expired silence from Alertmanager")
 		}
@@ -68,7 +68,7 @@ func (s *SilenceService) SyncSilence(ctx context.Context, newSilence *alertmanag
 
 	if s.updateNeeded(existingSilence, newSilence) {
 		newSilence.ID = existingSilence.ID
-		err := s.alertmanager.UpdateSilence(newSilence)
+		err := s.alertmanager.UpdateSilence(newSilence, "")
 		if err != nil {
 			return errors.Wrap(err, "failed to update silence in Alertmanager")
 		}
@@ -81,7 +81,7 @@ func (s *SilenceService) SyncSilence(ctx context.Context, newSilence *alertmanag
 
 // DeleteSilence handles the deletion of a silence
 func (s *SilenceService) DeleteSilence(ctx context.Context, comment string) error {
-	err := s.alertmanager.DeleteSilenceByComment(comment)
+	err := s.alertmanager.DeleteSilenceByComment(comment, "")
 	if err != nil {
 		// If the silence is already gone in Alertmanager, treat it as success
 		if errors.Is(err, alertmanager.ErrSilenceNotFound) {
