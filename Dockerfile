@@ -7,6 +7,6 @@ COPY silence-operator-* /binaries/
 FROM gcr.io/distroless/static:nonroot
 ARG TARGETPLATFORM
 WORKDIR /
-COPY --from=binary-selector /binaries/silence-operator-${TARGETPLATFORM#linux/} /silence-operator
+COPY --from=binary-selector /binaries/silence-operator-linux-${TARGETPLATFORM#linux/} /silence-operator
 USER 65532:65532
 ENTRYPOINT ["/silence-operator"]
