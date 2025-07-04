@@ -1,0 +1,15 @@
+apiVersion: monitoring.giantswarm.io/v1alpha1
+kind: RecurringSilence
+metadata:
+  name: my-sample-recurring-silence
+spec:
+  schedule: "0 0 * * *"
+  template:
+    matchers:
+    - isRegex: false
+      name: alertname
+      value: MyPagingAlert
+    - isEqual: false
+      isRegex: false
+      name: alertname
+      value: Heartbeat
