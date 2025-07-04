@@ -22,8 +22,11 @@ workflows:
             only: /^v.*/
 
     - architect/go-build:
-        name: go-build
+        matrix:
+          parameters:
+            architecture: ["linux/amd64", "linux/arm64"]
         binary: silence-operator
+        resource_class: large
         requires:
         - go-tests
         path: ./cmd
@@ -31,11 +34,13 @@ workflows:
           tags:
             only: /^v.*/
 
-    - architect/push-to-registries:
+    - architect/push-to-registries-multiarch:
         context: architect
         name: push-to-registries
         requires:
-        - go-build
+          - architect/go-build
+        image: giantswarm/silence-operator
+        platforms: "linux/amd64,linux/arm64"
         filters:
           tags:
             only: /^v.*/
