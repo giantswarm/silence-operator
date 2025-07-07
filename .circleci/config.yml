@@ -18,13 +18,17 @@ jobs:
     environment:
       IMAGE_REPO: gsoci.azurecr.io/giantswarm/silence-operator
     steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load persisted Docker image tag
+          command: |
+            DOCKER_IMAGE_TAG=$(cat /tmp/workspace/docker_image_tag.txt)
+            echo "export DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG" >> $BASH_ENV
       - run:
           name: Validate manifest includes amd64 and arm64
           command: |
-            architect project version | head -n 1 | tr -d "\n" | tee .docker_image_tag
-            echo -n "" | tee -a .docker_image_tag
-
-            IMAGE="${IMAGE_REPO}:$(cat .docker_image_tag)"
+            IMAGE="${IMAGE_REPO}:${DOCKER_IMAGE_TAG}"
 
             echo "🔍 Inspecting manifest for $IMAGE"
             docker manifest inspect $IMAGE > manifest.json
@@ -51,10 +55,7 @@ jobs:
       - run:
           name: Validate ARM64 binary
           command: |
-            architect project version | head -n 1 | tr -d "\n" | tee .docker_image_tag
-            echo -n "" | tee -a .docker_image_tag
-
-            IMAGE="${IMAGE_REPO}:$(cat .docker_image_tag)"
+            IMAGE="${IMAGE_REPO}:${DOCKER_IMAGE_TAG}"
             BINARY_PATH=/binaries/silence-operator-linux-arm64
 
             echo "⬇️ Pulling arm64 variant..."
@@ -79,10 +80,7 @@ jobs:
       - run:
           name: Validate AMD64 binary
           command: |
-            architect project version | head -n 1 | tr -d "\n" | tee .docker_image_tag
-            echo -n "" | tee -a .docker_image_tag
-
-            IMAGE="${IMAGE_REPO}:$(cat .docker_image_tag)"
+            IMAGE="${IMAGE_REPO}:${DOCKER_IMAGE_TAG}"
             BINARY_PATH=/binaries/silence-operator-linux-amd64
 
             echo "⬇️ Pulling amd64 variant..."
@@ -132,6 +130,14 @@ workflows:
           - architect/go-build
         image: giantswarm/silence-operator
         platforms: "linux/amd64,linux/arm64"
+        post-steps:
+          - run:
+              name: Persist Docker image tag
+              command: echo $DOCKER_IMAGE_TAG > /tmp/workspace/docker_image_tag.txt
+          - persist_to_workspace:
+              root: /tmp/workspace
+              paths:
+                - docker_image_tag.txt
         filters:
           tags:
             only: /^v.*/
