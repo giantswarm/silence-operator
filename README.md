@@ -254,7 +254,7 @@ spec:
 
 ## Multi-Tenancy Configuration
 
-The silence-operator supports multi-tenant Alertmanager configurations, allowing different teams or environments to manage their own silences independently. This is particularly useful in shared Alertmanager deployments where different tenants need isolated silence management.
+The silence-operator supports multi-tenant configurations for Mimir Alermanager, allowing different teams or environments to manage their own silences independently.
 
 ### Tenancy Configuration
 
