@@ -11,6 +11,27 @@
         "alertmanagerDefaultTenant": {
             "type": "string"
         },
+        "tenancy": {
+            "type": "object",
+            "description": "Multi-tenancy configuration for Alertmanager",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable multi-tenancy support for Alertmanager"
+                },
+                "labelKey": {
+                    "type": "string",
+                    "default": "observability.giantswarm.io/tenant",
+                    "description": "Label key to extract tenant information from Kubernetes resources"
+                },
+                "defaultTenant": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Default tenant to use when no tenant label is found"
+                }
+            }
+        },
         "silenceSelector": {
             "type": "string",
             "default": "",

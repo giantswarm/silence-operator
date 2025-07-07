@@ -18,8 +18,18 @@ image:
 # TODO improve this for better user experience
 alertmanagerAddress: ""
 alertmanagerAuthentication: false
-# -- Default alertmanager tenant
+# -- Default alertmanager tenant (DEPRECATED: use tenancy.defaultTenant instead)
 alertmanagerDefaultTenant: ""
+
+# Tenancy configuration for multi-tenant Alertmanager setups
+tenancy:
+  # Whether to enable tenant extraction from silence resources
+  enabled: false
+  # Label key to extract tenant information from. If the label is not found on a silence resource,
+  # the defaultTenant value will be used
+  labelKey: "observability.giantswarm.io/tenant"
+  # Default tenant to use when no tenant label is found
+  defaultTenant: ""
 
 # Label selector to filter Silence custom resources.
 # If empty, all Silence CRs are processed.

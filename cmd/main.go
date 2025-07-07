@@ -43,6 +43,7 @@ import (
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/pkg/config"
 	"github.com/giantswarm/silence-operator/pkg/service"
+	"github.com/giantswarm/silence-operator/pkg/tenancy"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -95,6 +96,10 @@ func main() {
 	flag.BoolVar(&cfg.Authentication, "alertmanager-authentication", false, "Enable Alertmanager authentication using Service Account token.")
 	flag.StringVar(&silenceSelector, "silence-selector", "", "Label selector to filter Silence custom resources (e.g., 'environment=production,tier=frontend').")
 	flag.StringVar(&namespaceSelector, "namespace-selector", "", "Label selector to restrict which namespaces the v2 controller watches (e.g., 'environment=production'). If empty, all namespaces are watched.")
+	// Tenancy flags (not wired up yet - for future PRs)
+	flag.BoolVar(&cfg.TenancyEnabled, "tenancy-enabled", false, "Enable tenancy support for multi-tenant Alertmanager setups.")
+	flag.StringVar(&cfg.TenancyLabelKey, "tenancy-label-key", "observability.giantswarm.io/tenant", "Label key to extract tenant information from Silence resources.")
+	flag.StringVar(&cfg.TenancyDefaultTenant, "tenancy-default-tenant", "", "Default tenant to use when no tenant label is found on a Silence resource.")
 
 	opts := zap.Options{
 		Development: false,
@@ -244,14 +249,17 @@ func main() {
 		}
 	}
 
+	// Create the tenancy helper
+	tenancyHelper := tenancy.NewHelper(cfg)
+
 	// Create the silence service
 	silenceService := service.NewSilenceService(amClient)
-	if err = controller.NewSilenceReconciler(mgr.GetClient(), silenceService).
+	if err = controller.NewSilenceReconciler(mgr.GetClient(), silenceService, tenancyHelper).
 		SetupWithManager(mgr, cfg); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Silence")
 		os.Exit(1)
 	}
-	if err = controller.NewSilenceV2Reconciler(mgr.GetClient(), silenceService).
+	if err = controller.NewSilenceV2Reconciler(mgr.GetClient(), silenceService, tenancyHelper).
 		SetupWithManager(mgr, cfg); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SilenceV2")
 		os.Exit(1)
