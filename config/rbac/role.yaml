@@ -22,3 +22,24 @@ rules:
   - silences/finalizers
   verbs:
   - update
+- apiGroups:
+  - observability.giantswarm.io
+  resources:
+  - recurringsilences
+  - silences
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - observability.giantswarm.io
+  resources:
+  - recurringsilences/status
+  verbs:
+  - get
+  - patch
+  - update
