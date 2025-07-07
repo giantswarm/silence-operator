@@ -13,6 +13,95 @@ jobs:
         name: Run unit and integration tests
         command: CGO_ENABLED=0 make test
 
+  validate-silence-operator-multiarch:
+    executor: architect/architect
+    environment:
+      IMAGE_REPO: gsoci.azurecr.io/giantswarm/silence-operator
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load persisted Docker image tag
+          command: |
+            DOCKER_IMAGE_TAG=$(cat /tmp/workspace/docker_image_tag.txt)
+            echo "export DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG" >> $BASH_ENV
+      - run:
+          name: Validate manifest includes amd64 and arm64
+          command: |
+            IMAGE="${IMAGE_REPO}:${DOCKER_IMAGE_TAG}"
+
+            echo "🔍 Inspecting manifest for $IMAGE"
+            docker manifest inspect $IMAGE > manifest.json
+
+            jq '.manifests[].platform' manifest.json
+
+            echo "✅ Validating image contains both amd64 and arm64..."
+
+            AMD64_PRESENT=$(jq -r '.manifests[].platform | select(.architecture=="amd64" and .os=="linux")' manifest.json)
+            ARM64_PRESENT=$(jq -r '.manifests[].platform | select(.architecture=="arm64" and .os=="linux")' manifest.json)
+
+            if [ -z "$AMD64_PRESENT" ]; then
+              echo "❌ amd64 variant not found!"
+              exit 1
+            fi
+
+            if [ -z "$ARM64_PRESENT" ]; then
+              echo "❌ arm64 variant not found!"
+              exit 1
+            fi
+
+            echo "✅ Image includes both amd64 and arm64."
+
+      - run:
+          name: Validate ARM64 binary
+          command: |
+            IMAGE="${IMAGE_REPO}:${DOCKER_IMAGE_TAG}"
+            BINARY_PATH=/binaries/silence-operator-linux-arm64
+
+            echo "⬇️ Pulling arm64 variant..."
+            docker pull --platform=linux/arm64 $IMAGE
+
+            echo "📦 Extracting ARM64 binary..."
+            CID=$(docker create --platform=linux/arm64 $IMAGE)
+            docker cp $CID:$BINARY_PATH ./binary-arm64
+            docker rm $CID
+
+            echo "🔍 Inspecting ARM64 binary:"
+            file ./binary-arm64
+
+            echo "✅ Checking if binary is ARM aarch64..."
+            file ./binary-arm64 | grep -q 'ELF 64-bit LSB executable, ARM aarch64' || {
+              echo "❌ Binary is not aarch64!"
+              exit 1
+            }
+
+            echo "✅ ARM64 binary is valid."
+
+      - run:
+          name: Validate AMD64 binary
+          command: |
+            IMAGE="${IMAGE_REPO}:${DOCKER_IMAGE_TAG}"
+            BINARY_PATH=/binaries/silence-operator-linux-amd64
+
+            echo "⬇️ Pulling amd64 variant..."
+            docker pull --platform=linux/amd64 $IMAGE
+
+            echo "📦 Extracting AMD64 binary..."
+            CID=$(docker create --platform=linux/amd64 $IMAGE)
+            docker cp $CID:$BINARY_PATH ./binary-amd64
+            docker rm $CID
+
+            echo "🔍 Inspecting AMD64 binary:"
+            file ./binary-amd64
+
+            echo "✅ Checking if binary is x86-64..."
+            file ./binary-amd64 | grep -q 'ELF 64-bit LSB executable, x86-64' || {
+              echo "❌ Binary is not x86-64!"
+              exit 1
+            }
+
+            echo "✅ AMD64 binary is valid."
+
 workflows:
   build:
     jobs:
@@ -22,8 +111,11 @@ workflows:
             only: /^v.*/
 
     - architect/go-build:
-        name: go-build
+        matrix:
+          parameters:
+            architecture: ["linux/amd64", "linux/arm64"]
         binary: silence-operator
+        resource_class: large
         requires:
         - go-tests
         path: ./cmd
@@ -31,11 +123,32 @@ workflows:
           tags:
             only: /^v.*/
 
-    - architect/push-to-registries:
+    - architect/push-to-registries-multiarch:
         context: architect
         name: push-to-registries
         requires:
-        - go-build
+          - architect/go-build
+        image: giantswarm/silence-operator
+        platforms: "linux/amd64,linux/arm64"
+        post-steps:
+          - run:
+              name: Persist Docker image tag
+              command: echo $DOCKER_IMAGE_TAG > /tmp/workspace/docker_image_tag.txt
+          - persist_to_workspace:
+              root: /tmp/workspace
+              paths:
+                - docker_image_tag.txt
+        filters:
+          tags:
+            only: /^v.*/
+          branches:
+            ignore:
+            - main
+
+    - validate-silence-operator-multiarch:
+        context: architect
+        requires:
+        - push-to-registries
         filters:
           tags:
             only: /^v.*/
@@ -51,7 +164,7 @@ workflows:
         app_catalog_test: control-plane-test-catalog
         chart: silence-operator
         requires:
-        - push-to-registries
+        - validate-silence-operator-multiarch
         filters:
           tags:
             only: /^v.*/
