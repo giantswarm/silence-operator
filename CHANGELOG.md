@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add multi-tenancy infrastructure and configuration support for Alertmanager with configurable tenant extraction and backward compatibility.
 - Add new `RecurringSilence` CRD to create silences based on a cron expression.
 
 ## [0.17.0] - 2025-07-02

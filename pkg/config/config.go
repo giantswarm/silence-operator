@@ -12,11 +12,18 @@ type Config struct {
 	Authentication bool
 	BearerToken    string
 	TenantId       string
+
 	// SilenceSelector is used to filter silences based on label selectors.
+	// If nil, the controller will watch all silences.
 	SilenceSelector labels.Selector
 	// NamespaceSelector is used to restrict which namespaces the v2 controller watches.
 	// If nil, the controller will watch all namespaces.
 	NamespaceSelector labels.Selector
+
+	// Tenancy configuration
+	TenancyEnabled       bool
+	TenancyLabelKey      string // Single label key to extract tenant from (e.g., "observability.giantswarm.io/tenant")
+	TenancyDefaultTenant string
 }
 
 // parseSelector is a generic helper function that parses a selector string into a labels.Selector.

@@ -31,6 +31,7 @@ import (
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/pkg/config"
 	"github.com/giantswarm/silence-operator/pkg/service"
+	"github.com/giantswarm/silence-operator/pkg/tenancy"
 )
 
 // Define the finalizer name
@@ -42,13 +43,15 @@ type SilenceReconciler struct {
 	client client.Client
 
 	silenceService *service.SilenceService
+	tenancyHelper  *tenancy.Helper
 }
 
-// NewSilenceReconciler creates a new SilenceReconciler with the provided silence service
-func NewSilenceReconciler(client client.Client, silenceService *service.SilenceService) *SilenceReconciler {
+// NewSilenceReconciler creates a new SilenceReconciler with the provided silence service and tenancy helper
+func NewSilenceReconciler(client client.Client, silenceService *service.SilenceService, tenancyHelper *tenancy.Helper) *SilenceReconciler {
 	return &SilenceReconciler{
 		client:         client,
 		silenceService: silenceService,
+		tenancyHelper:  tenancyHelper,
 	}
 }
 
@@ -143,30 +146,37 @@ func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alph
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
-	logger.Info("Syncing silence with Alertmanager")
+	// Extract tenant information from the silence resource
+	tenant := r.tenancyHelper.ExtractTenant(silence)
 
-	err = r.silenceService.SyncSilence(ctx, newSilence)
+	logger.Info("Syncing silence with Alertmanager", "tenant", tenant)
+
+	err = r.silenceService.SyncSilence(ctx, newSilence, tenant)
 	if err != nil {
-		logger.Error(err, "Failed to sync silence with Alertmanager")
+		logger.Error(err, "Failed to sync silence with Alertmanager", "tenant", tenant)
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
-	logger.Info("Successfully synced silence with Alertmanager")
+	logger.Info("Successfully synced silence with Alertmanager", "tenant", tenant)
 	return ctrl.Result{}, nil
 }
 
 // reconcileDelete handles the deletion of the external Alertmanager silence.
 func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alpha1.Silence) error {
 	logger := log.FromContext(ctx)
-	logger.Info("Deleting silence from Alertmanager as part of finalization")
+
+	// Extract tenant information from the silence resource
+	tenant := r.tenancyHelper.ExtractTenant(silence)
+
+	logger.Info("Deleting silence from Alertmanager as part of finalization", "tenant", tenant)
 
 	comment := alertmanager.SilenceComment(silence)
-	err := r.silenceService.DeleteSilence(ctx, comment)
+	err := r.silenceService.DeleteSilence(ctx, comment, tenant)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete silence from Alertmanager")
 	}
 
-	logger.Info("Successfully deleted silence from Alertmanager")
+	logger.Info("Successfully deleted silence from Alertmanager", "tenant", tenant)
 	return nil
 }
 
