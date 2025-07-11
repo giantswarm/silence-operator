@@ -1,6 +1,9 @@
 module github.com/giantswarm/silence-operator
 
-go 1.24.4
+
+go 1.24.0
+
+toolchain go1.24.5
 
 require (
 	github.com/aptible/supercronic v0.2.34
