@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -153,8 +154,31 @@ func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1al
 
 // getSilenceFromCR converts a v1alpha2.Silence to alertmanager.Silence
 func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*alertmanager.Silence, error) {
+	matchers, err := r.convertMatchers(silence.Spec.Matchers)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	startsAt, endsAt, err := r.calculateSilenceTimes(silence)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	newSilence := &alertmanager.Silence{
+		Comment:   alertmanager.SilenceComment(silence),
+		CreatedBy: alertmanager.CreatedBy,
+		StartsAt:  startsAt,
+		EndsAt:    endsAt,
+		Matchers:  matchers,
+	}
+
+	return newSilence, nil
+}
+
+// convertMatchers converts v1alpha2.SilenceMatcher slice to alertmanager.Matcher slice
+func (r *SilenceV2Reconciler) convertMatchers(silenceMatchers []v1alpha2.SilenceMatcher) ([]alertmanager.Matcher, error) {
 	var matchers []alertmanager.Matcher
-	for _, matcher := range silence.Spec.Matchers {
+	for _, matcher := range silenceMatchers {
 		// Convert MatchType enum to boolean fields for alertmanager compatibility
 		var isRegex, isEqual bool
 
@@ -177,6 +201,8 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 		case v1alpha2.MatchRegexNotMatch:
 			isRegex = true
 			isEqual = false
+		default:
+			return nil, errors.Errorf("unsupported match type: %s", matchType)
 		}
 
 		matchers = append(matchers, alertmanager.Matcher{
@@ -187,20 +213,48 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 		})
 	}
 
-	endsAt, err := alertmanager.SilenceEndsAt(silence)
+	return matchers, nil
+}
+
+// calculateSilenceTimes implements priority-based time resolution for v1alpha2 silences.
+// Priority order:
+// 1. EndsAt field (highest priority)
+// 2. Duration field
+// 3. valid-until annotation (for backward compatibility) + 100-year default fallback
+func (r *SilenceV2Reconciler) calculateSilenceTimes(silence *v1alpha2.Silence) (startsAt, endsAt time.Time, err error) {
+	now := time.Now()
+
+	// Determine start time: StartsAt field takes precedence over creation timestamp
+	if silence.Spec.StartsAt != nil {
+		startsAt = silence.Spec.StartsAt.Time
+	} else {
+		startsAt = silence.GetCreationTimestamp().Time
+		// If creation timestamp is zero (shouldn't happen in practice), use current time
+		if startsAt.IsZero() {
+			startsAt = now
+		}
+	}
+
+	// Determine end time using priority order
+	// Priority 1: EndsAt field (highest priority)
+	if silence.Spec.EndsAt != nil {
+		endsAt = silence.Spec.EndsAt.Time
+		return startsAt, endsAt, nil
+	}
+
+	// Priority 2: Duration field
+	if silence.Spec.Duration != nil {
+		endsAt = startsAt.Add(silence.Spec.Duration.Duration)
+		return startsAt, endsAt, nil
+	}
+
+	// Priority 3 & 4: Use existing alertmanager.SilenceEndsAt function
+	// This handles both valid-until annotation (Priority 3) and 100-year default (Priority 4)
+	endsAt, err = alertmanager.SilenceEndsAt(silence)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return time.Time{}, time.Time{}, errors.WithStack(err)
 	}
-
-	newSilence := &alertmanager.Silence{
-		Comment:   alertmanager.SilenceComment(silence),
-		CreatedBy: alertmanager.CreatedBy,
-		StartsAt:  silence.GetCreationTimestamp().Time,
-		EndsAt:    endsAt,
-		Matchers:  matchers,
-	}
-
-	return newSilence, nil
+	return startsAt, endsAt, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
