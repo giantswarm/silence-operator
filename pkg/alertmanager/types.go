@@ -4,6 +4,11 @@ import (
 	"time"
 )
 
+const (
+	// AnnotationStartsAt is the annotation key used to specify the start time of a silence.
+	AnnotationStartsAt = "observability.giantswarm.io/starts-at"
+)
+
 // TODO Can we use open API Types here instead of defining our own types?
 type Silence struct {
 	Comment   string    `json:"comment"`

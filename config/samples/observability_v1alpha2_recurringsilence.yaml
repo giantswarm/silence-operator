@@ -1,0 +1,16 @@
+
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: RecurringSilence
+metadata:
+  name: recurringsilence-sample
+spec:
+  schedule: "0 0 * * *"
+  timeZone: "UTC"
+  silenceTemplate:
+    matchers:
+      - name: alertname
+        value: "TestAlert"
+        matchType: "="
+      - name: severity
+        value: "critical"
+        matchType: "="
