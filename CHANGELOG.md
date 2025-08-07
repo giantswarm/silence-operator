@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `RecurringSilence` CRD for scheduling automatic silences with cron expressions.
+  - Support standard 5-field cron syntax (minute, hour, day-of-month, month, day-of-week) with validation.
+  - Configurable silence duration (e.g., "30m", "2h", "24h") with proper validation.
+  - Automatic creation and management of `Silence` v1alpha2 resources based on schedule.
+  - Smart scheduling with calculated requeue intervals and missed schedule detection.
+  - Comprehensive status tracking with next scheduled time, active silence name, and condition reporting.
+  - Proper cleanup of managed silences when `RecurringSilence` is deleted.
+  - Uses enhanced `cronexpr` library for robust cron parsing and scheduling.
+  - Full integration with existing v1alpha2 namespace-scoped architecture and RBAC.
+  - Sample configurations for common use cases like maintenance windows and backup silencing.
+
 ## [0.18.0] - 2025-07-15
 
 ### Added
