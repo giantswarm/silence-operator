@@ -1,0 +1,31 @@
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: RecurringSilence
+metadata:
+  name: nightly-maintenance
+  namespace: default
+spec:
+  schedule: "0 2 * * 0"  # Weekly on Sunday at 2 AM
+  duration: "4h"         # Silence for 4 hours
+  matchers:
+    - name: severity
+      value: warning
+      matchType: "="
+    - name: component
+      value: maintenance
+      matchType: "="
+---
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: RecurringSilence
+metadata:
+  name: daily-backup
+  namespace: default
+spec:
+  schedule: "0 1 * * *"   # Daily at 1 AM
+  duration: "30m"         # Silence for 30 minutes
+  matchers:
+    - name: job
+      value: backup
+      matchType: "="
+    - name: severity
+      value: warning
+      matchType: "!="
