@@ -21,6 +21,7 @@ limitations under the License.
 package v1alpha2
 
 import (
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -104,6 +105,19 @@ func (in *SilenceSpec) DeepCopyInto(out *SilenceSpec) {
 		in, out := &in.Matchers, &out.Matchers
 		*out = make([]SilenceMatcher, len(*in))
 		copy(*out, *in)
+	}
+	if in.StartsAt != nil {
+		in, out := &in.StartsAt, &out.StartsAt
+		*out = (*in).DeepCopy()
+	}
+	if in.EndsAt != nil {
+		in, out := &in.EndsAt, &out.EndsAt
+		*out = (*in).DeepCopy()
+	}
+	if in.Duration != nil {
+		in, out := &in.Duration, &out.Duration
+		*out = new(v1.Duration)
+		**out = **in
 	}
 }
 
