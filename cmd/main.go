@@ -264,6 +264,11 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "SilenceV2")
 		os.Exit(1)
 	}
+	if err = controller.NewRecurringSilenceReconciler(mgr.GetClient(), mgr.GetScheme()).
+		SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "RecurringSilence")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if metricsCertWatcher != nil {
