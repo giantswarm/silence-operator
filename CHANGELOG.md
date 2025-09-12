@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add enhanced time management fields (`startsAt`, `endsAt`, `duration`) to v1alpha2 Silence CRD with priority-based resolution and backward compatibility.
+
 ## [0.18.0] - 2025-07-15
 
 ### Added

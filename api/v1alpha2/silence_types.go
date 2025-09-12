@@ -58,12 +58,34 @@ type SilenceSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
 	Matchers []SilenceMatcher `json:"matchers"`
+
+	// StartsAt defines when the silence becomes active. If not specified, defaults to the current time.
+	// This field takes precedence over creation timestamp when both are available.
+	// +optional
+	StartsAt *metav1.Time `json:"startsAt,omitempty"`
+
+	// EndsAt defines when the silence expires. If not specified, Duration is used to calculate the end time.
+	// This field takes precedence over Duration and valid-until annotation when specified.
+	// +optional
+	EndsAt *metav1.Time `json:"endsAt,omitempty"`
+
+	// Duration defines how long the silence should be active from StartsAt (or creation time if StartsAt is not set).
+	// This field is ignored if EndsAt is specified. If neither EndsAt nor Duration is specified,
+	// the valid-until annotation is used, or defaults to 100 years (same as v1alpha1 for backward compatibility).
+	// Examples: "1h", "30m", "24h", "7d"
+	// +optional
+	Duration *metav1.Duration `json:"duration,omitempty"`
 }
 
 // Silence is the Schema for the silences API.
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced
+// +kubebuilder:printcolumn:name="Starts At",type=date,JSONPath=`.spec.startsAt`
+// +kubebuilder:printcolumn:name="Ends At",type=date,JSONPath=`.spec.endsAt`
+// +kubebuilder:printcolumn:name="Duration",type=string,JSONPath=`.spec.duration`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:validation:XValidation:rule="!(has(self.spec.endsAt) && has(self.spec.duration))",message="endsAt and duration are mutually exclusive"
+// +kubebuilder:validation:XValidation:rule="!has(self.spec.startsAt) || !has(self.spec.endsAt) || timestamp(self.spec.startsAt) < timestamp(self.spec.endsAt)",message="startsAt must be before endsAt"
 type Silence struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
