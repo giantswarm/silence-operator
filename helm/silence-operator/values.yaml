@@ -48,6 +48,11 @@ podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
 
+# Configures PodMonitor for the Prometheus operator
+podMonitor:
+  # Whether to enable the PodMonitor CR
+  enabled: true
+
 # -- Configures the container security context
 containerSecurityContext:
   allowPrivilegeEscalation: false
