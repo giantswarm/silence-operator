@@ -48,7 +48,7 @@ podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
 
-# Configures PodMonitor for the Prometheus operator
+# Configures PodMonitor for silence-operator
 podMonitor:
   # Whether to enable the PodMonitor CR
   enabled: true
