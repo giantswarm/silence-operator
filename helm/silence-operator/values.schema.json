@@ -11,6 +11,9 @@
         "alertmanagerDefaultTenant": {
             "type": "string"
         },
+        "replicas": {
+            "type": "integer"
+        },
         "tenancy": {
             "type": "object",
             "description": "Multi-tenancy configuration for Alertmanager",
