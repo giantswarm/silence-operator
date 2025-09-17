@@ -15,6 +15,9 @@ image:
   name: "giantswarm/silence-operator"
   tag: ""
 
+# Deployment replicas
+replicas: 1
+
 # TODO improve this for better user experience
 alertmanagerAddress: ""
 alertmanagerAuthentication: false
