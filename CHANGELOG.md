@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- [Helm] Ability to use more than 1 replica.
+
 ## [0.18.0] - 2025-07-15
 
 ### Added
