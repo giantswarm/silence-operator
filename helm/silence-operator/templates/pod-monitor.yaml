@@ -1,4 +1,5 @@
-{{- if .Values.podMonitor.enabled }}
+{{- if .Values.podMonitor.enabled -}}
+---
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
@@ -15,4 +16,4 @@ spec:
       {{- include "labels.selector" . | nindent 6 }}
   podMetricsEndpoints:
     - port: http
-{{ end }}
+{{- end -}}

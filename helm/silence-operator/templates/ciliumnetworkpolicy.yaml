@@ -1,4 +1,4 @@
-{{- if and .Values.networkPolicy.enabled (eq .Values.networkPolicy.flavor "cilium") }}
+{{- if and .Values.networkPolicy.enabled (eq .Values.networkPolicy.flavor "cilium") -}}
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -23,4 +23,4 @@ spec:
         http:
         - method: "GET"
           path: "/metrics"
-{{- end }}
+{{- end -}}
