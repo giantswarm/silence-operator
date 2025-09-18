@@ -18,6 +18,10 @@ image:
 # Deployment replicas
 replicas: 1
 
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+
 # TODO improve this for better user experience
 alertmanagerAddress: ""
 alertmanagerAuthentication: false
