@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,8 +11,10 @@ spec:
   selector:
     matchLabels:
       {{- include "labels.selector" . | nindent 6 }}
+  {{- with .Values.strategy }}
   strategy:
-    type: Recreate
+    {{- toYaml . | trim | nindent 4 }}
+  {{- end }}
   template:
     metadata:
       labels:
