@@ -10,13 +10,18 @@ jobs:
   build_user_list:
     name: Get yaml config of GS users
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
     - name: Get user-mapping
+      env:
+        GH_TOKEN: ${{ secrets.ISSUE_AUTOMATION }}
       run: |
         mkdir -p artifacts
-        wget --header "Authorization: token ${{ secrets.ISSUE_AUTOMATION }}" \
-          -O artifacts/users.yaml \
-          https://raw.githubusercontent.com/giantswarm/github/main/tools/issue-automation/user-mapping.yaml
+        gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/giantswarm/github/contents/tools/issue-automation/user-mapping.yaml \
+          | jq -r '.content' \
+          | base64 -d > artifacts/users.yaml
     - name: Upload Artifact
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
       with:
@@ -24,11 +29,14 @@ jobs:
         path: artifacts/users.yaml
         retention-days: 1
     - name: Get label-mapping
+      env:
+        GH_TOKEN: ${{ secrets.ISSUE_AUTOMATION }}
       run: |
         mkdir -p artifacts
-        wget --header "Authorization: token ${{ secrets.ISSUE_AUTOMATION }}" \
-          -O artifacts/labels.yaml \
-          https://raw.githubusercontent.com/giantswarm/github/main/tools/issue-automation/label-mapping.yaml
+        gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/giantswarm/github/contents/tools/issue-automation/label-mapping.yaml \
+          | jq -r '.content' \
+          | base64 -d > artifacts/labels.yaml
     - name: Upload Artifact
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
       with:
