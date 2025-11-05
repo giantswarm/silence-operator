@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2025-11-05
+
 ### Added
 
 - [Helm] Ability to specify deployment (rollout) strategy and switch from 'Recreate' to 'RollingUpdate' by default.
@@ -343,7 +345,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/giantswarm/silence-operator/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/giantswarm/silence-operator/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/giantswarm/silence-operator/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/giantswarm/silence-operator/compare/v0.16.1...v0.17.0
