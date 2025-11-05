@@ -39,7 +39,7 @@ _See [`helm repo`](https://helm.sh/docs/helm/helm_repo/) for command documentati
 helm install [RELEASE_NAME] giantswarm/silence-operator
 ```
 
-**Note**: The operator supports both API versions for backward compatibility. New deployments should use the namespace-scoped `observability.giantswarm.io/v1alpha2` API. See [MIGRATION.md](MIGRATION.md) for migration guidance.
+You can customize the installation by providing your own values file or by overriding values on the command line. For example, to set the Alertmanager address and a silence selector:
 
 ```console
 helm install [RELEASE_NAME] giantswarm/silence-operator \
