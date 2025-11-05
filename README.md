@@ -10,8 +10,6 @@ The Silence Operator automates the management of [Alertmanager](https://github.c
 - Kubernetes 1.25+
 - Helm 3+
 
----
-
 ## Install
 
 You can now install the chart using either of the following methods:
@@ -41,7 +39,7 @@ _See [`helm repo`](https://helm.sh/docs/helm/helm_repo/) for command documentati
 helm install [RELEASE_NAME] giantswarm/silence-operator
 ```
 
-You can customize the installation by providing your own values file or by overriding values on the command line. For example:
+**Note**: The operator supports both API versions for backward compatibility. New deployments should use the namespace-scoped `observability.giantswarm.io/v1alpha2` API. See [MIGRATION.md](MIGRATION.md) for migration guidance.
 
 ```console
 helm install [RELEASE_NAME] giantswarm/silence-operator \
@@ -51,8 +49,6 @@ helm install [RELEASE_NAME] giantswarm/silence-operator \
 ```
 
 _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation._
-
----
 
 ## CRDs
 
@@ -67,8 +63,6 @@ kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/sile
 ```
 
 **Note**: The operator supports both API versions for backward compatibility. New deployments should use the namespace-scoped `observability.giantswarm.io/v1alpha2` API. See [MIGRATION.md](MIGRATION.md) for migration guidance.
-
----
 
 ## Uninstall Helm Chart
 
@@ -89,8 +83,6 @@ kubectl delete crd silences.monitoring.giantswarm.io
 # Remove namespace-scoped CRD
 kubectl delete crd silences.observability.giantswarm.io
 ```
-
----
 
 ## Upgrading Chart
 
@@ -117,8 +109,6 @@ kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/sile
 ```
 
 *See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation.*
-
----
 
 ## Configuration
 
@@ -464,3 +454,7 @@ go build github.com/giantswarm/silence-operator
 See [CONTRIBUTING](CONTRIBUTING.md) for details on submitting patches, the
 contribution workflow as well as reporting bugs.
 
+For security issues, please see [the security policy](SECURITY.md).
+## License	
+This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE) file for the full license text.	
+Copyright (c) 2025 Giant Swarm GmbH
