@@ -108,7 +108,7 @@ kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/sile
 kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/observability.giantswarm.io_silences.yaml
 ```
 
-*See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation.*
+_See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
 
 ## Configuration
 
