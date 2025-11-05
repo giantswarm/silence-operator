@@ -12,18 +12,7 @@ The Silence Operator automates the management of [Alertmanager](https://github.c
 
 ---
 
-## Get Helm Repository Info (Traditional Method)
-
-```console
-helm repo add giantswarm https://giantswarm.github.io/control-plane-catalog/
-helm repo update
-```
-
-*See [`helm repo`](https://helm.sh/docs/helm/helm_repo/) for command documentation.*
-
----
-
-## Install Helm Chart
+## Install
 
 You can now install the chart using either of the following methods:
 
@@ -40,6 +29,13 @@ helm upgrade [RELEASE_NAME] oci://gsoci.azurecr.io/charts/giantswarm/silence-ope
 ```
 
 ### Method 2: From Helm Repository (Legacy)
+
+```console
+helm repo add giantswarm https://giantswarm.github.io/control-plane-catalog/
+helm repo update
+```
+
+*See [`helm repo`](https://helm.sh/docs/helm/helm_repo/) for command documentation.*
 
 ```console
 helm install [RELEASE_NAME] giantswarm/silence-operator
