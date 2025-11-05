@@ -72,7 +72,7 @@ helm uninstall [RELEASE_NAME]
 
 This removes all the Kubernetes components associated with the chart and deletes the release.
 
-_See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
+_See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command documentation._
 
 CRDs are not removed by default and should be manually cleaned up:
 
