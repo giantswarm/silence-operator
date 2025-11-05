@@ -36,9 +36,9 @@ helm install [RELEASE_NAME] giantswarm/silence-operator
 You can customize the installation by providing your own values file or by overriding values on the command line. For example, to set the Alertmanager address and a silence selector:
 
 ```console
-helm install [RELEASE_NAME] giantswarm/silence-operator \
-  --set alertmanagerAddress="http://my-alertmanager:9093" \
-  --set silenceSelector="environment=production" \
+helm install [RELEASE_NAME] giantswarm/silence-operator \\
+  --set alertmanagerAddress="http://my-alertmanager:9093" \\
+  --set silenceSelector="environment=production" \\
   --set namespaceSelector="team=platform"
 ```
 
