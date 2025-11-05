@@ -20,12 +20,6 @@ You can now install the chart using either of the following methods:
 helm install [RELEASE_NAME] oci://gsoci.azurecr.io/charts/giantswarm/silence-operator --version [VERSION]
 ```
 
-To upgrade an existing release:
-
-```console
-helm upgrade [RELEASE_NAME] oci://gsoci.azurecr.io/charts/giantswarm/silence-operator --version [VERSION]
-```
-
 ### Method 2: From Helm Repository
 
 ```console
