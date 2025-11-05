@@ -52,7 +52,7 @@ _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documen
 
 ## CRDs
 
-CRDs are **not created automatically** by this chart and should be manually deployed:
+CRDs are not created by this chart and should be manually deployed:
 
 ```console
 # For existing cluster-scoped silences (legacy)
