@@ -26,7 +26,7 @@ To upgrade an existing release:
 helm upgrade [RELEASE_NAME] oci://gsoci.azurecr.io/charts/giantswarm/silence-operator --version [VERSION]
 ```
 
-### Method 2: From Helm Repository (Legacy)
+### Method 2: From Helm Repository
 
 ```console
 helm repo add giantswarm https://giantswarm.github.io/control-plane-catalog/
