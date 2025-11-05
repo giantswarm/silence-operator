@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/giantswarm/silence-operator.svg?\&style=shield)](https://circleci.com/gh/giantswarm/silence-operator)
+[![CircleCI](https://circleci.com/gh/giantswarm/silence-operator.svg?&style=shield)](https://circleci.com/gh/giantswarm/silence-operator)
 [![Docker Repository on Quay](https://quay.io/repository/giantswarm/silence-operator/status "Docker Repository on Quay")](https://quay.io/repository/giantswarm/silence-operator)
 
 # silence-operator
