@@ -72,7 +72,7 @@ helm uninstall [RELEASE_NAME]
 
 This removes all the Kubernetes components associated with the chart and deletes the release.
 
-*See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command documentation.*
+_See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
 
 CRDs are not removed by default and should be manually cleaned up:
 
@@ -455,6 +455,9 @@ See [CONTRIBUTING](CONTRIBUTING.md) for details on submitting patches, the
 contribution workflow as well as reporting bugs.
 
 For security issues, please see [the security policy](SECURITY.md).
-## License	
-This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE) file for the full license text.	
+
+## License
+
+This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE) file for the full license text.
+
 Copyright (c) 2025 Giant Swarm GmbH
