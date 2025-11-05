@@ -86,7 +86,7 @@ kubectl delete crd silences.observability.giantswarm.io
 helm upgrade [RELEASE_NAME] oci://gsoci.azurecr.io/charts/giantswarm/silence-operator --version [VERSION]
 ```
 
-### Helm Repository Upgrade (Legacy)
+### Helm Repository Upgrade
 
 ```console
 helm upgrade [RELEASE_NAME] giantswarm/silence-operator
