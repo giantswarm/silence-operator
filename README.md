@@ -10,7 +10,17 @@ The Silence Operator automates the management of [Alertmanager](https://github.c
 - Kubernetes 1.25+
 - Helm 3+
 
-## Get Helm Repository Info
+## Install
+
+You can now install the chart using either of the following methods:
+
+### Method 1: From OCI Registry (Recommended)
+
+```console
+helm install [RELEASE_NAME] oci://gsoci.azurecr.io/charts/giantswarm/silence-operator --version [VERSION]
+```
+
+### Method 2: From Helm Repository
 
 ```console
 helm repo add giantswarm https://giantswarm.github.io/control-plane-catalog/
@@ -18,8 +28,6 @@ helm repo update
 ```
 
 _See [`helm repo`](https://helm.sh/docs/helm/helm_repo/) for command documentation._
-
-## Install Helm Chart
 
 ```console
 helm install [RELEASE_NAME] giantswarm/silence-operator
@@ -36,6 +44,7 @@ helm install [RELEASE_NAME] giantswarm/silence-operator \\
 
 _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation._
 
+## CRDs
 
 CRDs are not created by this chart and should be manually deployed:
 
@@ -71,13 +80,21 @@ kubectl delete crd silences.observability.giantswarm.io
 
 ## Upgrading Chart
 
+### OCI Registry Upgrade (Recommended)
+
+```console
+helm upgrade [RELEASE_NAME] oci://gsoci.azurecr.io/charts/giantswarm/silence-operator --version [VERSION]
+```
+
+### Helm Repository Upgrade
+
 ```console
 helm upgrade [RELEASE_NAME] giantswarm/silence-operator
 ```
 
-CRDs should be manually updated:
+CRDs should be manually updated after upgrading:
 
-```
+```console
 # Update legacy cluster-scoped CRD (if using v1alpha1)
 kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/monitoring.giantswarm.io_silences.yaml
 
