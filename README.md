@@ -51,10 +51,10 @@ If you need to manually deploy or update the CRDs, use the following commands:
 
 ```console
 # For existing cluster-scoped silences (legacy)
-kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/config/crd/bases/monitoring.giantswarm.io_silences.yaml
+kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/refs/heads/main/config/crd/bases/monitoring.giantswarm.io_silences.yaml
 
 # For new namespace-scoped silences (recommended)
-kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/config/crd/bases/observability.giantswarm.io_silences.yaml
+kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/refs/heads/main/config/crd/bases/observability.giantswarm.io_silences.yaml
 ```
 
 **Note**: The operator supports both API versions for backward compatibility. New deployments should use the namespace-scoped `observability.giantswarm.io/v1alpha2` API. See [MIGRATION.md](MIGRATION.md) for migration guidance.
