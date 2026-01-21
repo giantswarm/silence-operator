@@ -2,7 +2,7 @@ module github.com/giantswarm/silence-operator
 
 go 1.25.0
 
-toolchain go1.25.5
+toolchain go1.25.6
 
 require (
 	github.com/onsi/ginkgo/v2 v2.27.5
