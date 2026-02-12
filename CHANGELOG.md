@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Use `Chart.AppVersion` instead of `Chart.Version` for Kubernetes labels to support Flux OCI automatic upgrades.
+- Update team annotation to OpenContainers format (`io.giantswarm.application.team`).
+
 ## [0.20.0] - 2025-11-05
 
 ### Added

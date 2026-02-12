@@ -36,7 +36,7 @@ app: {{ template "silence-operator.name" . }}
 {{ include "labels.selector" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-application.giantswarm.io/team: {{ index .Chart.Annotations "application.giantswarm.io/team"  | default "atlas" | quote }}
+application.giantswarm.io/team: {{ index .Chart.Annotations "io.giantswarm.application.team"  | default "atlas" | quote }}
 helm.sh/chart: {{ template "silence-operator.chartref" . }}
 {{- end -}}
 
