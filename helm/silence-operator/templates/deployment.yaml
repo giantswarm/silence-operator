@@ -46,7 +46,7 @@ spec:
       restartPolicy: {{ .Values.restartPolicy }}
       containers:
       - name: {{ template "silence-operator.name" . }}
-        image: "{{ .Values.image.registry }}/{{ .Values.image.name }}:{{ default .Chart.Version .Values.image.tag }}"
+        image: "{{ .Values.image.registry }}/{{ .Values.image.name }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         args:
         - --leader-elect
         - --metrics-bind-address=:8080
