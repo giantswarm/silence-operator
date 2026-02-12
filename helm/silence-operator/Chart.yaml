@@ -4,6 +4,6 @@ description: The silence-operator manages alertmanager silences.
 home: https://github.com/giantswarm/silence-operator
 icon: https://s.giantswarm.io/app-icons/giantswarm/1/light.svg
 name: silence-operator
-version: 0.20.0
+version: 0.20.1
 annotations:
   io.giantswarm.application.team: "atlas"
