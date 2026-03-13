@@ -13,10 +13,66 @@ jobs:
         name: Run unit and integration tests
         command: CGO_ENABLED=0 make test
 
+  e2e-tests:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    steps:
+    - checkout
+    - run:
+        name: Install Go
+        command: |
+          GO_VERSION=$(sed -n 's/^toolchain go//p' go.mod)
+          if [ -z "$GO_VERSION" ]; then
+            GO_VERSION=$(sed -n 's/^go //p' go.mod)
+          fi
+          curl -sSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | sudo tar -C /usr/local -xz
+          echo 'export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH' >> "$BASH_ENV"
+    - run:
+        name: Install kubectl
+        command: |
+          curl -sSLo kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+    - run:
+        name: Install Helm
+        command: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    - run:
+        name: Install kind
+        command: |
+          curl -sSLo kind "https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64"
+          chmod +x kind && sudo mv kind /usr/local/bin/
+    - run:
+        name: Run e2e tests
+        command: make e2e-test
+        no_output_timeout: 20m
+    - run:
+        name: Collect logs on failure
+        when: on_fail
+        command: |
+          mkdir -p /tmp/e2e-logs
+          kubectl -n silence-operator logs -l app.kubernetes.io/name=silence-operator --tail=-1 > /tmp/e2e-logs/operator.log 2>&1 || true
+          kubectl -n alertmanager logs -l app=alertmanager --tail=-1 > /tmp/e2e-logs/alertmanager.log 2>&1 || true
+          kubectl get silences.observability.giantswarm.io -A -o yaml > /tmp/e2e-logs/silences-v2.yaml 2>&1 || true
+          kubectl get silences.monitoring.giantswarm.io -o yaml > /tmp/e2e-logs/silences-v1.yaml 2>&1 || true
+    - store_artifacts:
+        path: /tmp/e2e-logs
+        destination: e2e-logs
+    - run:
+        name: Clean up
+        when: always
+        command: make e2e-clean
+
 workflows:
   build:
     jobs:
     - go-tests:
+        filters:
+          tags:
+            only: /^v.*/
+
+    - e2e-tests:
+        requires:
+        - go-tests
         filters:
           tags:
             only: /^v.*/
