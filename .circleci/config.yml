@@ -20,15 +20,6 @@ jobs:
     steps:
     - checkout
     - run:
-        name: Install Go
-        command: |
-          GO_VERSION=$(sed -n 's/^toolchain go//p' go.mod)
-          if [ -z "$GO_VERSION" ]; then
-            GO_VERSION=$(sed -n 's/^go //p' go.mod)
-          fi
-          curl -sSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | sudo tar -C /usr/local -xz
-          echo 'export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH' >> "$BASH_ENV"
-    - run:
         name: Install kubectl
         command: |
           curl -sSLo kubectl "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
