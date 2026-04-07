@@ -47,6 +47,30 @@ func TestNew(t *testing.T) {
 			},
 			expectError: true,
 		},
+		{
+			name: "valid expiration time UTC",
+			config: config.Config{
+				Address:        "http://localhost:9093",
+				ExpirationTime: "08:00Z",
+			},
+			expectError: false,
+		},
+		{
+			name: "valid expiration time with positive offset",
+			config: config.Config{
+				Address:        "http://localhost:9093",
+				ExpirationTime: "08:00+01:00",
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid expiration time",
+			config: config.Config{
+				Address:        "http://localhost:9093",
+				ExpirationTime: "not-a-time",
+			},
+			expectError: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -141,9 +165,12 @@ func TestSilenceEndsAt(t *testing.T) {
 		},
 	}
 
+	am, err := New(config.Config{Address: "http://localhost:9093"})
+	require.NoError(t, err)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := SilenceEndsAt(tt.silence)
+			result, err := am.SilenceEndsAt(tt.silence)
 
 			if tt.expectError {
 				assert.Error(t, err)

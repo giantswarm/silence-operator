@@ -48,7 +48,9 @@ spec:
       - name: {{ template "silence-operator.name" . }}
         image: "{{ if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.name }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         args:
+        {{- if .Values.leaderElection }}
         - --leader-elect
+        {{- end }}
         - --metrics-bind-address=:8080
         - --alertmanager-address={{ .Values.alertmanagerAddress }}
         - --alertmanager-authentication={{ .Values.alertmanagerAuthentication }}
@@ -73,6 +75,7 @@ spec:
         {{- if .Values.namespaceSelector }}
         - --namespace-selector={{ .Values.namespaceSelector }}
         {{- end }}
+        - --expiration-time={{ .Values.expirationTime }}
         livenessProbe:
           {{- with .Values.livenessProbe }}
           {{- toYaml . | nindent 10 }}

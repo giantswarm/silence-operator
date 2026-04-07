@@ -96,6 +96,8 @@ func main() {
 	flag.BoolVar(&cfg.Authentication, "alertmanager-authentication", false, "Enable Alertmanager authentication using Service Account token.")
 	flag.StringVar(&silenceSelector, "silence-selector", "", "Label selector to filter Silence custom resources (e.g., 'environment=production,tier=frontend').")
 	flag.StringVar(&namespaceSelector, "namespace-selector", "", "Label selector to restrict which namespaces the v2 controller watches (e.g., 'environment=production'). If empty, all namespaces are watched.")
+	flag.StringVar(&cfg.ExpirationTime, "expiration-time", "08:00Z",
+		"Time of day at which date-only 'valid-until' silences expire, in ISO 8601 HH:MM±HH:MM format (e.g. '08:00Z', '08:00+01:00'). Default: '08:00Z'.")
 	// Tenancy flags (not wired up yet - for future PRs)
 	flag.BoolVar(&cfg.TenancyEnabled, "tenancy-enabled", false, "Enable tenancy support for multi-tenant Alertmanager setups.")
 	flag.StringVar(&cfg.TenancyLabelKey, "tenancy-label-key", "observability.giantswarm.io/tenant", "Label key to extract tenant information from Silence resources.")

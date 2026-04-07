@@ -564,7 +564,7 @@ var _ = Describe("Silence Controller", func() {
 			}
 
 			By("converting CR to alertmanager Silence")
-			silence, err := getSilenceFromCR(cr)
+			silence, err := getSilenceFromCR(cr, reconciler.silenceService)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(silence).NotTo(BeNil())
 

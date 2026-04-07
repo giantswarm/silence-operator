@@ -20,6 +20,10 @@ type Config struct {
 	// If nil, the controller will watch all namespaces.
 	NamespaceSelector labels.Selector
 
+	// ExpirationTime is the time of day at which date-only 'valid-until' silences expire.
+	// Must be in ISO 8601 HH:MM±HH:MM format (e.g. "08:00Z", "08:00+01:00"). Default: "08:00Z".
+	ExpirationTime string
+
 	// Tenancy configuration
 	TenancyEnabled       bool
 	TenancyLabelKey      string // Single label key to extract tenant from (e.g., "observability.giantswarm.io/tenant")

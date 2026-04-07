@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 )
@@ -77,6 +78,11 @@ func (s *SilenceService) SyncSilence(ctx context.Context, newSilence *alertmanag
 
 	// No changes needed
 	return nil
+}
+
+// SilenceEndsAt delegates to the alertmanager client to compute the expiry time for a silence.
+func (s *SilenceService) SilenceEndsAt(silence client.Object) (time.Time, error) {
+	return s.alertmanager.SilenceEndsAt(silence)
 }
 
 // DeleteSilence handles the deletion of a silence

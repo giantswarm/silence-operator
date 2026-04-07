@@ -135,6 +135,15 @@ readinessProbe:
 # -- Restart policy for the pod (Always for single-instance reliability)
 restartPolicy: Always
 
+# Whether to enable leader election (recommended for multi-replica deployments).
+# Disable for single-instance dev setups or when leader election is managed externally.
+leaderElection: true
+
+# Time of day at which date-only 'valid-until' silences expire (ISO 8601 HH:MM±HH:MM).
+# Default 08:00Z = 8am UTC (9 CET / 10 CEST) to avoid overnight expiration.
+# Examples: "08:00Z", "08:00+01:00", "06:00-05:00"
+expirationTime: "08:00Z"
+
 rbac:
   create: true
 

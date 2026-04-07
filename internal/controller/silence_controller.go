@@ -141,7 +141,7 @@ func (r *SilenceReconciler) cleanUpLegacyFinalizer(ctx context.Context, silence 
 func (r *SilenceReconciler) reconcileCreate(ctx context.Context, silence *v1alpha1.Silence) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	newSilence, err := getSilenceFromCR(silence)
+	newSilence, err := getSilenceFromCR(silence, r.silenceService)
 	if err != nil {
 		return ctrl.Result{}, errors.WithStack(err)
 	}
@@ -180,7 +180,7 @@ func (r *SilenceReconciler) reconcileDelete(ctx context.Context, silence *v1alph
 	return nil
 }
 
-func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) {
+func getSilenceFromCR(silence *v1alpha1.Silence, svc *service.SilenceService) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
 	for _, matcher := range silence.Spec.Matchers {
 		isEqual := true
@@ -196,7 +196,7 @@ func getSilenceFromCR(silence *v1alpha1.Silence) (*alertmanager.Silence, error) 
 		matchers = append(matchers, newMatcher)
 	}
 
-	endsAt, err := alertmanager.SilenceEndsAt(silence)
+	endsAt, err := svc.SilenceEndsAt(silence)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

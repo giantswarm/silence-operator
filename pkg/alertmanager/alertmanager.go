@@ -38,17 +38,21 @@ type Client interface {
 	DeleteSilenceByComment(comment string, tenant string) error
 	DeleteSilenceByID(id string, tenant string) error
 	ListSilences(tenant string) ([]Silence, error)
+	SilenceEndsAt(silence client.Object) (time.Time, error)
 }
 
 // Ensure Alertmanager implements Client
 var _ Client = (*Alertmanager)(nil)
 
 type Alertmanager struct {
-	address        string
-	authentication bool
-	token          string
-	tenantId       string
-	client         *http.Client
+	address           string
+	authentication    bool
+	token             string
+	tenantId          string
+	client            *http.Client
+	expirationHour    int
+	expirationMinute  int
+	expirationLoc     *time.Location
 }
 
 func New(config config.Config) (*Alertmanager, error) {
@@ -56,12 +60,32 @@ func New(config config.Config) (*Alertmanager, error) {
 		return nil, errors.Errorf("%T.Address must not be empty", config)
 	}
 
+	expirationTime := config.ExpirationTime
+	if expirationTime == "" {
+		expirationTime = "08:00Z"
+	}
+
+	parsed, err := time.Parse("15:04Z07:00", expirationTime)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid expiration-time %q: must be ISO 8601 HH:MM±HH:MM (e.g. \"08:00Z\", \"08:00+01:00\")", expirationTime)
+	}
+	_, offsetSeconds := parsed.Zone()
+	var loc *time.Location
+	if offsetSeconds == 0 {
+		loc = time.UTC
+	} else {
+		loc = time.FixedZone(fmt.Sprintf("%+03d:%02d", offsetSeconds/3600, (offsetSeconds%3600)/60), offsetSeconds)
+	}
+
 	return &Alertmanager{
-		address:        config.Address,
-		authentication: config.Authentication,
-		token:          config.BearerToken,
-		client:         http.DefaultClient,
-		tenantId:       config.TenantId,
+		address:          config.Address,
+		authentication:   config.Authentication,
+		token:            config.BearerToken,
+		client:           http.DefaultClient,
+		tenantId:         config.TenantId,
+		expirationHour:   parsed.Hour(),
+		expirationMinute: parsed.Minute(),
+		expirationLoc:    loc,
 	}, nil
 }
 
@@ -211,7 +235,7 @@ func SilenceComment(silence client.Object) string {
 // The expiry date is retrieved from the annotation name configured by ValidUntilAnnotationName.
 // The expected format is defined by DateOnlyLayout.
 // It returns an invalidExpirationDateError in case the date format is invalid.
-func SilenceEndsAt(silence client.Object) (time.Time, error) {
+func (am *Alertmanager) SilenceEndsAt(silence client.Object) (time.Time, error) {
 	annotations := silence.GetAnnotations()
 
 	// Check if the annotation exist otherwise return a date 100 years in the future.
@@ -232,8 +256,7 @@ func SilenceEndsAt(silence client.Object) (time.Time, error) {
 		// Combine both errors in the message. Wrap errRFC3339 to preserve stack trace.
 		return time.Time{}, errors.Wrapf(errRFC3339, "annotation %q date %q does not match expected formats %q or %q (legacy format error: %v)", ValidUntilAnnotationName, value, time.RFC3339, DateOnlyLayout, errDateOnly)
 	}
-	// We shift the time to 8am UTC (9 CET or 10 CEST) to ensure silences do not expire at night.
-	// TODO move this rule to a config?
-	expirationDate = time.Date(expirationDate.Year(), expirationDate.Month(), expirationDate.Day(), 8, 0, 0, 0, time.UTC)
+	// Shift to the configured expiration time to ensure silences do not expire at night.
+	expirationDate = time.Date(expirationDate.Year(), expirationDate.Month(), expirationDate.Day(), am.expirationHour, am.expirationMinute, 0, 0, am.expirationLoc)
 	return expirationDate, nil
 }

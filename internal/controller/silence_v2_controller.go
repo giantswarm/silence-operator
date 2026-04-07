@@ -187,7 +187,7 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 		})
 	}
 
-	endsAt, err := alertmanager.SilenceEndsAt(silence)
+	endsAt, err := r.silenceService.SilenceEndsAt(silence)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
