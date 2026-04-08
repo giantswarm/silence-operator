@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Mutating admission webhook for `v1alpha2` Silences: injects CEL-based mutation rules (matchers, labels, annotations) on CREATE/UPDATE, replacing the Kyverno policy in `kyverno-policies-observability`. Disabled by default; enabled via `webhook.enabled=true` and `webhook.celRules` in Helm values.
+
 ## [0.20.1] - 2026-02-12
 
 ### Changed

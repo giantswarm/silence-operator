@@ -1,0 +1,34 @@
+{{- if .Values.webhook.enabled }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+  name: {{ template "silence-operator.name" . }}
+  {{- if .Values.webhook.certManager.enabled }}
+  annotations:
+    # cert-manager's cainjector reads this annotation and populates caBundle automatically.
+    cert-manager.io/inject-ca-from: {{ template "silence-operator.namespace" . }}/{{ template "silence-operator.name" . }}-webhook-cert
+  {{- end }}
+webhooks:
+- name: msilence.observability.giantswarm.io
+  admissionReviewVersions: ["v1"]
+  failurePolicy: {{ .Values.webhook.failurePolicy | default "Fail" }}
+  sideEffects: None
+  clientConfig:
+    service:
+      name: {{ template "silence-operator.name" . }}-webhook
+      namespace: {{ template "silence-operator.namespace" . }}
+      path: /mutate-observability-giantswarm-io-v1alpha2-silence
+    {{- if .Values.webhook.certManager.enabled }}
+    caBundle: Cg==
+    {{- else }}
+    caBundle: {{ .Values.webhook.caBundle | default "" | b64enc }}
+    {{- end }}
+  rules:
+  - apiGroups:   ["observability.giantswarm.io"]
+    apiVersions: ["v1alpha2"]
+    operations:  ["CREATE", "UPDATE"]
+    resources:   ["silences"]
+{{- end }}

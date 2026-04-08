@@ -25,4 +25,7 @@ resources:
   kind: Silence
   path: github.com/giantswarm/silence-operator/api/v1alpha2
   version: v1alpha2
+  webhooks:
+    defaulting: true
+    webhookVersion: v1
 version: "3"
