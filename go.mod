@@ -2,7 +2,7 @@ module github.com/giantswarm/silence-operator
 
 go 1.25.0
 
-toolchain go1.26.1
+toolchain go1.26.2
 
 require (
 	github.com/google/cel-go v0.26.0
