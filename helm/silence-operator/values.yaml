@@ -192,7 +192,8 @@ webhook:
   tlsSecretName: ""
 
   # caBundle is only used when certManager.enabled is false.
-  # Set to the PEM-encoded CA certificate that signed the webhook server TLS cert.
+  # Set to the base64-encoded PEM CA certificate that signed the webhook server TLS cert.
+  # Obtain it with: kubectl get secret <tlsSecretName> -o jsonpath='{.data.ca\.crt}'
   # The API server uses this to verify the webhook's TLS connection.
   caBundle: ""
 

@@ -214,6 +214,80 @@
                     "description": "Whether to install the Silence CRD with this chart."
                 }
             }
+        },
+        "webhook": {
+            "type": "object",
+            "description": "Mutating admission webhook for v1alpha2 Silences.",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable the mutating webhook."
+                },
+                "celRules": {
+                    "type": "array",
+                    "description": "CEL-based mutation rules applied on CREATE/UPDATE. Empty condition = always apply.",
+                    "items": {
+                        "type": "object",
+                        "required": ["name"],
+                        "properties": {
+                            "name": { "type": "string" },
+                            "condition": { "type": "string", "default": "" },
+                            "matchers": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "required": ["name", "value", "matchType"],
+                                    "properties": {
+                                        "name": { "type": "string" },
+                                        "value": { "type": "string" },
+                                        "matchType": { "type": "string", "enum": ["=", "!=", "=~", "!~"] }
+                                    }
+                                }
+                            },
+                            "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+                            "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+                        }
+                    }
+                },
+                "failurePolicy": {
+                    "type": "string",
+                    "enum": ["Fail", "Ignore"],
+                    "default": "Fail",
+                    "description": "What to do when the webhook is unreachable. Fail blocks; Ignore lets through."
+                },
+                "certManager": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Issue the webhook TLS cert via cert-manager."
+                        },
+                        "issuerName": {
+                            "type": "string",
+                            "default": "selfsigned-giantswarm",
+                            "description": "Name of the cert-manager Issuer or ClusterIssuer."
+                        },
+                        "issuerKind": {
+                            "type": "string",
+                            "enum": ["Issuer", "ClusterIssuer"],
+                            "default": "ClusterIssuer",
+                            "description": "Kind of the cert-manager issuer reference."
+                        }
+                    }
+                },
+                "tlsSecretName": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Name of an existing Secret containing tls.crt and tls.key. Used when certManager.enabled is false."
+                },
+                "caBundle": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Base64-encoded PEM CA certificate used by the API server to verify the webhook. Required when certManager.enabled is false."
+                }
+            }
         }
     }
 }

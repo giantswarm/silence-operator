@@ -24,7 +24,7 @@ webhooks:
     {{- if .Values.webhook.certManager.enabled }}
     caBundle: Cg==
     {{- else }}
-    caBundle: {{ required "webhook.caBundle is required when webhook.certManager.enabled is false (base64-encoded PEM CA certificate)" .Values.webhook.caBundle | b64enc }}
+    caBundle: {{ required "webhook.caBundle is required when webhook.certManager.enabled is false (provide the base64-encoded PEM CA: kubectl get secret <tlsSecretName> -o jsonpath='{.data.ca\\.crt}')" .Values.webhook.caBundle }}
     {{- end }}
   rules:
   - apiGroups:   ["observability.giantswarm.io"]

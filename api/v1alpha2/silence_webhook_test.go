@@ -191,6 +191,55 @@ func TestNonBoolCELCondition_ReturnsError(t *testing.T) {
 	assert.Error(t, d.Default(context.Background(), silence))
 }
 
+// --- Label and annotation overwrite behaviour ---
+//
+// Labels and annotations are always overwritten (last-write-wins across rules).
+// This is intentional and different from matchers, which are deduplicated.
+
+func TestLabelOverwrite(t *testing.T) {
+	d := newDefaulter(t, config.WebhookConfig{
+		CELRules: []config.CELRule{
+			{Name: "enforce-team", Condition: "", Labels: map[string]string{"team": "backend"}},
+		},
+	})
+	silence := &Silence{
+		ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"team": "frontend"}},
+		Spec:       SilenceSpec{Matchers: []SilenceMatcher{{Name: "alertname", Value: "X", MatchType: MatchEqual}}},
+	}
+	require.NoError(t, d.Default(context.Background(), silence))
+	assert.Equal(t, "backend", silence.Labels["team"], "rule should overwrite existing label value")
+}
+
+func TestAnnotationOverwrite(t *testing.T) {
+	d := newDefaulter(t, config.WebhookConfig{
+		CELRules: []config.CELRule{
+			{Name: "stamp", Condition: "", Annotations: map[string]string{"managed-by": "webhook"}},
+		},
+	})
+	silence := &Silence{
+		ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"managed-by": "user"}},
+		Spec:       SilenceSpec{Matchers: []SilenceMatcher{{Name: "alertname", Value: "X", MatchType: MatchEqual}}},
+	}
+	require.NoError(t, d.Default(context.Background(), silence))
+	assert.Equal(t, "webhook", silence.Annotations["managed-by"], "rule should overwrite existing annotation value")
+}
+
+// --- Regex and negated-regex matcher injection ---
+
+func TestRegexMatcherInjection(t *testing.T) {
+	d := newDefaulter(t, config.WebhookConfig{
+		CELRules: []config.CELRule{
+			{Name: "regex-rule", Condition: "", Matchers: []config.MatcherSpec{matcherSpec("alertname", "High.*", "=~")}},
+		},
+	})
+	silence := &Silence{
+		Spec: SilenceSpec{Matchers: []SilenceMatcher{{Name: "alertname", Value: "HighCPU", MatchType: MatchEqual}}},
+	}
+	require.NoError(t, d.Default(context.Background(), silence))
+	assertHasMatcher(t, silence, "alertname", "High.*", MatchType("=~"))
+	assert.Len(t, silence.Spec.Matchers, 2)
+}
+
 // --- Runtime CEL errors ---
 
 // A condition that dereferences a field absent from the object (e.g. labels when
