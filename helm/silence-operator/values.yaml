@@ -138,61 +138,66 @@ restartPolicy: Always
 # Admission webhook configuration (mutating + validating).
 # When enabled, both webhooks are deployed and share the same TLS certificate and Service.
 #
-# The mutating webhook applies CEL-based mutation rules to every v1alpha2 Silence on
-# CREATE and UPDATE, replacing the Kyverno policy in kyverno-policies-observability.
-#
 # The validating webhook enforces business rules on CREATE and UPDATE:
 # duplicate matchers, invalid regex patterns, unparseable valid-until annotations,
 # and valid-until values already in the past (CREATE only).
-#
-# Rules with an empty condition always apply (unconditional injection).
-# Rules with a non-empty condition are evaluated as CEL expressions against the
-# incoming Silence resource, available as the `object` variable.
-# Supported mutations per rule: matchers, labels, annotations.
-#
-# To replicate the kyverno-policies-observability Silence policy:
-#
-#   celRules:
-#   - name: exclude-heartbeat
-#     condition: ""
-#     matchers:
-#     - name: alertname
-#       value: Heartbeat
-#       matchType: "!="
-#   - name: exclude-all-pipelines
-#     condition: ""
-#     matchers:
-#     - name: all_pipelines
-#       value: "true"
-#       matchType: "!="
-#
-# More examples:
-#   - name: tag-production-silences
-#     condition: 'object.metadata.namespace == "production"'
-#     labels:
-#       observability.giantswarm.io/env: production
-#   - name: require-team-label
-#     condition: '"team" in object.metadata.labels'
-#     annotations:
-#       observability.giantswarm.io/reviewed: "true"
 webhook:
   # Master switch. Deploys the TLS certificate, Service, and volume mount.
   # Set to true to enable either or both webhook types below.
   enabled: false
 
   # mutating controls the CEL-based mutation webhook.
-  # Requires celRules to be non-empty to have any effect.
   mutating:
     enabled: true
+
+    # celRules is a list of CEL-based mutation rules applied to every v1alpha2
+    # Silence on CREATE and UPDATE, replacing the Kyverno policy in
+    # kyverno-policies-observability.
+    #
+    # Each rule has:
+    #   name:      identifier (required)
+    #   condition: CEL expression evaluated against the incoming Silence as
+    #              `object`; empty string means always apply.
+    #              Use has() to safely access optional fields, e.g.:
+    #                has(object.metadata.labels) && "team" in object.metadata.labels
+    #   matchers:  list of {name, value, matchType} injected into spec.matchers
+    #              (idempotent — duplicates are never added).
+    #   labels:    key/value pairs merged into metadata.labels (last-write-wins).
+    #   annotations: key/value pairs merged into metadata.annotations.
+    #
+    # To replicate the kyverno-policies-observability Silence policy:
+    #
+    #   celRules:
+    #   - name: exclude-heartbeat
+    #     condition: ""
+    #     matchers:
+    #     - name: alertname
+    #       value: Heartbeat
+    #       matchType: "!="
+    #   - name: exclude-all-pipelines
+    #     condition: ""
+    #     matchers:
+    #     - name: all_pipelines
+    #       value: "true"
+    #       matchType: "!="
+    #
+    # Conditional examples:
+    #   - name: tag-production-silences
+    #     condition: 'object.metadata.namespace == "production"'
+    #     labels:
+    #       observability.giantswarm.io/env: production
+    #   - name: annotate-team-silences
+    #     condition: 'has(object.metadata.labels) && "team" in object.metadata.labels'
+    #     annotations:
+    #       observability.giantswarm.io/reviewed: "true"
+    celRules: []
 
   # validating controls the validation webhook (duplicate matchers, regex
   # validity, valid-until annotation format and expiry).
   validating:
     enabled: true
 
-  celRules: []
-
-  # failurePolicy controls what happens if the webhook is unreachable.
+  # failurePolicy controls what happens if either webhook is unreachable.
   # "Fail" (default) blocks the request; "Ignore" lets it through.
   failurePolicy: Fail
 

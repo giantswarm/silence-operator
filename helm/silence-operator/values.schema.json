@@ -231,6 +231,32 @@
                             "type": "boolean",
                             "default": true,
                             "description": "Deploy the MutatingWebhookConfiguration and pass CEL rules to the operator."
+                        },
+                        "celRules": {
+                            "type": "array",
+                            "description": "CEL-based mutation rules applied on CREATE/UPDATE. Empty condition = always apply.",
+                            "items": {
+                                "type": "object",
+                                "required": ["name"],
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "condition": { "type": "string", "default": "" },
+                                    "matchers": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "required": ["name", "value", "matchType"],
+                                            "properties": {
+                                                "name": { "type": "string" },
+                                                "value": { "type": "string" },
+                                                "matchType": { "type": "string", "enum": ["=", "!=", "=~", "!~"] }
+                                            }
+                                        }
+                                    },
+                                    "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+                                    "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+                                }
+                            }
                         }
                     }
                 },
@@ -241,32 +267,6 @@
                             "type": "boolean",
                             "default": true,
                             "description": "Deploy the ValidatingWebhookConfiguration and enable the validation handler."
-                        }
-                    }
-                },
-                "celRules": {
-                    "type": "array",
-                    "description": "CEL-based mutation rules applied on CREATE/UPDATE. Empty condition = always apply.",
-                    "items": {
-                        "type": "object",
-                        "required": ["name"],
-                        "properties": {
-                            "name": { "type": "string" },
-                            "condition": { "type": "string", "default": "" },
-                            "matchers": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "required": ["name", "value", "matchType"],
-                                    "properties": {
-                                        "name": { "type": "string" },
-                                        "value": { "type": "string" },
-                                        "matchType": { "type": "string", "enum": ["=", "!=", "=~", "!~"] }
-                                    }
-                                }
-                            },
-                            "labels": { "type": "object", "additionalProperties": { "type": "string" } },
-                            "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
                         }
                     }
                 },
