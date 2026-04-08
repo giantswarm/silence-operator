@@ -152,10 +152,10 @@ var _ = Describe("Mutating webhook", func() {
 	})
 
 	It("should apply a namespace-scoped CEL rule only in matching namespaces", Label("cel-conditional"), func() {
-		// This test is only meaningful when a conditional CEL rule is deployed,
-		// e.g.: condition: 'object.metadata.namespace == "test-webhook"'
-		// Skip if no conditional rules are configured (checked via the absence of
-		// an expected label after admission).
+		// This test verifies that always-apply rules (empty condition) fire regardless of
+		// namespace.  To additionally verify conditional rules, deploy the operator with a
+		// rule like: condition: 'object.metadata.namespace == "test-webhook"' and extend
+		// this test to assert the namespace-scoped injection as well.
 		silenceName := "webhook-conditional-test"
 
 		silence := &v1alpha2.Silence{
