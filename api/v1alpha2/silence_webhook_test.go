@@ -191,6 +191,68 @@ func TestNonBoolCELCondition_ReturnsError(t *testing.T) {
 	assert.Error(t, d.Default(context.Background(), silence))
 }
 
+// --- Runtime CEL errors ---
+
+// A condition that dereferences a field absent from the object (e.g. labels when
+// ObjectMeta.Labels is nil) should propagate as an error, not silently skip the rule.
+// Users should use the CEL has() macro to guard optional fields:
+//
+//	has(object.metadata.labels) && "team" in object.metadata.labels
+func TestCELRuntimeError_MissingField(t *testing.T) {
+	d := newDefaulter(t, config.WebhookConfig{
+		CELRules: []config.CELRule{
+			{
+				Name:      "requires-labels",
+				Condition: `"team" in object.metadata.labels`,
+				Matchers:  []config.MatcherSpec{matcherSpec("alertname", "Heartbeat", "!=")},
+			},
+		},
+	})
+	// Silence with no labels — object.metadata.labels is absent from the JSON map.
+	silence := &Silence{
+		Spec: SilenceSpec{Matchers: []SilenceMatcher{{Name: "alertname", Value: "X", MatchType: MatchEqual}}},
+	}
+	assert.Error(t, d.Default(context.Background(), silence), "expected error when CEL accesses absent labels map")
+}
+
+func TestCELRuntimeError_SafeGuardWithHas(t *testing.T) {
+	d := newDefaulter(t, config.WebhookConfig{
+		CELRules: []config.CELRule{
+			{
+				Name:      "safe-label-check",
+				Condition: `has(object.metadata.labels) && "team" in object.metadata.labels`,
+				Matchers:  []config.MatcherSpec{matcherSpec("alertname", "Heartbeat", "!=")},
+			},
+		},
+	})
+	// Silence with no labels — has() guard prevents the runtime error.
+	silence := &Silence{
+		Spec: SilenceSpec{Matchers: []SilenceMatcher{{Name: "alertname", Value: "X", MatchType: MatchEqual}}},
+	}
+	require.NoError(t, d.Default(context.Background(), silence))
+	assert.Len(t, silence.Spec.Matchers, 1, "rule should not fire when labels are absent")
+}
+
+// --- Multi-rule order ---
+
+// Rules are applied in the order they are declared in celRules.
+// Each rule's matchers are appended after the previous rule's injections.
+func TestMultipleRules_AppliedInOrder(t *testing.T) {
+	d := newDefaulter(t, config.WebhookConfig{
+		CELRules: []config.CELRule{
+			{Name: "first", Condition: "", Matchers: []config.MatcherSpec{matcherSpec("alertname", "Heartbeat", "!=")}},
+			{Name: "second", Condition: "", Matchers: []config.MatcherSpec{matcherSpec("all_pipelines", "true", "!=")}},
+		},
+	})
+	silence := &Silence{
+		Spec: SilenceSpec{Matchers: []SilenceMatcher{{Name: "alertname", Value: "X", MatchType: MatchEqual}}},
+	}
+	require.NoError(t, d.Default(context.Background(), silence))
+	require.Len(t, silence.Spec.Matchers, 3)
+	assert.Equal(t, "Heartbeat", silence.Spec.Matchers[1].Value, "first rule's matcher should be at index 1")
+	assert.Equal(t, "true", silence.Spec.Matchers[2].Value, "second rule's matcher should be at index 2")
+}
+
 // --- Kyverno parity ---
 //
 // Verifies that the webhook can replicate the behaviour of the Kyverno policy in

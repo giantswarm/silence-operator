@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/google/cel-go/cel"
-	"github.com/pkg/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -64,7 +63,7 @@ func NewSilenceDefaulter(cfg config.WebhookConfig) (*SilenceDefaulter, error) {
 		cel.Variable("object", cel.MapType(cel.StringType, cel.DynType)),
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create CEL environment")
+		return nil, fmt.Errorf("failed to create CEL environment: %w", err)
 	}
 
 	rules := make([]compiledCELRule, 0, len(cfg.CELRules))
@@ -103,7 +102,7 @@ func (d *SilenceDefaulter) Default(ctx context.Context, silence *Silence) error 
 
 	objMap, err := silenceToMap(silence)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert Silence to map for CEL evaluation")
+		return fmt.Errorf("failed to convert Silence to map for CEL evaluation: %w", err)
 	}
 
 	for _, cr := range d.celRules {
@@ -156,11 +155,11 @@ func hasMatcher(matchers []SilenceMatcher, ms config.MatcherSpec) bool {
 
 // evaluateCELRule evaluates the rule's condition against objMap.
 // A nil program (empty Condition) always matches.
-func evaluateCELRule(cr compiledCELRule, objMap map[string]interface{}) (bool, error) {
+func evaluateCELRule(cr compiledCELRule, objMap map[string]any) (bool, error) {
 	if cr.program == nil {
 		return true, nil
 	}
-	out, _, err := cr.program.Eval(map[string]interface{}{"object": objMap})
+	out, _, err := cr.program.Eval(map[string]any{"object": objMap})
 	if err != nil {
 		return false, err
 	}
@@ -171,19 +170,19 @@ func evaluateCELRule(cr compiledCELRule, objMap map[string]interface{}) (bool, e
 	return result, nil
 }
 
-// silenceToMap converts a Silence to a map[string]interface{} via JSON round-trip.
+// silenceToMap converts a Silence to a map[string]any via JSON round-trip.
 // This produces the shape available in CEL expressions as the "object" variable:
 //
 //	object.metadata.namespace
 //	object.metadata.labels["team"]
 //	"team" in object.metadata.labels
 //	object.spec.matchers
-func silenceToMap(s *Silence) (map[string]interface{}, error) {
+func silenceToMap(s *Silence) (map[string]any, error) {
 	data, err := json.Marshal(s)
 	if err != nil {
 		return nil, err
 	}
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
 		return nil, err
 	}
