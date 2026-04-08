@@ -23,4 +23,10 @@ spec:
         http:
         - method: "GET"
           path: "/metrics"
+  {{- if .Values.webhook.enabled }}
+  - toPorts:
+    - ports:
+      - port: "9443"
+        protocol: "TCP"
+  {{- end }}
 {{- end -}}

@@ -217,36 +217,56 @@
         },
         "webhook": {
             "type": "object",
-            "description": "Mutating admission webhook for v1alpha2 Silences.",
+            "description": "Admission webhooks (mutating + validating) for v1alpha2 Silences.",
             "properties": {
                 "enabled": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Enable the mutating webhook."
+                    "description": "Master switch. Deploys TLS certificate, Service, and volume mount."
                 },
-                "celRules": {
-                    "type": "array",
-                    "description": "CEL-based mutation rules applied on CREATE/UPDATE. Empty condition = always apply.",
-                    "items": {
-                        "type": "object",
-                        "required": ["name"],
-                        "properties": {
-                            "name": { "type": "string" },
-                            "condition": { "type": "string", "default": "" },
-                            "matchers": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "required": ["name", "value", "matchType"],
-                                    "properties": {
-                                        "name": { "type": "string" },
-                                        "value": { "type": "string" },
-                                        "matchType": { "type": "string", "enum": ["=", "!=", "=~", "!~"] }
-                                    }
+                "mutating": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Deploy the MutatingWebhookConfiguration and pass CEL rules to the operator."
+                        },
+                        "celRules": {
+                            "type": "array",
+                            "description": "CEL-based mutation rules applied on CREATE/UPDATE. Empty condition = always apply.",
+                            "items": {
+                                "type": "object",
+                                "required": ["name"],
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "condition": { "type": "string", "default": "" },
+                                    "matchers": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "required": ["name", "value", "matchType"],
+                                            "properties": {
+                                                "name": { "type": "string" },
+                                                "value": { "type": "string" },
+                                                "matchType": { "type": "string", "enum": ["=", "!=", "=~", "!~"] }
+                                            }
+                                        }
+                                    },
+                                    "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+                                    "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
                                 }
-                            },
-                            "labels": { "type": "object", "additionalProperties": { "type": "string" } },
-                            "annotations": { "type": "object", "additionalProperties": { "type": "string" } }
+                            }
+                        }
+                    }
+                },
+                "validating": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Deploy the ValidatingWebhookConfiguration and enable the validation handler."
                         }
                     }
                 },
