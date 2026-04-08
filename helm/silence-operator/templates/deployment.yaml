@@ -88,6 +88,7 @@ spec:
         {{- if .Values.webhook.enabled }}
         - --webhook-cert-path=/certs
         - --webhook-cel-rules={{ .Values.webhook.celRules | toJson }}
+        - --webhook-validating-enabled=true
         {{- end }}
         livenessProbe:
           {{- with .Values.livenessProbe }}
