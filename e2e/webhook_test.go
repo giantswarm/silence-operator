@@ -8,6 +8,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -32,12 +34,29 @@ import (
 //	    value: "true"
 //	    matchType: "!="
 //
-// If the webhook is not enabled the tests skip automatically.
+// If the MutatingWebhookConfiguration is absent the whole Describe block skips.
 var _ = Describe("Mutating webhook", func() {
 	ctx := context.Background()
 	const namespace = "test-webhook"
 
 	BeforeEach(func() {
+		// Skip the entire suite when the webhook isn't deployed.
+		mwc := &admissionregistrationv1.MutatingWebhookConfiguration{}
+		if err := k8sClient.Get(ctx, client.ObjectKey{Name: "silence-operator"}, mwc); err != nil {
+			Skip("MutatingWebhookConfiguration 'silence-operator' not found — deploy with webhook.enabled=true to run these tests")
+		}
+
+		// The namespace is shared across tests; wait for any previous instance to
+		// be fully gone before recreating it (avoids "namespace is terminating" errors).
+		Eventually(func() error {
+			ns := &corev1.Namespace{}
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: namespace}, ns)
+			if err != nil {
+				return nil // not found: safe to create
+			}
+			return fmt.Errorf("namespace %q still exists (phase: %s)", namespace, ns.Status.Phase)
+		}, "120s", "2s").Should(Succeed(), "timed out waiting for namespace %q to be fully deleted", namespace)
+
 		Expect(createNamespace(ctx, namespace)).To(Succeed())
 	})
 
