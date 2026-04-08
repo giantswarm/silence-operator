@@ -135,9 +135,15 @@ readinessProbe:
 # -- Restart policy for the pod (Always for single-instance reliability)
 restartPolicy: Always
 
-# Mutating webhook configuration.
-# The webhook applies CEL-based mutation rules to every v1alpha2 Silence on
+# Admission webhook configuration (mutating + validating).
+# When enabled, both webhooks are deployed and share the same TLS certificate and Service.
+#
+# The mutating webhook applies CEL-based mutation rules to every v1alpha2 Silence on
 # CREATE and UPDATE, replacing the Kyverno policy in kyverno-policies-observability.
+#
+# The validating webhook enforces business rules on CREATE and UPDATE:
+# duplicate matchers, invalid regex patterns, unparseable valid-until annotations,
+# and valid-until values already in the past (CREATE only).
 #
 # Rules with an empty condition always apply (unconditional injection).
 # Rules with a non-empty condition are evaluated as CEL expressions against the
@@ -170,7 +176,19 @@ restartPolicy: Always
 #     annotations:
 #       observability.giantswarm.io/reviewed: "true"
 webhook:
+  # Master switch. Deploys the TLS certificate, Service, and volume mount.
+  # Set to true to enable either or both webhook types below.
   enabled: false
+
+  # mutating controls the CEL-based mutation webhook.
+  # Requires celRules to be non-empty to have any effect.
+  mutating:
+    enabled: true
+
+  # validating controls the validation webhook (duplicate matchers, regex
+  # validity, valid-until annotation format and expiry).
+  validating:
+    enabled: true
 
   celRules: []
 

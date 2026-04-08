@@ -217,12 +217,32 @@
         },
         "webhook": {
             "type": "object",
-            "description": "Mutating admission webhook for v1alpha2 Silences.",
+            "description": "Admission webhooks (mutating + validating) for v1alpha2 Silences.",
             "properties": {
                 "enabled": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Enable the mutating webhook."
+                    "description": "Master switch. Deploys TLS certificate, Service, and volume mount."
+                },
+                "mutating": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Deploy the MutatingWebhookConfiguration and pass CEL rules to the operator."
+                        }
+                    }
+                },
+                "validating": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true,
+                            "description": "Deploy the ValidatingWebhookConfiguration and enable the validation handler."
+                        }
+                    }
                 },
                 "celRules": {
                     "type": "array",
