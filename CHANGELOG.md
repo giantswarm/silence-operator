@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add mutating admission webhook for `v1alpha2` Silences that injects matchers, labels, and annotations on CREATE/UPDATE via configurable CEL rules, replacing the Kyverno policy in `kyverno-policies-observability`.
+  - Disabled by default. Enable with `webhook.enabled=true` and configure rules in `webhook.celRules`.
+  - Rules with an empty `condition` apply unconditionally (Kyverno parity); non-empty conditions are evaluated as CEL expressions against the incoming object.
+  - TLS: cert-manager (default, configurable issuer name and kind) or BYO TLS secret (`webhook.certManager.enabled: false` + `webhook.tlsSecretName` + `webhook.caBundle`).
+  - `webhook.failurePolicy` defaults to `Fail`, meaning the webhook being unavailable blocks all Silence CREATE/UPDATE. Use `Ignore` during initial rollout if availability is a concern.
+
 ## [0.20.1] - 2026-02-12
 
 ### Changed

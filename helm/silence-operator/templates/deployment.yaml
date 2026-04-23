@@ -44,9 +44,21 @@ spec:
       priorityClassName: {{ . }}
       {{- end }}
       restartPolicy: {{ .Values.restartPolicy }}
+      {{- if .Values.webhook.enabled }}
+      volumes:
+      - name: webhook-certs
+        secret:
+          secretName: {{ if .Values.webhook.certManager.enabled }}{{ template "silence-operator.name" . }}-webhook-tls{{ else }}{{ required "webhook.tlsSecretName is required when webhook.certManager.enabled is false" .Values.webhook.tlsSecretName }}{{ end }}
+      {{- end }}
       containers:
       - name: {{ template "silence-operator.name" . }}
         image: "{{ if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.name }}:{{ default .Chart.AppVersion .Values.image.tag }}"
+        {{- if .Values.webhook.enabled }}
+        volumeMounts:
+        - name: webhook-certs
+          mountPath: /certs
+          readOnly: true
+        {{- end }}
         args:
         - --leader-elect
         - --metrics-bind-address=:8080
@@ -73,6 +85,10 @@ spec:
         {{- if .Values.namespaceSelector }}
         - --namespace-selector={{ .Values.namespaceSelector }}
         {{- end }}
+        {{- if .Values.webhook.enabled }}
+        - --webhook-cert-path=/certs
+        - --webhook-cel-rules={{ .Values.webhook.celRules | toJson }}
+        {{- end }}
         livenessProbe:
           {{- with .Values.livenessProbe }}
           {{- toYaml . | nindent 10 }}
@@ -88,6 +104,11 @@ spec:
         - containerPort: 8081
           name: http-healthz
           protocol: TCP
+        {{- if .Values.webhook.enabled }}
+        - containerPort: 9443
+          name: webhook
+          protocol: TCP
+        {{- end }}
         resources: {{ toYaml .Values.resources | nindent 10 }}
         securityContext:
           {{- with .Values.containerSecurityContext }}

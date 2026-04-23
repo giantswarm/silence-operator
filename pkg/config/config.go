@@ -6,6 +6,60 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+// WebhookConfig holds configuration for the mutating admission webhook.
+// The webhook is active only when at least one CELRule is defined.
+type WebhookConfig struct {
+	// CELRules are conditional mutation rules evaluated using CEL expressions.
+	CELRules []CELRule `json:"celRules"`
+}
+
+// IsEnabled returns true when the webhook has at least one rule to enforce.
+func (w WebhookConfig) IsEnabled() bool {
+	return len(w.CELRules) > 0
+}
+
+// MatcherSpec describes a single Alertmanager matcher to inject into a Silence.
+type MatcherSpec struct {
+	Name      string `json:"name"`
+	Value     string `json:"value"`
+	MatchType string `json:"matchType"` // =, !=, =~, !~
+}
+
+// CELRule defines a conditional mutation applied when the CEL Condition evaluates to true.
+// The Condition expression receives an "object" variable containing the Silence as a JSON map.
+// An empty Condition always matches, making it equivalent to an unconditional forced rule.
+//
+// To replicate the kyverno-policies-observability Silence policy, use:
+//
+//	celRules:
+//	- name: exclude-heartbeat
+//	  condition: ""
+//	  matchers:
+//	  - name: alertname
+//	    value: Heartbeat
+//	    matchType: "!="
+//	- name: exclude-all-pipelines
+//	  condition: ""
+//	  matchers:
+//	  - name: all_pipelines
+//	    value: "true"
+//	    matchType: "!="
+type CELRule struct {
+	// Name is a human-readable identifier for the rule (used in log and error messages).
+	Name string `json:"name"`
+	// Condition is a CEL expression returning bool. Empty string means always apply.
+	// The "object" variable exposes the full Silence resource as a map, e.g.:
+	//   object.metadata.namespace == "production"
+	//   "team" in object.metadata.labels
+	Condition string `json:"condition"`
+	// Matchers to inject when Condition is true (idempotent — no duplicates).
+	Matchers []MatcherSpec `json:"matchers,omitempty"`
+	// Labels to set on the Silence when Condition is true.
+	Labels map[string]string `json:"labels,omitempty"`
+	// Annotations to set on the Silence when Condition is true.
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
 // Config struct holds all the configuration for the operator.
 type Config struct {
 	Address        string
