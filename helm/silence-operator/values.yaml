@@ -135,6 +135,68 @@ readinessProbe:
 # -- Restart policy for the pod (Always for single-instance reliability)
 restartPolicy: Always
 
+# Mutating webhook configuration.
+# The webhook applies CEL-based mutation rules to every v1alpha2 Silence on
+# CREATE and UPDATE, replacing the Kyverno policy in kyverno-policies-observability.
+#
+# Rules with an empty condition always apply (unconditional injection).
+# Rules with a non-empty condition are evaluated as CEL expressions against the
+# incoming Silence resource, available as the `object` variable.
+# Supported mutations per rule: matchers, labels, annotations.
+#
+# To replicate the kyverno-policies-observability Silence policy:
+#
+#   celRules:
+#   - name: exclude-heartbeat
+#     condition: ""
+#     matchers:
+#     - name: alertname
+#       value: Heartbeat
+#       matchType: "!="
+#   - name: exclude-all-pipelines
+#     condition: ""
+#     matchers:
+#     - name: all_pipelines
+#       value: "true"
+#       matchType: "!="
+#
+# More examples:
+#   - name: tag-production-silences
+#     condition: 'object.metadata.namespace == "production"'
+#     labels:
+#       observability.giantswarm.io/env: production
+#   - name: require-team-label
+#     condition: '"team" in object.metadata.labels'
+#     annotations:
+#       observability.giantswarm.io/reviewed: "true"
+webhook:
+  enabled: false
+
+  celRules: []
+
+  # failurePolicy controls what happens if the webhook is unreachable.
+  # "Fail" (default) blocks the request; "Ignore" lets it through.
+  failurePolicy: Fail
+
+  # certManager configures the cert-manager Certificate resource created for
+  # webhook TLS. Set enabled: false to bring your own TLS secret instead.
+  certManager:
+    enabled: true
+    # Name of the ClusterIssuer to use.
+    issuerName: selfsigned-giantswarm
+    # Kind of the issuer reference: ClusterIssuer or Issuer.
+    issuerKind: ClusterIssuer
+
+  # tlsSecretName is only used when certManager.enabled is false.
+  # The secret must exist in the operator namespace and contain tls.crt and tls.key.
+  tlsSecretName: ""
+
+  # caBundle is only used when certManager.enabled is false.
+  # Set to the base64-encoded PEM CA certificate that signed the webhook server TLS cert.
+  # Obtain it with: kubectl get secret <tlsSecretName> -o jsonpath='{.data.ca\.crt}'
+  # The API server uses this to verify the webhook's TLS connection.
+  caBundle: ""
+
 rbac:
   create: true
 

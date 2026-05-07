@@ -1,0 +1,18 @@
+{{- if and .Values.webhook.enabled .Values.webhook.certManager.enabled }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+  name: {{ template "silence-operator.name" . }}-webhook-cert
+  namespace: {{ template "silence-operator.namespace" . }}
+spec:
+  dnsNames:
+  - {{ template "silence-operator.name" . }}-webhook.{{ template "silence-operator.namespace" . }}.svc
+  - {{ template "silence-operator.name" . }}-webhook.{{ template "silence-operator.namespace" . }}.svc.cluster.local
+  issuerRef:
+    kind: {{ .Values.webhook.certManager.issuerKind | default "ClusterIssuer" }}
+    name: {{ .Values.webhook.certManager.issuerName }}
+  secretName: {{ template "silence-operator.name" . }}-webhook-tls
+{{- end }}
