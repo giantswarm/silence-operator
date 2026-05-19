@@ -76,6 +76,7 @@ func main() {
 	var silenceSelector string
 	var namespaceSelector string
 	var webhookCELRulesJSON string
+	var webhookValidatingEnabled bool
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -100,6 +101,8 @@ func main() {
 	flag.StringVar(&namespaceSelector, "namespace-selector", "", "Label selector to restrict which namespaces the v2 controller watches (e.g., 'environment=production'). If empty, all namespaces are watched.")
 	flag.StringVar(&webhookCELRulesJSON, "webhook-cel-rules", "[]",
 		"JSON array of CEL mutation rules applied to every Silence on CREATE/UPDATE. Each rule has: name, condition (CEL expr on 'object'; empty = always apply), matchers, labels, annotations. Webhook is disabled when this is an empty array.")
+	flag.BoolVar(&webhookValidatingEnabled, "webhook-validating-enabled", false,
+		"Enable the validating webhook for v1alpha2 Silences (duplicate matchers, regex validity, valid-until annotation).")
 	// Tenancy flags (not wired up yet - for future PRs)
 	flag.BoolVar(&cfg.TenancyEnabled, "tenancy-enabled", false, "Enable tenancy support for multi-tenant Alertmanager setups.")
 	flag.StringVar(&cfg.TenancyLabelKey, "tenancy-label-key", "observability.giantswarm.io/tenant", "Label key to extract tenant information from Silence resources.")
@@ -289,6 +292,15 @@ func main() {
 		setupLog.Info("mutating webhook registered", "celRules", len(webhookCfg.CELRules))
 	} else {
 		setupLog.Info("mutating webhook disabled (no CEL rules configured)")
+	}
+
+	if webhookValidatingEnabled {
+		validator := &observabilityv1alpha2.SilenceValidator{}
+		if err = validator.SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to register webhook", "webhook", "SilenceValidating")
+			os.Exit(1)
+		}
+		setupLog.Info("validating webhook registered")
 	}
 
 	if metricsCertWatcher != nil {
