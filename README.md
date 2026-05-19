@@ -10,7 +10,17 @@ The Silence Operator automates the management of [Alertmanager](https://github.c
 - Kubernetes 1.25+
 - Helm 3+
 
-## Get Helm Repository Info
+## Install
+
+You can now install the chart using either of the following methods:
+
+### Method 1: From OCI Registry (Recommended)
+
+```console
+helm install [RELEASE_NAME] oci://gsoci.azurecr.io/charts/giantswarm/silence-operator --version [VERSION]
+```
+
+### Method 2: From Helm Repository
 
 ```console
 helm repo add giantswarm https://giantswarm.github.io/control-plane-catalog/
@@ -18,8 +28,6 @@ helm repo update
 ```
 
 _See [`helm repo`](https://helm.sh/docs/helm/helm_repo/) for command documentation._
-
-## Install Helm Chart
 
 ```console
 helm install [RELEASE_NAME] giantswarm/silence-operator
@@ -36,15 +44,17 @@ helm install [RELEASE_NAME] giantswarm/silence-operator \\
 
 _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation._
 
+## CRDs
 
-CRDs are not created by this chart and should be manually deployed:
+CRDs are automatically created by this chart unless you set `install.crds: false` in its values.
+If you need to manually deploy or update the CRDs, use the following commands:
 
 ```console
 # For existing cluster-scoped silences (legacy)
-kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/monitoring.giantswarm.io_silences.yaml
+kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/refs/heads/main/config/crd/bases/monitoring.giantswarm.io_silences.yaml
 
 # For new namespace-scoped silences (recommended)
-kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/observability.giantswarm.io_silences.yaml
+kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/refs/heads/main/config/crd/bases/observability.giantswarm.io_silences.yaml
 ```
 
 **Note**: The operator supports both API versions for backward compatibility. New deployments should use the namespace-scoped `observability.giantswarm.io/v1alpha2` API. See [MIGRATION.md](MIGRATION.md) for migration guidance.
@@ -71,13 +81,21 @@ kubectl delete crd silences.observability.giantswarm.io
 
 ## Upgrading Chart
 
+### OCI Registry Upgrade (Recommended)
+
+```console
+helm upgrade [RELEASE_NAME] oci://gsoci.azurecr.io/charts/giantswarm/silence-operator --version [VERSION]
+```
+
+### Helm Repository Upgrade
+
 ```console
 helm upgrade [RELEASE_NAME] giantswarm/silence-operator
 ```
 
-CRDs should be manually updated:
+CRDs should be manually updated after upgrading:
 
-```
+```console
 # Update legacy cluster-scoped CRD (if using v1alpha1)
 kubectl apply --server-side -f https://raw.githubusercontent.com/giantswarm/silence-operator/main/config/crd/monitoring.giantswarm.io_silences.yaml
 
@@ -251,6 +269,92 @@ spec:
     - `"!="` - exact string non-match
     - `"=~"` - regex match
     - `"!~"` - regex non-match
+
+## Mimir Multi-Tenancy Configuration
+
+The silence-operator supports multi-tenant configurations for Mimir Alermanager, allowing different teams or environments to manage their own silences independently.
+
+### Tenancy Configuration
+
+Multi-tenancy can be enabled via Helm values or command-line flags:
+
+**Helm Configuration:**
+```yaml
+# Enable tenancy support
+tenancy:
+  enabled: true
+  labelKey: "observability.giantswarm.io/tenant"
+  defaultTenant: "default"
+
+# Legacy configuration (deprecated but supported)
+alertmanagerDefaultTenant: "legacy-tenant"
+```
+
+**Command-line Flags:**
+```bash
+--tenancy-enabled=true
+--tenancy-label-key="observability.giantswarm.io/tenant"
+--tenancy-default-tenant="default"
+
+# Legacy flag (deprecated but supported)
+--alertmanager-default-tenant-id="legacy-tenant"
+```
+
+### How Tenancy Works
+
+When tenancy is enabled, the operator:
+
+1. **Extracts tenant information** from the Silence resource using the configured label key
+2. **Uses tenant-specific Alertmanager clients** that include the `X-Scope-OrgID` header
+3. **Falls back to the default tenant** when no tenant label is found on the resource
+
+**Example with tenant label:**
+```yaml
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: team-alpha-silence
+  namespace: team-alpha
+  labels:
+    observability.giantswarm.io/tenant: "team-alpha"
+spec:
+  matchers:
+  - name: team
+    value: alpha
+    matchType: "="
+```
+
+**Example without tenant label (uses default tenant):**
+```yaml
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: shared-silence
+  namespace: monitoring
+spec:
+  matchers:
+  - name: severity
+    value: warning
+    matchType: "="
+```
+
+### Backward Compatibility
+
+The operator maintains full backward compatibility with existing configurations:
+
+- Setting `alertmanagerDefaultTenant` automatically enables tenancy and uses that value as the default tenant
+- Existing silences without tenant labels continue to work unchanged
+- The legacy `alertmanagerDefaultTenant` setting is preserved and mapped to the new tenancy configuration
+
+### Multi-Tenant Alertmanager Setup
+
+For proper multi-tenancy, your Mimir Alertmanager should be configured to support tenant-specific configurations. This typically involves:
+
+1. **Tenant-aware routing** based on the `X-Scope-OrgID` header
+2. **Separate silence storage** per tenant
+3. **Isolated notification configurations** per tenant
+
+Consult your Mimir Alertmanager documentation for specific multi-tenancy setup instructions.
 
 ## Architecture
 

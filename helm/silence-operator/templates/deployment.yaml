@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,12 +7,14 @@ metadata:
   name: {{ template "silence-operator.name" . }}
   namespace: {{ template "silence-operator.namespace" . }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
       {{- include "labels.selector" . | nindent 6 }}
+  {{- with .Values.strategy }}
   strategy:
-    type: Recreate
+    {{- toYaml . | trim | nindent 4 }}
+  {{- end }}
   template:
     metadata:
       labels:
@@ -43,14 +46,26 @@ spec:
       restartPolicy: {{ .Values.restartPolicy }}
       containers:
       - name: {{ template "silence-operator.name" . }}
-        image: "{{ .Values.image.registry }}/{{ .Values.image.name }}:{{ default .Chart.Version .Values.image.tag }}"
+        image: "{{ if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.name }}:{{ default .Chart.AppVersion .Values.image.tag }}"
         args:
         - --leader-elect
         - --metrics-bind-address=:8080
         - --alertmanager-address={{ .Values.alertmanagerAddress }}
         - --alertmanager-authentication={{ .Values.alertmanagerAuthentication }}
-        {{ with .Values.alertmanagerDefaultTenant }}
-        - --alertmanager-default-tenant-id={{ . }}
+        {{ if or .Values.tenancy.enabled .Values.alertmanagerDefaultTenant }}
+        - --tenancy-enabled=true
+        {{ if .Values.alertmanagerDefaultTenant }}
+        - --tenancy-default-tenant={{ .Values.alertmanagerDefaultTenant }}
+        {{ else }}
+        {{ with .Values.tenancy.defaultTenant}}
+        - --tenancy-default-tenant={{ . }}
+        {{ end }}
+        {{ with .Values.tenancy.labelKey }}
+        - --tenancy-label-key={{ . }}
+        {{ end }}
+        {{ end }}
+        {{ else }}
+        - --tenancy-enabled=false
         {{ end }}
         {{- if .Values.silenceSelector }}
         - --silence-selector={{ .Values.silenceSelector }}

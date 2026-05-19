@@ -1,5 +1,5 @@
 /*
-Copyright 2025.
+Copyright 2026.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,7 +30,9 @@ import (
 
 	observabilityv1alpha2 "github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/internal/controller/testutils"
+	"github.com/giantswarm/silence-operator/pkg/config"
 	"github.com/giantswarm/silence-operator/pkg/service"
+	"github.com/giantswarm/silence-operator/pkg/tenancy"
 )
 
 var _ = Describe("SilenceV2 Controller", func() {
@@ -91,10 +93,15 @@ var _ = Describe("SilenceV2 Controller", func() {
 			alertManager, err := mockServer.GetAlertmanager()
 			Expect(err).NotTo(HaveOccurred())
 
+			// Create tenancy helper with default config
+			cfg := config.Config{}
+			tenancyHelper := tenancy.NewHelper(cfg)
+
 			silenceService := service.NewSilenceService(alertManager)
 			controllerReconciler := NewSilenceV2Reconciler(
 				k8sClient,
 				silenceService,
+				tenancyHelper,
 			)
 
 			_, reconcileErr := controllerReconciler.Reconcile(ctx, reconcile.Request{
@@ -133,10 +140,15 @@ var _ = Describe("SilenceV2 Controller", func() {
 			alertManager, err2 := mockServer.GetAlertmanager()
 			Expect(err2).NotTo(HaveOccurred())
 
+			// Create tenancy helper with default config
+			cfg := config.Config{}
+			tenancyHelper := tenancy.NewHelper(cfg)
+
 			silenceService := service.NewSilenceService(alertManager)
 			controllerReconciler := NewSilenceV2Reconciler(
 				k8sClient,
 				silenceService,
+				tenancyHelper,
 			)
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
