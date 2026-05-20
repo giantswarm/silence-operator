@@ -2,9 +2,11 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/8960b8810d2fdb97543d84baa8b50ffa40da26a9/pkg/gen/input/workflows/internal/file/check_values_schema.yaml.template
+#    https://github.com/giantswarm/devctl/blob/87f30fd3b955a0daf6017834a776c222d93a207c/pkg/gen/input/workflows/internal/file/check_values_schema.yaml.template
 #
+
 name: 'Values and schema'
+
 on:
   pull_request:
     branches:
@@ -15,41 +17,10 @@ on:
       - 'helm/**/values.schema.json'  # schema
       - 'helm/**/ci/ci-values.yaml'   # overrides for CI (can contain required entries)
 
-  push: {}
+permissions: {}
 
 jobs:
   check:
-    name: 'validate values.yaml against values.schema.json'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          fetch-depth: 0
-
-      - name: Install validator
-        run: |
-          wget -q -O ${HOME}/yajsv https://github.com/neilpa/yajsv/releases/download/v1.4.1/yajsv.linux.amd64
-          chmod +x ${HOME}/yajsv
-
-      - name: 'Check if values.yaml is a valid instance of values.schema.json'
-        run: |
-          for chart_yaml in helm/*/Chart.yaml; do
-            helm_dir="${chart_yaml%/Chart.yaml}"
-
-            if [ ! -f ${helm_dir}/values.schema.json ]; then
-              echo "Skipping validation for '${helm_dir}' folder, because 'values.schema.json' does not exist..."
-              continue
-            fi
-
-            values=${helm_dir}/values.yaml
-            if [ -f ${helm_dir}/ci/ci-values.yaml ]; then
-              # merge ci-values.yaml into values.yaml (providing required values)
-              echo -e "\nMerged values:\n=============="
-              yq '. *= load("'${helm_dir}'/ci/ci-values.yaml")' ${helm_dir}/values.yaml | tee ${helm_dir}/combined-values.yaml
-              echo -e "\n==============\n"
-              values=${helm_dir}/combined-values.yaml
-            fi
-
-            ${HOME}/yajsv -s ${helm_dir}/values.schema.json ${values}
-          done
+    uses: giantswarm/github-workflows/.github/workflows/chart-values.yaml@main
+    permissions:
+      contents: read
