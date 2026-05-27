@@ -59,20 +59,18 @@ type SilenceSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	Matchers []SilenceMatcher `json:"matchers"`
 
-	// StartsAt defines when the silence becomes active. If not specified, defaults to the current time.
-	// This field takes precedence over creation timestamp when both are available.
+	// StartsAt defines when the silence becomes active. Defaults to the object's creation timestamp.
 	// +optional
 	StartsAt *metav1.Time `json:"startsAt,omitempty"`
 
-	// EndsAt defines when the silence expires. If not specified, Duration is used to calculate the end time.
-	// This field takes precedence over Duration and valid-until annotation when specified.
+	// EndsAt defines when the silence expires. Takes precedence over Duration and the valid-until annotation.
 	// +optional
 	EndsAt *metav1.Time `json:"endsAt,omitempty"`
 
-	// Duration defines how long the silence should be active from StartsAt (or creation time if StartsAt is not set).
-	// This field is ignored if EndsAt is specified. If neither EndsAt nor Duration is specified,
-	// the valid-until annotation is used, or defaults to 100 years (same as v1alpha1 for backward compatibility).
-	// Examples: "1h", "30m", "24h", "7d"
+	// Duration defines how long the silence is active from StartsAt (or creation time when StartsAt is unset).
+	// Ignored when EndsAt is set. When neither EndsAt nor Duration is set, the valid-until annotation is used,
+	// falling back to 100 years for backward compatibility with v1alpha1.
+	// Uses Go duration syntax: "1h", "30m", "24h", "168h".
 	// +optional
 	Duration *metav1.Duration `json:"duration,omitempty"`
 }

@@ -4,19 +4,6 @@ metadata:
   name: my-sample-silence
   namespace: default
 spec:
-  # Time management options (choose one approach):
-
-  # Option 1: Specify exact start and end times
-  # startsAt: "2025-07-15T14:30:00Z"
-  # endsAt: "2025-07-15T18:30:00Z"
-
-  # Option 2: Use duration from start time (or creation time if startsAt not specified)
-  duration: "4h"
-
-  # Option 3: For backward compatibility, use annotation (lowest priority)
-  # annotations:
-  #   valid-until: "2025-07-15T18:30:00Z"
-
   matchers:
   - name: alertname
     value: MyPagingAlert
@@ -24,14 +11,8 @@ spec:
   - name: alertname
     value: Heartbeat
     matchType: "!="
-  - name: severity
-    value: critical
-    matchType: "="
-  - name: instance
-    value: ".*prod.*"
-    matchType: "=~"  # Regex match
 ---
-# Example with explicit start and end times
+# Example: schedule an upcoming maintenance window with exact timestamps.
 apiVersion: observability.giantswarm.io/v1alpha2
 kind: Silence
 metadata:
@@ -48,7 +29,7 @@ spec:
     value: node-exporter
     matchType: "="
 ---
-# Example with duration-based silence
+# Example: silence active from creation for a fixed duration.
 apiVersion: observability.giantswarm.io/v1alpha2
 kind: Silence
 metadata:
