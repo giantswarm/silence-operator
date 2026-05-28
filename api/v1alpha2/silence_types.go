@@ -17,6 +17,11 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"regexp"
+	"strconv"
+	"time"
+
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -34,6 +39,29 @@ const (
 	// MatchRegexNotMatch matches alerts where the label value does not match the regex pattern
 	MatchRegexNotMatch MatchType = "!~"
 )
+
+// durationExtPattern matches a single N+unit token where unit is w or d.
+var durationExtPattern = regexp.MustCompile(`(\d+)([wd])`)
+
+// SilenceDuration is a duration string that extends Go's time.Duration syntax
+// with week (w) and day (d) units: "7d", "2w", "1d12h", "30m".
+// +kubebuilder:validation:Pattern=`^(\d+(w|d|h|m|s))+$`
+type SilenceDuration string
+
+// Duration parses the value into a time.Duration, expanding d→24h and w→168h.
+func (sd SilenceDuration) Duration() (time.Duration, error) {
+	expanded := durationExtPattern.ReplaceAllStringFunc(string(sd), func(m string) string {
+		parts := durationExtPattern.FindStringSubmatch(m)
+		n, _ := strconv.Atoi(parts[1])
+		multipliers := map[string]int{"d": 24, "w": 168}
+		return strconv.Itoa(n*multipliers[parts[2]]) + "h"
+	})
+	d, err := time.ParseDuration(expanded)
+	if err != nil {
+		return 0, errors.Errorf("invalid duration %q: %v", sd, err)
+	}
+	return d, nil
+}
 
 // SilenceMatcher defines an alert matcher to be muted by the Silence.
 type SilenceMatcher struct {
@@ -70,9 +98,9 @@ type SilenceSpec struct {
 	// Duration defines how long the silence is active from StartsAt (or creation time when StartsAt is unset).
 	// Ignored when EndsAt is set. When neither EndsAt nor Duration is set, the valid-until annotation is used,
 	// falling back to 100 years for backward compatibility with v1alpha1.
-	// Uses Go duration syntax: "1h", "30m", "24h", "168h".
+	// Supports weeks (w), days (d), hours (h), minutes (m), and seconds (s): "7d", "2w", "1d12h", "30m".
 	// +optional
-	Duration *metav1.Duration `json:"duration,omitempty"`
+	Duration *SilenceDuration `json:"duration,omitempty"`
 }
 
 // Silence is the Schema for the silences API.

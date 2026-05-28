@@ -370,7 +370,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 		It("should compute endsAt from startsAt + duration when endsAt is unset", func() {
 			now := time.Now()
 			startsAt := metav1.NewTime(now.Add(-30 * time.Minute))
-			duration := metav1.Duration{Duration: 3 * time.Hour}
+			duration := observabilityv1alpha2.SilenceDuration("3h")
 
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
@@ -395,11 +395,11 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			got := findSilenceByComment(listSilences(), comment)
 			Expect(got).NotTo(BeNil(), "silence %q not found in Alertmanager", comment)
 			Expect(got.StartsAt).To(BeTemporally("~", startsAt.Time, time.Second))
-			Expect(got.EndsAt).To(BeTemporally("~", startsAt.Time.Add(duration.Duration), time.Second))
+			Expect(got.EndsAt).To(BeTemporally("~", startsAt.Time.Add(3*time.Hour), time.Second))
 		})
 
 		It("should use creation timestamp as start when startsAt is unset", func() {
-			duration := metav1.Duration{Duration: 2 * time.Hour}
+			duration := observabilityv1alpha2.SilenceDuration("2h")
 
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
@@ -428,7 +428,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			got := findSilenceByComment(listSilences(), comment)
 			Expect(got).NotTo(BeNil(), "silence %q not found in Alertmanager", comment)
 			Expect(got.StartsAt).To(BeTemporally("~", createdAt, time.Second))
-			Expect(got.EndsAt).To(BeTemporally("~", createdAt.Add(duration.Duration), time.Second))
+			Expect(got.EndsAt).To(BeTemporally("~", createdAt.Add(2*time.Hour), time.Second))
 		})
 
 		It("should fall back to valid-until annotation when no spec time fields are set", func() {
@@ -464,7 +464,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 		It("should reject endsAt and duration set simultaneously", func() {
 			now := time.Now()
 			endsAt := metav1.NewTime(now.Add(2 * time.Hour))
-			duration := metav1.Duration{Duration: 3 * time.Hour}
+			duration := observabilityv1alpha2.SilenceDuration("3h")
 
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
@@ -488,7 +488,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 
 	Context("Matcher Types with CRDs", func() {
 		It("should convert all four match types correctly", func() {
-			duration := metav1.Duration{Duration: 1 * time.Hour}
+			duration := observabilityv1alpha2.SilenceDuration("1h")
 
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
@@ -524,7 +524,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 
 	Context("Finalizer Handling with CRDs", func() {
 		It("should add finalizer on create and remove it on delete", func() {
-			duration := metav1.Duration{Duration: 1 * time.Hour}
+			duration := observabilityv1alpha2.SilenceDuration("1h")
 
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{

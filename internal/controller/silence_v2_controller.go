@@ -237,7 +237,11 @@ func (r *SilenceV2Reconciler) calculateSilenceTimes(silence *v1alpha2.Silence) (
 	}
 
 	if silence.Spec.Duration != nil {
-		return startsAt, startsAt.Add(silence.Spec.Duration.Duration), nil
+		d, err := silence.Spec.Duration.Duration()
+		if err != nil {
+			return time.Time{}, time.Time{}, err
+		}
+		return startsAt, startsAt.Add(d), nil
 	}
 
 	// Fall back to valid-until annotation, then 100-year default.

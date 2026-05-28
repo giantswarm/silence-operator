@@ -29,7 +29,7 @@ spec:
     value: node-exporter
     matchType: "="
 ---
-# Example: silence active from creation for a fixed duration.
+# Example: silence active from creation for a fixed duration (hours and minutes).
 apiVersion: observability.giantswarm.io/v1alpha2
 kind: Silence
 metadata:
@@ -43,4 +43,17 @@ spec:
     matchType: "=~"
   - name: team
     value: platform
+    matchType: "="
+---
+# Example: silence active for one week using the week unit.
+apiVersion: observability.giantswarm.io/v1alpha2
+kind: Silence
+metadata:
+  name: week-long-silence
+  namespace: default
+spec:
+  duration: "1w"
+  matchers:
+  - name: alertname
+    value: KnownFlappingAlert
     matchType: "="

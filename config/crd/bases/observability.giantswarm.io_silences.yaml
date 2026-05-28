@@ -57,7 +57,8 @@ spec:
                   Duration defines how long the silence is active from StartsAt (or creation time when StartsAt is unset).
                   Ignored when EndsAt is set. When neither EndsAt nor Duration is set, the valid-until annotation is used,
                   falling back to 100 years for backward compatibility with v1alpha1.
-                  Uses Go duration syntax: "1h", "30m", "24h", "168h".
+                  Supports weeks (w), days (d), hours (h), minutes (m), and seconds (s): "7d", "2w", "1d12h", "30m".
+                pattern: ^(\d+(w|d|h|m|s))+$
                 type: string
               endsAt:
                 description: EndsAt defines when the silence expires. Takes precedence
