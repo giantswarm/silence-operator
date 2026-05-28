@@ -175,9 +175,6 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 	return newSilence, nil
 }
 
-// convertMatchers converts v1alpha2.SilenceMatcher values to alertmanager.Matcher values.
-// Alertmanager represents match semantics as two booleans (isRegex, isEqual) rather than
-// a MatchType enum; this function performs that translation.
 func convertMatchers(silenceMatchers []v1alpha2.SilenceMatcher) ([]alertmanager.Matcher, error) {
 	var matchers []alertmanager.Matcher
 	for _, matcher := range silenceMatchers {
@@ -219,16 +216,15 @@ func convertMatchers(silenceMatchers []v1alpha2.SilenceMatcher) ([]alertmanager.
 // calculateSilenceTimes resolves start and end times using the following priority chain:
 //  1. spec.startsAt / spec.endsAt (explicit timestamps)
 //  2. spec.startsAt + spec.duration
-//  3. spec.startsAt + valid-until annotation (migration path from pre-v1alpha2)
-//  4. creation timestamp + 100-year default (v1alpha1 backward compatibility)
+//  3. creationTimestamp + valid-until annotation (migration path from v1alpha1)
+//  4. creationTimestamp + 100-year default (v1alpha1 backward compatibility)
 func (r *SilenceV2Reconciler) calculateSilenceTimes(silence *v1alpha2.Silence) (startsAt, endsAt time.Time, err error) {
 	if silence.Spec.StartsAt != nil {
 		startsAt = silence.Spec.StartsAt.Time
 	} else {
-		// The API server always sets creationTimestamp; the zero guard is a safety net.
 		startsAt = silence.GetCreationTimestamp().Time
 		if startsAt.IsZero() {
-			startsAt = time.Now()
+			return time.Time{}, time.Time{}, errors.New("creationTimestamp is zero")
 		}
 	}
 

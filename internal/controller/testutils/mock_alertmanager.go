@@ -123,11 +123,8 @@ func (m *MockAlertmanagerServer) handleCreateSilence(w http.ResponseWriter, r *h
 		silence.ID = "mock-id-" + silence.Comment
 	}
 
-	// Set status if not provided (to match real Alertmanager behavior)
 	if silence.Status == nil {
-		silence.Status = &alertmanager.Status{
-			State: "active", // Real Alertmanager sets this to "active" for new silences
-		}
+		silence.Status = &alertmanager.Status{State: "active"}
 	}
 
 	m.silences[silence.ID] = &silence

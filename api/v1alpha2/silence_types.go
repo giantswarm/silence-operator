@@ -17,11 +17,11 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -40,8 +40,8 @@ const (
 	MatchRegexNotMatch MatchType = "!~"
 )
 
-// durationExtPattern matches a single N+unit token where unit is w or d.
 var durationExtPattern = regexp.MustCompile(`(\d+)([wd])`)
+var durationMultipliers = map[string]int{"d": 24, "w": 168}
 
 // SilenceDuration is a duration string that extends Go's time.Duration syntax
 // with week (w) and day (d) units: "7d", "2w", "1d12h", "30m".
@@ -53,12 +53,11 @@ func (sd SilenceDuration) Duration() (time.Duration, error) {
 	expanded := durationExtPattern.ReplaceAllStringFunc(string(sd), func(m string) string {
 		parts := durationExtPattern.FindStringSubmatch(m)
 		n, _ := strconv.Atoi(parts[1])
-		multipliers := map[string]int{"d": 24, "w": 168}
-		return strconv.Itoa(n*multipliers[parts[2]]) + "h"
+		return strconv.Itoa(n*durationMultipliers[parts[2]]) + "h"
 	})
 	d, err := time.ParseDuration(expanded)
 	if err != nil {
-		return 0, errors.Errorf("invalid duration %q: %v", sd, err)
+		return 0, fmt.Errorf("invalid duration %q: %v", sd, err)
 	}
 	return d, nil
 }
