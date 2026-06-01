@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - TLS: cert-manager (default, configurable issuer name and kind) or BYO TLS secret (`webhook.certManager.enabled: false` + `webhook.tlsSecretName` + `webhook.caBundle`).
   - `webhook.failurePolicy` defaults to `Fail`, meaning the webhook being unavailable blocks all Silence CREATE/UPDATE. Use `Ignore` during initial rollout if availability is a concern.
 
+### Changed
+
+- Regenerate `.github/workflows/zz_generated.*.yaml` via devctl to use the centralized reusable workflow, removing the Node-20 `mindsers/changelog-reader-action` dependency.
+
 ## [0.20.1] - 2026-02-12
 
 ### Changed
