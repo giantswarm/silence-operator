@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add validating admission webhook for `v1alpha2` Silences that enforces business rules not expressible in OpenAPI schema: no duplicate matchers, valid regular expressions for `=~`/`!~` matchers, parseable `valid-until` annotation, and non-past expiry on CREATE. Enabled automatically when `webhook.enabled=true`.
 - Add mutating admission webhook for `v1alpha2` Silences that injects matchers, labels, and annotations on CREATE/UPDATE via configurable CEL rules, replacing the Kyverno policy in `kyverno-policies-observability`.
   - Disabled by default. Enable with `webhook.enabled=true` and configure rules in `webhook.celRules`.
   - Rules with an empty `condition` apply unconditionally (Kyverno parity); non-empty conditions are evaluated as CEL expressions against the incoming object.

@@ -15,6 +15,11 @@ spec:
   - ports:
     - port: http
       protocol: TCP
+  {{- if .Values.webhook.enabled }}
+  - ports:
+    - port: 9443
+      protocol: TCP
+  {{- end }}
   egress:
   - {}
   policyTypes:

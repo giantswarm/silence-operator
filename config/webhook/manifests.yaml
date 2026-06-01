@@ -24,3 +24,29 @@ webhooks:
     resources:
     - silences
   sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-observability-giantswarm-io-v1alpha2-silence
+  failurePolicy: Fail
+  name: vsilence.observability.giantswarm.io
+  rules:
+  - apiGroups:
+    - observability.giantswarm.io
+    apiVersions:
+    - v1alpha2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - silences
+  sideEffects: None
