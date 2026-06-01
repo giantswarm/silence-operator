@@ -200,11 +200,13 @@ var _ = Describe("SilenceV2 Controller", func() {
 				{"", false, true, "empty/default should be exact match"},
 			}
 
+			now := metav1.Now()
 			for _, tc := range testCases {
 				silence := &observabilityv1alpha2.Silence{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-silence",
-						Namespace: "default",
+						Name:              "test-silence",
+						Namespace:         "default",
+						CreationTimestamp: now,
 					},
 					Spec: observabilityv1alpha2.SilenceSpec{
 						Matchers: []observabilityv1alpha2.SilenceMatcher{
