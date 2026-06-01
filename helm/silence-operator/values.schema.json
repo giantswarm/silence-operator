@@ -11,6 +11,9 @@
         "alertmanagerDefaultTenant": {
             "type": "string"
         },
+        "replicas": {
+            "type": "integer"
+        },
         "tenancy": {
             "type": "object",
             "description": "Multi-tenancy configuration for Alertmanager",
@@ -119,6 +122,14 @@
                             "type": "string"
                         }
                     }
+                }
+            }
+        },
+        "podMonitor": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
                 }
             }
         },

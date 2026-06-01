@@ -11,6 +11,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `startsAt`, `endsAt`, and `duration` fields to the v1alpha2 Silence CRD for explicit silence scheduling. `duration` accepts weeks (`w`), days (`d`), hours (`h`), minutes (`m`), and seconds (`s`): `"7d"`, `"2w"`, `"1d12h"`. `endsAt` and `duration` are mutually exclusive. When neither is set, the `valid-until` annotation is used as a fallback.
 
+### Changed
+
+- Regenerate `.github/workflows/zz_generated.*.yaml` via devctl to use the centralized reusable workflow, removing the Node-20 `mindsers/changelog-reader-action` dependency.
+
+## [0.20.1] - 2026-02-12
+
+### Changed
+
+- Use `Chart.AppVersion` instead of `Chart.Version` for Kubernetes labels to support Flux OCI automatic upgrades.
+- Update team annotation to OpenContainers format (`io.giantswarm.application.team`).
+
+## [0.20.0] - 2025-11-05
+
+### Added
+
+- [Helm] Ability to specify deployment (rollout) strategy and switch from 'Recreate' to 'RollingUpdate' by default.
+
+## [0.19.0] - 2025-09-17
+
+### Added
+
+- [Helm] Ability to opt out of the PodMonitor CR.
+- [Helm] Ability to use more than 1 replica.
+
 ## [0.18.0] - 2025-07-15
 
 ### Added
@@ -336,7 +360,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.20.1...HEAD
+[0.20.1]: https://github.com/giantswarm/silence-operator/compare/v0.20.0...v0.20.1
+[0.20.0]: https://github.com/giantswarm/silence-operator/compare/v0.19.0...v0.20.0
+[0.19.0]: https://github.com/giantswarm/silence-operator/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/giantswarm/silence-operator/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/giantswarm/silence-operator/compare/v0.16.1...v0.17.0
 [0.16.1]: https://github.com/giantswarm/silence-operator/compare/v0.16.0...v0.16.1

@@ -15,6 +15,13 @@ image:
   name: "giantswarm/silence-operator"
   tag: ""
 
+# Deployment replicas
+replicas: 1
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+
 # TODO improve this for better user experience
 alertmanagerAddress: ""
 alertmanagerAuthentication: false
@@ -47,6 +54,11 @@ podSecurityContext:
   runAsUser: 65534
   seccompProfile:
     type: RuntimeDefault
+
+# Configures PodMonitor for silence-operator
+podMonitor:
+  # Whether to enable the PodMonitor CR
+  enabled: true
 
 # -- Configures the container security context
 containerSecurityContext:
