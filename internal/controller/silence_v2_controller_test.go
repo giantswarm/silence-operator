@@ -273,4 +273,100 @@ var _ = Describe("SilenceV2 Controller", func() {
 			Expect(namespaceSelectorLabels.String()).To(Equal("environment=production"))
 		})
 	})
+
+	// ---------------------------------------------------------------------------
+	// Webhook integration: verify that CEL rules injected by SilenceDefaulter
+	// are preserved through the full reconciliation cycle and reach Alertmanager.
+	// This simulates the admission webhook's effect without running a live webhook
+	// server (full envtest webhook testing requires certificate infrastructure).
+	// ---------------------------------------------------------------------------
+	Context("When reconciling a Silence mutated by the webhook defaulter", func() {
+		var (
+			mockServer *testutils.MockAlertmanagerServer
+			ctx        = context.Background()
+		)
+
+		BeforeEach(func() {
+			mockServer = testutils.NewMockAlertmanagerServer()
+		})
+
+		AfterEach(func() {
+			mockServer.Close()
+		})
+
+		It("should sync injected matchers to Alertmanager", func() {
+			alertManager, err := mockServer.GetAlertmanager()
+			Expect(err).NotTo(HaveOccurred())
+
+			silenceService := service.NewSilenceService(alertManager)
+			reconciler := NewSilenceV2Reconciler(k8sClient, silenceService, tenancy.NewHelper(config.Config{}))
+
+			resourceName := "webhook-mutated-silence"
+			namespacedName := types.NamespacedName{Name: resourceName, Namespace: "default"}
+
+			By("Creating a Silence already mutated by the webhook (two matchers)")
+			// Simulate what the webhook injects: user provided one matcher, the
+			// defaulter added the Heartbeat exclusion via empty-condition CEL rule.
+			mutated := &observabilityv1alpha2.Silence{
+				ObjectMeta: metav1.ObjectMeta{Name: resourceName, Namespace: "default"},
+				Spec: observabilityv1alpha2.SilenceSpec{
+					Matchers: []observabilityv1alpha2.SilenceMatcher{
+						{Name: "alertname", Value: "HighCPU", MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: "alertname", Value: "Heartbeat", MatchType: observabilityv1alpha2.MatchNotEqual},
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, mutated)).To(Succeed())
+			DeferCleanup(func() { _ = k8sClient.Delete(ctx, mutated) })
+
+			By("Reconciling twice (first adds finalizer, second syncs to Alertmanager)")
+			_, err = reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: namespacedName})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: namespacedName})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Verifying Alertmanager received both user and injected matchers")
+			silences, err := alertManager.ListSilences("")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(silences).To(HaveLen(1))
+
+			matcherPairs := make([]string, 0, len(silences[0].Matchers))
+			for _, m := range silences[0].Matchers {
+				matcherPairs = append(matcherPairs, m.Name+"="+m.Value)
+			}
+			Expect(matcherPairs).To(ContainElements("alertname=HighCPU", "alertname=Heartbeat"))
+		})
+
+		It("should verify SilenceDefaulter injects matchers before reconcile", func() {
+			By("Creating a defaulter with an always-apply CEL rule")
+			defaulter, err := observabilityv1alpha2.NewSilenceDefaulter(config.WebhookConfig{
+				CELRules: []config.CELRule{
+					{
+						Name:      "exclude-heartbeat",
+						Condition: "",
+						Matchers:  []config.MatcherSpec{{Name: "alertname", Value: "Heartbeat", MatchType: "!="}},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Applying the defaulter to a Silence (simulating admission)")
+			silence := &observabilityv1alpha2.Silence{
+				Spec: observabilityv1alpha2.SilenceSpec{
+					Matchers: []observabilityv1alpha2.SilenceMatcher{
+						{Name: "alertname", Value: "HighCPU", MatchType: observabilityv1alpha2.MatchEqual},
+					},
+				},
+			}
+			Expect(defaulter.Default(ctx, silence)).To(Succeed())
+
+			By("Verifying the Heartbeat exclusion matcher was injected")
+			Expect(silence.Spec.Matchers).To(HaveLen(2))
+			Expect(silence.Spec.Matchers).To(ContainElement(observabilityv1alpha2.SilenceMatcher{
+				Name:      "alertname",
+				Value:     "Heartbeat",
+				MatchType: observabilityv1alpha2.MatchNotEqual,
+			}))
+		})
+	})
 })
