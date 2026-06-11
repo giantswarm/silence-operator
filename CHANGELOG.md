@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Regenerate `.github/workflows/zz_generated.*.yaml` via devctl to use the centralized reusable workflow, removing the Node-20 `mindsers/changelog-reader-action` dependency.
 
+### Fixed
+
+- Fix various CVEs by updating dependencies:
+
 ## [0.20.1] - 2026-02-12
 
 ### Changed
