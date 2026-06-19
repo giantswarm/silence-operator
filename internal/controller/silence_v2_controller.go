@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -153,12 +154,32 @@ func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1al
 
 // getSilenceFromCR converts a v1alpha2.Silence to alertmanager.Silence
 func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*alertmanager.Silence, error) {
+	matchers, err := convertMatchers(silence.Spec.Matchers)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	startsAt, endsAt, err := r.calculateSilenceTimes(silence)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	newSilence := &alertmanager.Silence{
+		Comment:   alertmanager.SilenceComment(silence),
+		CreatedBy: alertmanager.CreatedBy,
+		StartsAt:  startsAt,
+		EndsAt:    endsAt,
+		Matchers:  matchers,
+	}
+
+	return newSilence, nil
+}
+
+func convertMatchers(silenceMatchers []v1alpha2.SilenceMatcher) ([]alertmanager.Matcher, error) {
 	var matchers []alertmanager.Matcher
-	for _, matcher := range silence.Spec.Matchers {
-		// Convert MatchType enum to boolean fields for alertmanager compatibility
+	for _, matcher := range silenceMatchers {
 		var isRegex, isEqual bool
 
-		// Default to exact match if MatchType is not specified
 		matchType := matcher.MatchType
 		if matchType == "" {
 			matchType = v1alpha2.MatchEqual
@@ -177,6 +198,8 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 		case v1alpha2.MatchRegexNotMatch:
 			isRegex = true
 			isEqual = false
+		default:
+			return nil, errors.Errorf("unsupported match type: %s", matchType)
 		}
 
 		matchers = append(matchers, alertmanager.Matcher{
@@ -187,20 +210,42 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 		})
 	}
 
-	endsAt, err := alertmanager.SilenceEndsAt(silence)
+	return matchers, nil
+}
+
+// calculateSilenceTimes resolves start and end times using the following priority chain:
+//  1. spec.startsAt / spec.endsAt (explicit timestamps)
+//  2. spec.startsAt + spec.duration
+//  3. creationTimestamp + valid-until annotation (migration path from v1alpha1)
+//  4. creationTimestamp + 100-year default (v1alpha1 backward compatibility)
+func (r *SilenceV2Reconciler) calculateSilenceTimes(silence *v1alpha2.Silence) (startsAt, endsAt time.Time, err error) {
+	if silence.Spec.StartsAt != nil {
+		startsAt = silence.Spec.StartsAt.Time
+	} else {
+		startsAt = silence.GetCreationTimestamp().Time
+		if startsAt.IsZero() {
+			return time.Time{}, time.Time{}, errors.New("creationTimestamp is zero")
+		}
+	}
+
+	if silence.Spec.EndsAt != nil {
+		return startsAt, silence.Spec.EndsAt.Time, nil
+	}
+
+	if silence.Spec.Duration != nil {
+		d, err := silence.Spec.Duration.Duration()
+		if err != nil {
+			return time.Time{}, time.Time{}, err
+		}
+		return startsAt, startsAt.Add(d), nil
+	}
+
+	// Fall back to valid-until annotation, then 100-year default.
+	endsAt, err = alertmanager.SilenceEndsAt(silence)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return time.Time{}, time.Time{}, errors.WithStack(err)
 	}
-
-	newSilence := &alertmanager.Silence{
-		Comment:   alertmanager.SilenceComment(silence),
-		CreatedBy: alertmanager.CreatedBy,
-		StartsAt:  silence.GetCreationTimestamp().Time,
-		EndsAt:    endsAt,
-		Matchers:  matchers,
-	}
-
-	return newSilence, nil
+	return startsAt, endsAt, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

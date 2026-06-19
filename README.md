@@ -175,6 +175,7 @@ If you're currently using the cluster-scoped `monitoring.giantswarm.io/v1alpha1`
 - **Namespace-scoped**: Silences are scoped to specific namespaces instead of cluster-wide
 - **New API group**: Uses `observability.giantswarm.io` instead of `monitoring.giantswarm.io`
 - **Simplified matcher syntax**: Uses enum-based `matchType` field (`=`, `!=`, `=~`, `!~`) instead of boolean `isRegex`/`isEqual` fields
+- **Scheduling fields**: `startsAt`, `endsAt`, and `duration` allow explicit silence windows; `duration` supports `w`/`d`/`h`/`m`/`s` units
 - **Streamlined spec**: Removes legacy fields (`targetTags`, `owner`, `issue_url`, `postmortem_url`) for a cleaner API surface
 - **Enhanced validation**: Includes stricter field validation and length limits for better error handling
 
@@ -269,6 +270,41 @@ spec:
     - `"!="` - exact string non-match
     - `"=~"` - regex match
     - `"!~"` - regex non-match
+
+### Silence Scheduling (v1alpha2)
+
+v1alpha2 silences support three ways to control when a silence is active:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `startsAt` | RFC 3339 timestamp | When the silence becomes active. Defaults to the object's creation time. |
+| `endsAt` | RFC 3339 timestamp | When the silence expires. Takes precedence over `duration`. |
+| `duration` | duration string | How long the silence is active from `startsAt`. Mutually exclusive with `endsAt`. |
+
+`duration` accepts weeks (`w`), days (`d`), hours (`h`), minutes (`m`), and seconds (`s`), and units can be combined: `"7d"`, `"2w"`, `"1d12h"`, `"30m"`.
+
+When neither `endsAt` nor `duration` is set, the operator falls back to the `valid-until` annotation (migration path from v1alpha1), then to a 100-year default.
+
+**Examples:**
+
+```yaml
+# Fixed window: explicit start and end timestamps
+spec:
+  startsAt: "2025-07-16T02:00:00Z"
+  endsAt: "2025-07-16T06:00:00Z"
+  matchers: [...]
+
+# Rolling window: active for one week from creation
+spec:
+  duration: "1w"
+  matchers: [...]
+
+# Combination: explicit start, relative end
+spec:
+  startsAt: "2025-07-16T02:00:00Z"
+  duration: "1d12h"
+  matchers: [...]
+```
 
 ## Mimir Multi-Tenancy Configuration
 

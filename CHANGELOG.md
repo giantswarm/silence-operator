@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `startsAt`, `endsAt`, and `duration` fields to the v1alpha2 Silence CRD for explicit silence scheduling. `duration` accepts weeks (`w`), days (`d`), hours (`h`), minutes (`m`), and seconds (`s`): `"7d"`, `"2w"`, `"1d12h"`. `endsAt` and `duration` are mutually exclusive. When neither is set, the `valid-until` annotation is used as a fallback.
+
 ### Changed
 
 - Regenerate `.github/workflows/zz_generated.*.yaml` via devctl to use the centralized reusable workflow, removing the Node-20 `mindsers/changelog-reader-action` dependency.
