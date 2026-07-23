@@ -21,6 +21,9 @@ spec:
         {{- include "labels.common" . | nindent 8 }}
       annotations:
         releaseRevision: {{ .Release.Revision | quote }}
+        {{- if .Values.namespaceEnforcement.rules }}
+        checksum/namespace-enforcement: {{ include (print $.Template.BasePath "/namespace-enforcement-configmap.yaml") . | sha256sum }}
+        {{- end }}
     spec:
       {{- if or .Values.affinity .Values.nodeAffinity }}
       affinity:
@@ -73,6 +76,9 @@ spec:
         {{- if .Values.namespaceSelector }}
         - --namespace-selector={{ .Values.namespaceSelector }}
         {{- end }}
+        {{- if .Values.namespaceEnforcement.rules }}
+        - --namespace-enforcement-config=/etc/silence-operator/namespace-enforcement.yaml
+        {{- end }}
         livenessProbe:
           {{- with .Values.livenessProbe }}
           {{- toYaml . | nindent 10 }}
@@ -93,8 +99,20 @@ spec:
           {{- with .Values.containerSecurityContext }}
             {{- . | toYaml | nindent 10 }}
           {{- end }}
+        {{- if .Values.namespaceEnforcement.rules }}
+        volumeMounts:
+        - name: namespace-enforcement
+          mountPath: /etc/silence-operator
+          readOnly: true
+        {{- end }}
       securityContext:
         {{- with .Values.podSecurityContext }}
           {{- . | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ template "silence-operator.name" . }}
+      {{- if .Values.namespaceEnforcement.rules }}
+      volumes:
+      - name: namespace-enforcement
+        configMap:
+          name: {{ template "silence-operator.name" . }}-namespace-enforcement
+      {{- end }}

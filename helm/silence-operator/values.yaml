@@ -48,6 +48,34 @@ silenceSelector: ""
 # Example: 'environment=production' or 'team=platform,tier=monitoring'
 namespaceSelector: ""
 
+# Namespace-scoped silence enforcement (v1alpha2 API only).
+# When one or more rules are configured, a Silence created in a namespace that
+# matches a rule's namespaceSelector gets an authoritative
+# "<matcherLabel>=<namespace>" matcher (plus any custom matchers from the rule)
+# injected into the Alertmanager silence, so it can only mute alerts from its
+# own namespace. If rules is empty, no enforcement is applied.
+namespaceEnforcement:
+  # Label used for the injected namespace matcher. Defaults to "namespace".
+  matcherLabel: "namespace"
+  # Rules are evaluated top-to-bottom; the first rule whose namespaceSelector
+  # matches a namespace wins (first-match-wins). An empty namespaceSelector ({})
+  # matches ALL namespaces.
+  rules: []
+  # Example:
+  # rules:
+  #   - namespaceSelector:
+  #       matchLabels:
+  #         tenant-isolation: "enabled"
+  #   - namespaceSelector:
+  #       matchExpressions:
+  #         - key: team
+  #           operator: In
+  #           values: [platform]
+  #     matchers:
+  #       - name: cluster_id
+  #         value: prod
+  #         matchType: "="
+
 # -- Configures the pod security context
 podSecurityContext:
   runAsNonRoot: true

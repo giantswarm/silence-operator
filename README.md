@@ -141,6 +141,48 @@ namespaceSelector: "environment=production"
 
 **Note:** The namespace selector provides an additional layer of filtering for the v2 controller, allowing you to restrict monitoring to specific namespace subsets. The v1 controller continues to process all cluster-scoped v1alpha1 resources regardless of this setting.
 
+### Namespace-Scoped Silence Enforcement
+
+By default, a `Silence` created in one namespace can mute alerts belonging to _any_ namespace, since the silence is just a set of Alertmanager matchers. Namespace-scoped enforcement provides lightweight multi-tenancy: when enabled, the operator injects an authoritative `namespace="<namespace>"` matcher into every silence created in a matching namespace, so it can only ever mute alerts carrying that namespace label.
+
+This applies **only** to the namespace-scoped `observability.giantswarm.io/v1alpha2` API.
+
+```yaml
+# values.yaml
+namespaceEnforcement:
+  # Label used for the injected namespace matcher (default: "namespace").
+  matcherLabel: "namespace"
+  # Rules are evaluated top-to-bottom; the first matching rule wins.
+  rules:
+    # Enforce namespace scoping for any namespace labeled tenant-isolation=enabled.
+    - namespaceSelector:
+        matchLabels:
+          tenant-isolation: "enabled"
+    # For platform-team namespaces, also pin a cluster_id matcher.
+    - namespaceSelector:
+        matchExpressions:
+          - key: team
+            operator: In
+            values: [platform]
+      matchers:
+        - name: cluster_id
+          value: prod
+          matchType: "="   # one of =, !=, =~, !~ (default "=")
+```
+
+**How it works:**
+
+- A namespace is enforced if its labels match **any** rule's `namespaceSelector` (OR across rules). If `rules` is empty, no enforcement is applied — this is the default.
+- Rules are evaluated **top-to-bottom, first-match-wins**: a namespace matching multiple rules gets only the first matching rule's custom matchers (plus the namespace matcher). Order your rules accordingly.
+- Enforcement is **authoritative**: if a user already specified a matcher on the enforced label (e.g. `namespace` or `cluster_id`), the operator's value overrides it, a warning is logged, and a `MatcherOverridden` Kubernetes Event is emitted on the `Silence` resource.
+- An **empty** `namespaceSelector` (`{}`) matches **all** namespaces (standard Kubernetes semantics). This is the way to enforce everywhere, but beware of accidentally leaving a selector empty — the operator logs a startup warning for any match-all rule.
+
+**Caveats:**
+
+- Alerts that carry **no** `namespace` label (e.g. node- or cluster-level alerts) can no longer be silenced from an enforced namespace, since the injected equality matcher will never match them. This is usually the desired isolation behavior.
+- Enforcement is evaluated at **`Silence` reconcile time**. If a namespace's labels change so that it starts or stops matching a rule, existing `Silence` resources in that namespace are not re-evaluated until they themselves change (are updated or re-reconciled). Enforcement is therefore eventually consistent with respect to namespace label changes.
+- This feature is orthogonal to [Mimir multi-tenancy](#mimir-multi-tenancy-configuration): the former scopes _which alerts a silence can match_ by namespace, the latter routes silences to different Alertmanager tenants. They can be used together.
+
 ### Complete Configuration Example
 
 ```yaml
