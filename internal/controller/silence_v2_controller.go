@@ -199,12 +199,13 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 	return newSilence, nil
 }
 
-// applyEnforcement injects the enforced namespace matcher (and any custom
-// matchers from the first matching rule) into the Alertmanager silence when the
-// silence's namespace matches an enforcement rule. It is a no-op when no
-// enforcer is configured. When enforcement overrides a user-supplied matcher, a
-// warning is logged and a Kubernetes Event is emitted on the Silence so the
-// owner can see why the silence was modified.
+// applyEnforcement injects the first matching rule's enforced matchers (and,
+// when a namespaceMatcherLabel is configured, an authoritative namespace
+// matcher) into the Alertmanager silence when the silence's namespace matches an
+// enforcement rule. It is a no-op when no enforcer is configured. When
+// enforcement overrides a user-supplied matcher, a warning is logged and a
+// Kubernetes Event is emitted on the Silence so the owner can see why the
+// silence was modified.
 func (r *SilenceV2Reconciler) applyEnforcement(ctx context.Context, silence *v1alpha2.Silence, alertmanagerSilence *alertmanager.Silence) error {
 	if r.enforcer == nil {
 		return nil
@@ -225,11 +226,11 @@ func (r *SilenceV2Reconciler) applyEnforcement(ctx context.Context, silence *v1a
 
 	replaced := enforce.ApplyEnforcedMatchers(alertmanagerSilence, enforced)
 	if len(replaced) > 0 {
-		logger.Info("Namespace enforcement overrode user-supplied matchers",
+		logger.Info("Enforcement overrode user-supplied matchers",
 			"namespace", silence.Namespace, "name", silence.Name, "overriddenMatchers", replaced)
 		if r.recorder != nil {
 			r.recorder.Eventf(silence, corev1.EventTypeWarning, "MatcherOverridden",
-				"Namespace enforcement overrode matcher(s) %v with namespace-scoped values", replaced)
+				"Enforcement overrode matcher(s) %v with enforced values", replaced)
 		}
 	}
 

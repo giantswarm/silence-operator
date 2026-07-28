@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package enforce implements namespace-scoped silence enforcement. When one or
-// more rules are configured, a Silence created in a namespace matching a rule's
-// namespaceSelector gets an authoritative "namespace=<namespace>" matcher (plus
-// any custom matchers from the rule) injected into the Alertmanager silence, so
-// that it can only ever mute alerts belonging to its own namespace.
+// Package enforce implements enforced-matcher injection for silences. When one
+// or more rules are configured, a Silence created in a namespace matching a
+// rule's namespaceSelector gets that rule's matchers injected into the
+// Alertmanager silence. Optionally, when a namespaceMatcherLabel is configured,
+// an authoritative "<namespaceMatcherLabel>=<namespace>" matcher is also
+// injected so the silence can only mute alerts belonging to its own namespace.
 package enforce
 
 import (
@@ -32,18 +33,16 @@ import (
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 )
 
-// DefaultMatcherLabel is the matcher label used for the injected namespace
-// matcher when the config does not override it.
-const DefaultMatcherLabel = "namespace"
-
 // FileConfig is the on-disk (YAML) representation of the enforcement config.
 // JSON tags are used because it is parsed via sigs.k8s.io/yaml, which converts
 // YAML to JSON so that Kubernetes types (e.g. metav1.LabelSelector) deserialize
 // exactly as they would in a manifest.
 type FileConfig struct {
-	// MatcherLabel is the label used for the injected namespace matcher.
-	// Defaults to "namespace" when empty.
-	MatcherLabel string `json:"matcherLabel,omitempty"`
+	// NamespaceMatcherLabel, when non-empty, is the label used for an
+	// authoritative "<label>=<namespace>" matcher injected into every silence
+	// in a matching namespace. When empty (the default), no namespace matcher
+	// is added and only each rule's own matchers are injected.
+	NamespaceMatcherLabel string `json:"namespaceMatcherLabel,omitempty"`
 	// Rules are evaluated top-to-bottom; the first rule whose namespaceSelector
 	// matches a namespace wins (first-match-wins).
 	Rules []RuleConfig `json:"rules,omitempty"`
@@ -74,12 +73,14 @@ type rule struct {
 	matchers []alertmanager.Matcher
 }
 
-// Enforcer applies namespace-scoped enforcement to Alertmanager silences based
-// on a set of compiled rules.
+// Enforcer applies enforced-matcher injection to Alertmanager silences based on
+// a set of compiled rules.
 type Enforcer struct {
-	matcherLabel string
-	rules        []rule
-	warnings     []string
+	// namespaceMatcherLabel, when non-empty, is the label used for the injected
+	// "<label>=<namespace>" matcher. Empty means no namespace matcher is added.
+	namespaceMatcherLabel string
+	rules                 []rule
+	warnings              []string
 }
 
 // LoadFromFile reads and compiles the enforcement config from the given path.
@@ -89,12 +90,12 @@ type Enforcer struct {
 func LoadFromFile(path string) (*Enforcer, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read namespace enforcement config %q", path)
+		return nil, errors.Wrapf(err, "failed to read enforcement config %q", path)
 	}
 
 	var fc FileConfig
 	if err := yaml.UnmarshalStrict(data, &fc); err != nil {
-		return nil, errors.Wrapf(err, "failed to parse namespace enforcement config %q", path)
+		return nil, errors.Wrapf(err, "failed to parse enforcement config %q", path)
 	}
 
 	return newEnforcer(fc)
@@ -103,10 +104,7 @@ func LoadFromFile(path string) (*Enforcer, error) {
 // newEnforcer compiles a FileConfig into an Enforcer.
 func newEnforcer(fc FileConfig) (*Enforcer, error) {
 	e := &Enforcer{
-		matcherLabel: fc.MatcherLabel,
-	}
-	if e.matcherLabel == "" {
-		e.matcherLabel = DefaultMatcherLabel
+		namespaceMatcherLabel: fc.NamespaceMatcherLabel,
 	}
 
 	for i, rc := range fc.Rules {
@@ -133,6 +131,12 @@ func newEnforcer(fc FileConfig) (*Enforcer, error) {
 			matchers = append(matchers, m)
 		}
 
+		// A rule that injects nothing (no matchers and no namespace matcher) is
+		// almost certainly a misconfiguration; warn so it is visible.
+		if len(matchers) == 0 && e.namespaceMatcherLabel == "" {
+			e.warnings = append(e.warnings, noopRuleWarning(i))
+		}
+
 		e.rules = append(e.rules, rule{selector: selector, matchers: matchers})
 	}
 
@@ -140,7 +144,11 @@ func newEnforcer(fc FileConfig) (*Enforcer, error) {
 }
 
 func matchAllWarning(i int) string {
-	return errors.Errorf("namespace enforcement rule[%d] has an empty namespaceSelector and will be enforced on ALL namespaces", i).Error()
+	return errors.Errorf("enforcement rule[%d] has an empty namespaceSelector and will be applied to ALL namespaces", i).Error()
+}
+
+func noopRuleWarning(i int) string {
+	return errors.Errorf("enforcement rule[%d] injects no matchers (empty matchers and no namespaceMatcherLabel) and will have no effect", i).Error()
 }
 
 // Warnings returns non-fatal warnings collected while loading the config (e.g.
@@ -150,10 +158,10 @@ func (e *Enforcer) Warnings() []string {
 }
 
 // MatchersFor returns the enforced matchers for a namespace with the given name
-// and labels, and whether any rule matched. The returned slice always leads
-// with the authoritative namespace matcher, followed by the first matching
-// rule's custom matchers (first-match-wins). It returns (nil, false) when no
-// rule matches.
+// and labels, and whether any rule matched. When a namespaceMatcherLabel is
+// configured, the returned slice leads with the authoritative
+// "<label>=<namespace>" matcher; it is followed by the first matching rule's
+// matchers (first-match-wins). It returns (nil, false) when no rule matches.
 func (e *Enforcer) MatchersFor(namespaceName string, namespaceLabels map[string]string) ([]alertmanager.Matcher, bool) {
 	set := labels.Set(namespaceLabels)
 	for _, r := range e.rules {
@@ -161,11 +169,15 @@ func (e *Enforcer) MatchersFor(namespaceName string, namespaceLabels map[string]
 			continue
 		}
 
-		// NewMatcher cannot error for a "=" match type.
-		nsMatcher, _ := alertmanager.NewMatcher(alertmanager.MatchTypeEqual, e.matcherLabel, namespaceName)
-
 		enforced := make([]alertmanager.Matcher, 0, 1+len(r.matchers))
-		enforced = append(enforced, nsMatcher)
+		// Only inject a namespace matcher when a label is configured. When it is
+		// empty, no namespace scoping is applied and just the rule's matchers
+		// are enforced.
+		if e.namespaceMatcherLabel != "" {
+			// NewMatcher cannot error for a "=" match type.
+			nsMatcher, _ := alertmanager.NewMatcher(alertmanager.MatchTypeEqual, e.namespaceMatcherLabel, namespaceName)
+			enforced = append(enforced, nsMatcher)
+		}
 		enforced = append(enforced, r.matchers...)
 		return enforced, true
 	}

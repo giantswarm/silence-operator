@@ -21,8 +21,8 @@ spec:
         {{- include "labels.common" . | nindent 8 }}
       annotations:
         releaseRevision: {{ .Release.Revision | quote }}
-        {{- if .Values.namespaceEnforcement.rules }}
-        checksum/namespace-enforcement: {{ include (print $.Template.BasePath "/namespace-enforcement-configmap.yaml") . | sha256sum }}
+        {{- if .Values.enforcementRules.rules }}
+        checksum/enforcement: {{ include (print $.Template.BasePath "/enforcement-configmap.yaml") . | sha256sum }}
         {{- end }}
     spec:
       {{- if or .Values.affinity .Values.nodeAffinity }}
@@ -76,8 +76,8 @@ spec:
         {{- if .Values.namespaceSelector }}
         - --namespace-selector={{ .Values.namespaceSelector }}
         {{- end }}
-        {{- if .Values.namespaceEnforcement.rules }}
-        - --namespace-enforcement-config=/etc/silence-operator/namespace-enforcement.yaml
+        {{- if .Values.enforcementRules.rules }}
+        - --enforcement-config=/etc/silence-operator/enforcement.yaml
         {{- end }}
         livenessProbe:
           {{- with .Values.livenessProbe }}
@@ -99,9 +99,9 @@ spec:
           {{- with .Values.containerSecurityContext }}
             {{- . | toYaml | nindent 10 }}
           {{- end }}
-        {{- if .Values.namespaceEnforcement.rules }}
+        {{- if .Values.enforcementRules.rules }}
         volumeMounts:
-        - name: namespace-enforcement
+        - name: enforcement
           mountPath: /etc/silence-operator
           readOnly: true
         {{- end }}
@@ -110,9 +110,9 @@ spec:
           {{- . | toYaml | nindent 8 }}
         {{- end }}
       serviceAccountName: {{ template "silence-operator.name" . }}
-      {{- if .Values.namespaceEnforcement.rules }}
+      {{- if .Values.enforcementRules.rules }}
       volumes:
-      - name: namespace-enforcement
+      - name: enforcement
         configMap:
-          name: {{ template "silence-operator.name" . }}-namespace-enforcement
+          name: {{ template "silence-operator.name" . }}-enforcement
       {{- end }}

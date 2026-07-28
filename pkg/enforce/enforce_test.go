@@ -43,7 +43,7 @@ func writeConfig(t *testing.T, content string) string {
 
 func TestLoadFromFile_Valid(t *testing.T) {
 	path := writeConfig(t, `
-matcherLabel: namespace
+namespaceMatcherLabel: namespace
 rules:
   - namespaceSelector:
       matchLabels:
@@ -63,8 +63,8 @@ rules:
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if e.matcherLabel != "namespace" {
-		t.Errorf("matcherLabel = %q, want %q", e.matcherLabel, "namespace")
+	if e.namespaceMatcherLabel != "namespace" {
+		t.Errorf("namespaceMatcherLabel = %q, want %q", e.namespaceMatcherLabel, "namespace")
 	}
 	if len(e.rules) != 2 {
 		t.Fatalf("len(rules) = %d, want 2", len(e.rules))
@@ -74,7 +74,27 @@ rules:
 	}
 }
 
-func TestLoadFromFile_DefaultsMatcherLabel(t *testing.T) {
+func TestLoadFromFile_EmptyMatcherLabelStaysEmpty(t *testing.T) {
+	path := writeConfig(t, `
+rules:
+  - namespaceSelector:
+      matchLabels:
+        a: "b"
+    matchers:
+      - name: cluster_id
+        value: prod
+`)
+	e, err := LoadFromFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if e.namespaceMatcherLabel != "" {
+		t.Errorf("namespaceMatcherLabel = %q, want empty (no defaulting)", e.namespaceMatcherLabel)
+	}
+}
+
+func TestLoadFromFile_NoopRuleWarns(t *testing.T) {
+	// A rule with no matchers and no namespaceMatcherLabel injects nothing.
 	path := writeConfig(t, `
 rules:
   - namespaceSelector:
@@ -85,8 +105,8 @@ rules:
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if e.matcherLabel != DefaultMatcherLabel {
-		t.Errorf("matcherLabel = %q, want %q", e.matcherLabel, DefaultMatcherLabel)
+	if len(e.Warnings()) != 1 {
+		t.Fatalf("Warnings() = %v, want exactly 1 (no-op rule)", e.Warnings())
 	}
 }
 
@@ -151,7 +171,7 @@ rules:
 
 func TestMatchersFor(t *testing.T) {
 	e, err := newEnforcer(FileConfig{
-		MatcherLabel: "namespace",
+		NamespaceMatcherLabel: "namespace",
 		Rules: []RuleConfig{
 			{
 				NamespaceSelector: labelSelector(map[string]string{"tier": "gold"}),
@@ -240,9 +260,34 @@ func TestMatchersFor_FirstMatchWins(t *testing.T) {
 	if !matched {
 		t.Fatal("expected match")
 	}
-	// namespace matcher + first rule's matcher
-	if len(got) != 2 || got[1].Value != "first" {
-		t.Errorf("got %+v, want first rule's matcher", got)
+	// No namespaceMatcherLabel configured, so only the first rule's matcher.
+	if len(got) != 1 || got[0].Value != "first" {
+		t.Errorf("got %+v, want only the first rule's matcher", got)
+	}
+}
+
+func TestMatchersFor_NoNamespaceMatcherWhenLabelEmpty(t *testing.T) {
+	// Theo's scenario: empty namespaceMatcherLabel means no namespace matcher is
+	// injected, only the matching rule's own matchers.
+	e, err := newEnforcer(FileConfig{
+		Rules: []RuleConfig{
+			{
+				NamespaceSelector: labelSelector(map[string]string{"team": "platform"}),
+				Matchers:          []MatcherConfig{{Name: "cluster_id", Value: "prod", MatchType: "="}},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("newEnforcer: %v", err)
+	}
+
+	got, matched := e.MatchersFor("my-namespace", map[string]string{"team": "platform"})
+	if !matched {
+		t.Fatal("expected match")
+	}
+	want := []alertmanager.Matcher{{Name: "cluster_id", Value: "prod", IsEqual: true}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("matchers = %+v, want %+v (no namespace matcher)", got, want)
 	}
 }
 

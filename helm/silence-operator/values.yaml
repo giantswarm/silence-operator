@@ -48,20 +48,24 @@ silenceSelector: ""
 # Example: 'environment=production' or 'team=platform,tier=monitoring'
 namespaceSelector: ""
 
-# Namespace-scoped silence enforcement (v1alpha2 API only).
+# Silence enforcement rules (v1alpha2 API only).
 # When one or more rules are configured, a Silence created in a namespace that
-# matches a rule's namespaceSelector gets an authoritative
-# "<matcherLabel>=<namespace>" matcher (plus any custom matchers from the rule)
-# injected into the Alertmanager silence, so it can only mute alerts from its
-# own namespace. If rules is empty, no enforcement is applied.
-namespaceEnforcement:
-  # Label used for the injected namespace matcher. Defaults to "namespace".
-  matcherLabel: "namespace"
+# matches a rule's namespaceSelector gets that rule's matchers injected into the
+# Alertmanager silence. Optionally, when namespaceMatcherLabel is set, an
+# authoritative "<namespaceMatcherLabel>=<namespace>" matcher is also injected so
+# the silence can only mute alerts from its own namespace. If rules is empty, no
+# enforcement is applied.
+enforcementRules:
+  # Label used for the injected namespace matcher. When empty (the default), no
+  # namespace matcher is added and only each rule's own matchers are enforced.
+  # Set this (e.g. "namespace") to enable namespace scoping.
+  namespaceMatcherLabel: ""
   # Rules are evaluated top-to-bottom; the first rule whose namespaceSelector
   # matches a namespace wins (first-match-wins). An empty namespaceSelector ({})
   # matches ALL namespaces.
   rules: []
   # Example:
+  # namespaceMatcherLabel: "namespace"
   # rules:
   #   - namespaceSelector:
   #       matchLabels:

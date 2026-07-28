@@ -315,7 +315,20 @@ var _ = Describe("SilenceV2 Controller", func() {
 		}
 
 		const enforcementConfig = `
-matcherLabel: namespace
+namespaceMatcherLabel: namespace
+rules:
+  - namespaceSelector:
+      matchLabels:
+        tenant-isolation: "enabled"
+    matchers:
+      - name: cluster_id
+        value: prod
+        matchType: "="
+`
+
+		// Same rules but without a namespaceMatcherLabel: only the rule's own
+		// matchers are injected, no namespace scoping.
+		const enforcementConfigNoNamespaceLabel = `
 rules:
   - namespaceSelector:
       matchLabels:
@@ -426,6 +439,49 @@ rules:
 			Expect(findMatcher(created, "namespace")).To(BeNil())
 			Expect(findMatcher(created, "cluster_id")).To(BeNil())
 			Expect(findMatcher(created, "alertname")).NotTo(BeNil())
+
+			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+		})
+
+		It("injects only the rule's matchers (no namespace matcher) when namespaceMatcherLabel is empty", func() {
+			nsName := "no-nslabel-ns"
+			createNamespace(nsName, map[string]string{"tenant-isolation": "enabled"})
+
+			resource := &observabilityv1alpha2.Silence{
+				ObjectMeta: metav1.ObjectMeta{Name: "no-nslabel-silence", Namespace: nsName},
+				Spec: observabilityv1alpha2.SilenceSpec{
+					Matchers: []observabilityv1alpha2.SilenceMatcher{
+						{Name: "foo", Value: "bar"},
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+
+			mockServer := testutils.NewMockAlertmanagerServer()
+			defer mockServer.Close()
+			alertManager, err := mockServer.GetAlertmanager()
+			Expect(err).NotTo(HaveOccurred())
+
+			reconciler := NewSilenceV2Reconciler(
+				k8sClient,
+				service.NewSilenceService(alertManager),
+				tenancy.NewHelper(config.Config{}),
+				newEnforcer(enforcementConfigNoNamespaceLabel),
+				record.NewFakeRecorder(10),
+			)
+
+			_, err = reconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: "no-nslabel-silence", Namespace: nsName},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Verifying the rule's matcher is injected but no namespace matcher is added")
+			silences := mockServer.GetSilences()
+			Expect(silences).To(HaveLen(1))
+			created := silences[0]
+			Expect(findMatcher(created, "namespace")).To(BeNil(), "no namespace matcher when label is empty")
+			Expect(findMatcher(created, "cluster_id")).NotTo(BeNil())
+			Expect(findMatcher(created, "foo")).NotTo(BeNil())
 
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
