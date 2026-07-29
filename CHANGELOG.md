@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Quote the `=` scalars in the generated `matchType` CRD schema so the rendered chart parses under PyYAML (unblocks the `HelmTemplateValidator` step added in app-build-suite 2.2.0).
 - Fix various CVEs by updating dependencies:
 
 ## [0.20.1] - 2026-02-12

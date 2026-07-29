@@ -20,6 +20,9 @@ update-helm-crds: generate-crds ## Update Helm chart CRD templates from generate
 		mkdir -p "$(HELM_TEMPLATES_DIR)"; \
 	fi
 	@echo "{{- if .Values.crds.install }}" > $(CRD_TEMPLATE_FILE)
+# The sed pass quotes bare `=` scalars (e.g. the matchType default and enum entry).
+# controller-gen emits them unquoted, which YAML 1.1 parsers such as PyYAML resolve to
+# the `tag:yaml.org,2002:value` type and reject when validating the rendered chart.
 	@for crd_file in $(CRD_BASES_DIR)/*.yaml; do \
 		if [ -f "$$crd_file" ]; then \
 			echo "Processing $$crd_file..."; \
@@ -39,7 +42,9 @@ update-helm-crds: generate-crds ## Update Helm chart CRD templates from generate
 				next; \
 			} \
 			{ print $$0 } \
-			' "$$crd_file" >> $(CRD_TEMPLATE_FILE); \
+			' "$$crd_file" \
+			| sed -E 's/^([[:space:]]*(-|[A-Za-z0-9_.-]+:))[[:space:]]+=$$/\1 "="/' \
+			>> $(CRD_TEMPLATE_FILE); \
 		fi; \
 	done
 	@echo "{{- end }}" >> $(CRD_TEMPLATE_FILE)
