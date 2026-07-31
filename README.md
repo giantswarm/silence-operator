@@ -135,7 +135,7 @@ namespaceSelector: "environment=production"
 
 **Examples:**
 - `"environment=production"` - Only watch namespaces labeled with `environment=production`
-- `"team=platform,tier=monitoring"` - Only watch namespaces with both labels  
+- `"team=platform,tier=monitoring"` - Only watch namespaces with both labels
 - `"team notin (test,staging)"` - Watch namespaces except those with specified team labels
 - `""` - Watch all namespaces (default)
 
