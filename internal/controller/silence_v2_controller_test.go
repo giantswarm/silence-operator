@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -30,6 +31,7 @@ import (
 
 	observabilityv1alpha2 "github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/internal/controller/testutils"
+	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/pkg/config"
 	"github.com/giantswarm/silence-operator/pkg/service"
 	"github.com/giantswarm/silence-operator/pkg/tenancy"
@@ -198,11 +200,13 @@ var _ = Describe("SilenceV2 Controller", func() {
 				{"", false, true, "empty/default should be exact match"},
 			}
 
+			now := metav1.Now()
 			for _, tc := range testCases {
 				silence := &observabilityv1alpha2.Silence{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-silence",
-						Namespace: "default",
+						Name:              "test-silence",
+						Namespace:         "default",
+						CreationTimestamp: now,
 					},
 					Spec: observabilityv1alpha2.SilenceSpec{
 						Matchers: []observabilityv1alpha2.SilenceMatcher{
@@ -271,6 +275,287 @@ var _ = Describe("SilenceV2 Controller", func() {
 			By("Testing that namespace selector logic works correctly")
 			Expect(namespaceSelectorLabels).ToNot(BeNil())
 			Expect(namespaceSelectorLabels.String()).To(Equal("environment=production"))
+		})
+	})
+})
+
+// findSilenceByComment returns the first alertmanager silence whose Comment matches, or nil.
+func findSilenceByComment(silences []alertmanager.Silence, comment string) *alertmanager.Silence {
+	for i := range silences {
+		if silences[i].Comment == comment {
+			return &silences[i]
+		}
+	}
+	return nil
+}
+
+var _ = Describe("SilenceV2 CRD Integration Tests", func() {
+	var mockServer *testutils.MockAlertmanagerServer
+	var reconciler *SilenceV2Reconciler
+	var ctx context.Context
+
+	BeforeEach(func() {
+		ctx = context.Background()
+
+		mockServer = testutils.NewMockAlertmanagerServer()
+
+		alertManager, err := mockServer.GetAlertmanager()
+		Expect(err).NotTo(HaveOccurred())
+
+		cfg := config.Config{}
+		tenancyHelper := tenancy.NewHelper(cfg)
+
+		silenceService := service.NewSilenceService(alertManager)
+		reconciler = NewSilenceV2Reconciler(
+			k8sClient,
+			silenceService,
+			tenancyHelper,
+		)
+	})
+
+	AfterEach(func() {
+		if mockServer != nil {
+			mockServer.Close()
+		}
+	})
+
+	listSilences := func() []alertmanager.Silence {
+		am, err := mockServer.GetAlertmanager()
+		Expect(err).NotTo(HaveOccurred())
+		silences, err := am.ListSilences("")
+		Expect(err).NotTo(HaveOccurred())
+		return silences
+	}
+
+	doReconcile := func(name, namespace string) {
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{
+			NamespacedName: types.NamespacedName{Name: name, Namespace: namespace},
+		})
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	Context("Time Management with CRDs", func() {
+		It("should use endsAt over duration and valid-until annotation", func() {
+			now := time.Now()
+			startsAt := metav1.NewTime(now.Add(-1 * time.Hour))
+			endsAt := metav1.NewTime(now.Add(2 * time.Hour))
+
+			silence := &observabilityv1alpha2.Silence{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "silence-endsat-priority",
+					Namespace: "default",
+					Annotations: map[string]string{
+						"valid-until": now.Add(10 * time.Hour).Format(time.RFC3339),
+					},
+				},
+				Spec: observabilityv1alpha2.SilenceSpec{
+					StartsAt: &startsAt,
+					EndsAt:   &endsAt,
+					Matchers: []observabilityv1alpha2.SilenceMatcher{
+						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+					},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, silence)).To(Succeed())
+			DeferCleanup(func() { Expect(k8sClient.Delete(ctx, silence)).To(Succeed()) })
+
+			doReconcile(silence.Name, silence.Namespace)
+
+			comment := alertmanager.SilenceComment(silence)
+			got := findSilenceByComment(listSilences(), comment)
+			Expect(got).NotTo(BeNil(), "silence %q not found in Alertmanager", comment)
+			Expect(got.StartsAt).To(BeTemporally("~", startsAt.Time, time.Second))
+			Expect(got.EndsAt).To(BeTemporally("~", endsAt.Time, time.Second))
+		})
+
+		It("should compute endsAt from startsAt + duration when endsAt is unset", func() {
+			now := time.Now()
+			startsAt := metav1.NewTime(now.Add(-30 * time.Minute))
+			duration := observabilityv1alpha2.SilenceDuration("3h")
+
+			silence := &observabilityv1alpha2.Silence{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "silence-duration-explicit-start",
+					Namespace: "default",
+				},
+				Spec: observabilityv1alpha2.SilenceSpec{
+					StartsAt: &startsAt,
+					Duration: &duration,
+					Matchers: []observabilityv1alpha2.SilenceMatcher{
+						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+					},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, silence)).To(Succeed())
+			DeferCleanup(func() { Expect(k8sClient.Delete(ctx, silence)).To(Succeed()) })
+
+			doReconcile(silence.Name, silence.Namespace)
+
+			comment := alertmanager.SilenceComment(silence)
+			got := findSilenceByComment(listSilences(), comment)
+			Expect(got).NotTo(BeNil(), "silence %q not found in Alertmanager", comment)
+			Expect(got.StartsAt).To(BeTemporally("~", startsAt.Time, time.Second))
+			Expect(got.EndsAt).To(BeTemporally("~", startsAt.Time.Add(3*time.Hour), time.Second))
+		})
+
+		It("should use creation timestamp as start when startsAt is unset", func() {
+			duration := observabilityv1alpha2.SilenceDuration("2h")
+
+			silence := &observabilityv1alpha2.Silence{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "silence-duration-no-start",
+					Namespace: "default",
+				},
+				Spec: observabilityv1alpha2.SilenceSpec{
+					Duration: &duration,
+					Matchers: []observabilityv1alpha2.SilenceMatcher{
+						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+					},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, silence)).To(Succeed())
+			DeferCleanup(func() { Expect(k8sClient.Delete(ctx, silence)).To(Succeed()) })
+
+			// Capture creation timestamp before reconciling.
+			created := &observabilityv1alpha2.Silence{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: silence.Name, Namespace: silence.Namespace}, created)).To(Succeed())
+			createdAt := created.GetCreationTimestamp().Time
+
+			doReconcile(silence.Name, silence.Namespace)
+
+			comment := alertmanager.SilenceComment(silence)
+			got := findSilenceByComment(listSilences(), comment)
+			Expect(got).NotTo(BeNil(), "silence %q not found in Alertmanager", comment)
+			Expect(got.StartsAt).To(BeTemporally("~", createdAt, time.Second))
+			Expect(got.EndsAt).To(BeTemporally("~", createdAt.Add(2*time.Hour), time.Second))
+		})
+
+		It("should fall back to valid-until annotation when no spec time fields are set", func() {
+			// Migration path: existing silences using the annotation continue to work.
+			validUntil := time.Now().Add(6 * time.Hour).Truncate(time.Second).UTC()
+
+			silence := &observabilityv1alpha2.Silence{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "silence-annotation-fallback",
+					Namespace: "default",
+					Annotations: map[string]string{
+						"valid-until": validUntil.Format(time.RFC3339),
+					},
+				},
+				Spec: observabilityv1alpha2.SilenceSpec{
+					Matchers: []observabilityv1alpha2.SilenceMatcher{
+						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+					},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, silence)).To(Succeed())
+			DeferCleanup(func() { Expect(k8sClient.Delete(ctx, silence)).To(Succeed()) })
+
+			doReconcile(silence.Name, silence.Namespace)
+
+			comment := alertmanager.SilenceComment(silence)
+			got := findSilenceByComment(listSilences(), comment)
+			Expect(got).NotTo(BeNil(), "silence %q not found in Alertmanager", comment)
+			Expect(got.EndsAt).To(BeTemporally("~", validUntil, time.Second))
+		})
+
+		It("should reject endsAt and duration set simultaneously", func() {
+			now := time.Now()
+			endsAt := metav1.NewTime(now.Add(2 * time.Hour))
+			duration := observabilityv1alpha2.SilenceDuration("3h")
+
+			silence := &observabilityv1alpha2.Silence{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "invalid-silence-both-fields",
+					Namespace: "default",
+				},
+				Spec: observabilityv1alpha2.SilenceSpec{
+					EndsAt:   &endsAt,
+					Duration: &duration,
+					Matchers: []observabilityv1alpha2.SilenceMatcher{
+						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+					},
+				},
+			}
+
+			err := k8sClient.Create(ctx, silence)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("endsAt and duration are mutually exclusive"))
+		})
+	})
+
+	Context("Matcher Types with CRDs", func() {
+		It("should convert all four match types correctly", func() {
+			duration := observabilityv1alpha2.SilenceDuration("1h")
+
+			silence := &observabilityv1alpha2.Silence{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "silence-mixed-matchers",
+					Namespace: "default",
+				},
+				Spec: observabilityv1alpha2.SilenceSpec{
+					Duration: &duration,
+					Matchers: []observabilityv1alpha2.SilenceMatcher{
+						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: "excludeme", Value: "HeartbeatAlert", MatchType: observabilityv1alpha2.MatchNotEqual},
+						{Name: "instance", Value: ".*prod.*", MatchType: observabilityv1alpha2.MatchRegexMatch},
+						{Name: "testenv", Value: ".*test.*", MatchType: observabilityv1alpha2.MatchRegexNotMatch},
+					},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, silence)).To(Succeed())
+			DeferCleanup(func() { Expect(k8sClient.Delete(ctx, silence)).To(Succeed()) })
+
+			doReconcile(silence.Name, silence.Namespace)
+
+			comment := alertmanager.SilenceComment(silence)
+			got := findSilenceByComment(listSilences(), comment)
+			Expect(got).NotTo(BeNil(), "silence %q not found in Alertmanager", comment)
+			Expect(got.Matchers).To(HaveLen(4))
+			Expect(got.Matchers[0]).To(Equal(alertmanager.Matcher{Name: "alertname", Value: "TestAlert", IsRegex: false, IsEqual: true}))
+			Expect(got.Matchers[1]).To(Equal(alertmanager.Matcher{Name: "excludeme", Value: "HeartbeatAlert", IsRegex: false, IsEqual: false}))
+			Expect(got.Matchers[2]).To(Equal(alertmanager.Matcher{Name: "instance", Value: ".*prod.*", IsRegex: true, IsEqual: true}))
+			Expect(got.Matchers[3]).To(Equal(alertmanager.Matcher{Name: "testenv", Value: ".*test.*", IsRegex: true, IsEqual: false}))
+		})
+	})
+
+	Context("Finalizer Handling with CRDs", func() {
+		It("should add finalizer on create and remove it on delete", func() {
+			duration := observabilityv1alpha2.SilenceDuration("1h")
+
+			silence := &observabilityv1alpha2.Silence{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "silence-finalizer-test",
+					Namespace: "default",
+				},
+				Spec: observabilityv1alpha2.SilenceSpec{
+					Duration: &duration,
+					Matchers: []observabilityv1alpha2.SilenceMatcher{
+						{Name: "alertname", Value: "FinalizerTest", MatchType: observabilityv1alpha2.MatchEqual},
+					},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, silence)).To(Succeed())
+
+			doReconcile(silence.Name, silence.Namespace)
+
+			created := &observabilityv1alpha2.Silence{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: silence.Name, Namespace: silence.Namespace}, created)).To(Succeed())
+			Expect(created.Finalizers).To(ContainElement(FinalizerName))
+
+			Expect(k8sClient.Delete(ctx, created)).To(Succeed())
+
+			doReconcile(silence.Name, silence.Namespace)
+
+			deleted := &observabilityv1alpha2.Silence{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: silence.Name, Namespace: silence.Namespace}, deleted)
+			Expect(errors.IsNotFound(err)).To(BeTrue())
 		})
 	})
 })

@@ -114,6 +114,15 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .spec.startsAt
+      name: Starts At
+      type: date
+    - jsonPath: .spec.endsAt
+      name: Ends At
+      type: date
+    - jsonPath: .spec.duration
+      name: Duration
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
@@ -142,6 +151,19 @@ spec:
           spec:
             description: SilenceSpec defines the desired state of Silence.
             properties:
+              duration:
+                description: |-
+                  Duration defines how long the silence is active from StartsAt (or creation time when StartsAt is unset).
+                  Ignored when EndsAt is set. When neither EndsAt nor Duration is set, the valid-until annotation is used,
+                  falling back to 100 years for backward compatibility with v1alpha1.
+                  Supports weeks (w), days (d), hours (h), minutes (m), and seconds (s): "7d", "2w", "1d12h", "30m".
+                pattern: ^(\d+(w|d|h|m|s))+$
+                type: string
+              endsAt:
+                description: EndsAt defines when the silence expires. Takes precedence
+                  over Duration and the valid-until annotation.
+                format: date-time
+                type: string
               matchers:
                 description: Matchers defines the alert matchers that this silence
                   will apply to.
@@ -173,10 +195,21 @@ spec:
                   type: object
                 minItems: 1
                 type: array
+              startsAt:
+                description: StartsAt defines when the silence becomes active. Defaults
+                  to the object's creation timestamp.
+                format: date-time
+                type: string
             required:
             - matchers
             type: object
         type: object
+        x-kubernetes-validations:
+        - message: endsAt and duration are mutually exclusive
+          rule: '!(has(self.spec.endsAt) && has(self.spec.duration))'
+        - message: startsAt must be before endsAt
+          rule: '!has(self.spec.startsAt) || !has(self.spec.endsAt) || timestamp(self.spec.startsAt)
+            < timestamp(self.spec.endsAt)'
     served: true
     storage: true
     subresources: {}
