@@ -634,7 +634,7 @@ func TestAlertmanager_TenantPrecedence(t *testing.T) {
 		// Should get the parameter tenant, not the instance tenant
 		assert.Equal(t, "param-tenant", r.Header.Get("X-Scope-OrgID"))
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`[]`))
+		w.Write([]byte(`[]`)) // nolint:errcheck
 	}))
 	defer server.Close()
 
@@ -654,7 +654,7 @@ func TestAlertmanager_BackwardCompatibilityUsesInstanceTenant(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "instance-tenant", r.Header.Get("X-Scope-OrgID"))
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`[]`))
+		w.Write([]byte(`[]`)) // nolint:errcheck
 	}))
 	defer server.Close()
 
