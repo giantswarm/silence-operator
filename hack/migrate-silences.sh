@@ -6,7 +6,6 @@ set -euo pipefail
 
 # Help function
 show_help() {
-    local bin="$(basename "$0")"
     cat << EOF
 Usage: $0 <target-namespace> [--dry-run|--help]
 
