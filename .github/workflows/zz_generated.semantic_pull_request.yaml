@@ -1,0 +1,23 @@
+# DO NOT EDIT. Generated with:
+#
+#    devctl
+#
+#    https://github.com/giantswarm/devctl/blob/1e74e9b34eaee80c19dd433c7c298a67ab812605/pkg/gen/input/workflows/internal/file/semantic_pull_request.yaml.template
+#
+name: semantic-pull-request
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+  merge_group: {}
+
+permissions: {}
+
+jobs:
+  semantic-pull-request:
+    uses: giantswarm/github-workflows/.github/workflows/semantic-pull-request.yaml@main
+    permissions:
+      pull-requests: read
