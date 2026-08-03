@@ -72,6 +72,7 @@ workflows:
         context: architect
         name: go-build
         binary: silence-operator
+        sign: << not (pipeline.git.branch matches /^pull\/[0-9]+/) >>
         requires:
         - go-tests
         path: ./cmd
@@ -90,6 +91,7 @@ workflows:
           branches:
             ignore:
             - main
+            - /pull\/[0-9]+/
 
     - architect/push-to-app-catalog:
         context: architect
@@ -106,3 +108,4 @@ workflows:
           branches:
             ignore:
             - main
+            - /pull\/[0-9]+/
