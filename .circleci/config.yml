@@ -91,6 +91,7 @@ workflows:
           branches:
             ignore:
             - main
+            - /pull\/[0-9]+/
 
     - architect/push-to-app-catalog:
         context: architect
@@ -107,3 +108,4 @@ workflows:
           branches:
             ignore:
             - main
+            - /pull\/[0-9]+/
