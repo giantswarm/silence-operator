@@ -158,24 +158,6 @@ manifests-legacy: generate-manifests
 # Code Quality and Development Tools
 # ==================================================================================
 
-.PHONY: fmt
-fmt: ## Run go fmt against code
-	$(call log_build,"Running go fmt")
-	@go fmt ./...
-	@$(call log_info,"Code formatting completed")
-
-.PHONY: vet
-vet: ## Run go vet against code
-	$(call log_build,"Running go vet")
-	@go vet ./...
-	@$(call log_info,"Code vetting completed")
-
-.PHONY: lint
-lint: golangci-lint ## Run golangci-lint linter
-	$(call log_build,"Running golangci-lint")
-	@$(GOLANGCI_LINT) run -E gosec -E goconst --timeout=15m ./...
-	@$(call log_info,"Linting completed")
-
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 	$(call log_build,"Running golangci-lint with auto-fix")
@@ -193,7 +175,7 @@ lint-config: golangci-lint ## Verify golangci-lint linter configuration
 # ==================================================================================
 
 .PHONY: test
-test: ginkgo envtest ## Run tests with Ginkgo and envtest
+test-ginkgo: ginkgo envtest ## Run tests with Ginkgo and envtest
 	$(call log_build,"Running tests with Ginkgo")
 	@KUBEBUILDER_ASSETS="$$($(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" \
 		$(GINKGO) -p --nodes 4 -randomize-all --randomize-suites --cover --skip-package=e2e ./...
