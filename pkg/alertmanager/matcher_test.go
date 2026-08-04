@@ -1,20 +1,24 @@
 package alertmanager
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/giantswarm/silence-operator/api/v1alpha2"
+)
 
 func TestNewMatcher(t *testing.T) {
 	tests := []struct {
 		name      string
-		matchType string
+		matchType v1alpha2.MatchType
 		wantRegex bool
 		wantEqual bool
 		wantErr   bool
 	}{
 		{name: "default empty is equal", matchType: "", wantEqual: true},
-		{name: "equal", matchType: "=", wantEqual: true},
-		{name: "not equal", matchType: "!=", wantEqual: false},
-		{name: "regex match", matchType: "=~", wantRegex: true, wantEqual: true},
-		{name: "regex not match", matchType: "!~", wantRegex: true, wantEqual: false},
+		{name: "equal", matchType: v1alpha2.MatchEqual, wantEqual: true},
+		{name: "not equal", matchType: v1alpha2.MatchNotEqual, wantEqual: false},
+		{name: "regex match", matchType: v1alpha2.MatchRegexMatch, wantRegex: true, wantEqual: true},
+		{name: "regex not match", matchType: v1alpha2.MatchRegexNotMatch, wantRegex: true, wantEqual: false},
 		{name: "invalid", matchType: "??", wantErr: true},
 	}
 

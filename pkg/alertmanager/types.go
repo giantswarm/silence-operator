@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/giantswarm/silence-operator/api/v1alpha2"
 )
 
 // TODO Can we use open API Types here instead of defining our own types?
@@ -28,36 +30,26 @@ type Status struct {
 	State string `json:"state"`
 }
 
-// Match type strings understood by NewMatcher. These mirror the values of
-// v1alpha2.MatchType so that both CR conversion and the enforcement config
-// loader can share a single conversion routine.
-const (
-	MatchTypeEqual         = "="
-	MatchTypeNotEqual      = "!="
-	MatchTypeRegexMatch    = "=~"
-	MatchTypeRegexNotMatch = "!~"
-)
-
-// NewMatcher builds a Matcher from a match-type string (one of "=", "!=", "=~",
-// "!~"). An empty matchType defaults to exact equality ("="). It returns an
-// error for any other value so callers can fail fast on invalid configuration.
-func NewMatcher(matchType, name, value string) (Matcher, error) {
+// NewMatcher builds a Matcher from a v1alpha2.MatchType. An empty matchType
+// defaults to exact equality (v1alpha2.MatchEqual). It returns an error for any
+// other value so callers can fail fast on invalid configuration.
+func NewMatcher(matchType v1alpha2.MatchType, name, value string) (Matcher, error) {
 	if matchType == "" {
-		matchType = MatchTypeEqual
+		matchType = v1alpha2.MatchEqual
 	}
 
 	var isRegex, isEqual bool
 	switch matchType {
-	case MatchTypeEqual:
+	case v1alpha2.MatchEqual:
 		isRegex, isEqual = false, true
-	case MatchTypeNotEqual:
+	case v1alpha2.MatchNotEqual:
 		isRegex, isEqual = false, false
-	case MatchTypeRegexMatch:
+	case v1alpha2.MatchRegexMatch:
 		isRegex, isEqual = true, true
-	case MatchTypeRegexNotMatch:
+	case v1alpha2.MatchRegexNotMatch:
 		isRegex, isEqual = true, false
 	default:
-		return Matcher{}, errors.Errorf("invalid match type %q (must be one of %q, %q, %q, %q)", matchType, MatchTypeEqual, MatchTypeNotEqual, MatchTypeRegexMatch, MatchTypeRegexNotMatch)
+		return Matcher{}, errors.Errorf("invalid match type %q (must be one of %q, %q, %q, %q)", matchType, v1alpha2.MatchEqual, v1alpha2.MatchNotEqual, v1alpha2.MatchRegexMatch, v1alpha2.MatchRegexNotMatch)
 	}
 
 	return Matcher{

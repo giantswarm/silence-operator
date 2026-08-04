@@ -176,7 +176,7 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 	var matchers []alertmanager.Matcher
 	for _, matcher := range silence.Spec.Matchers {
 		// Convert the CR MatchType enum into alertmanager's boolean fields.
-		amMatcher, err := alertmanager.NewMatcher(string(matcher.MatchType), matcher.Name, matcher.Value)
+		amMatcher, err := alertmanager.NewMatcher(matcher.MatchType, matcher.Name, matcher.Value)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}

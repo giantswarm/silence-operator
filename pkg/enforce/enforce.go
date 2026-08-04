@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
+	"github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 )
 
@@ -124,7 +125,7 @@ func newEnforcer(fc FileConfig) (*Enforcer, error) {
 			if mc.Name == "" {
 				return nil, errors.Errorf("rule[%d].matchers[%d]: name must not be empty", i, j)
 			}
-			m, err := alertmanager.NewMatcher(mc.MatchType, mc.Name, mc.Value)
+			m, err := alertmanager.NewMatcher(v1alpha2.MatchType(mc.MatchType), mc.Name, mc.Value)
 			if err != nil {
 				return nil, errors.Wrapf(err, "rule[%d].matchers[%d]", i, j)
 			}
@@ -175,7 +176,7 @@ func (e *Enforcer) MatchersFor(namespaceName string, namespaceLabels map[string]
 		// are enforced.
 		if e.namespaceMatcherLabel != "" {
 			// NewMatcher cannot error for a "=" match type.
-			nsMatcher, _ := alertmanager.NewMatcher(alertmanager.MatchTypeEqual, e.namespaceMatcherLabel, namespaceName)
+			nsMatcher, _ := alertmanager.NewMatcher(v1alpha2.MatchEqual, e.namespaceMatcherLabel, namespaceName)
 			enforced = append(enforced, nsMatcher)
 		}
 		enforced = append(enforced, r.matchers...)
