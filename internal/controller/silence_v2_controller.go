@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -32,6 +33,7 @@ import (
 	"github.com/giantswarm/silence-operator/api/v1alpha2"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/pkg/config"
+	"github.com/giantswarm/silence-operator/pkg/enforce"
 	"github.com/giantswarm/silence-operator/pkg/service"
 	"github.com/giantswarm/silence-operator/pkg/tenancy"
 )
@@ -44,19 +46,31 @@ const (
 // SilenceV2Reconciler reconciles a Silence object in the observability.giantswarm.io API group
 // +kubebuilder:rbac:groups=observability.giantswarm.io,resources=silences,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=observability.giantswarm.io,resources=silences/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 type SilenceV2Reconciler struct {
 	client client.Client
 
 	silenceService *service.SilenceService
 	tenancyHelper  *tenancy.Helper
+	// enforcer applies namespace-scoped silence enforcement. It is nil when no
+	// enforcement config is provided, in which case enforcement is skipped.
+	enforcer *enforce.Enforcer
+	// recorder emits Kubernetes Events on the Silence resource (e.g. when an
+	// enforced matcher overrides a user-supplied one). May be nil.
+	recorder record.EventRecorder
 }
 
-// NewSilenceV2Reconciler creates a new SilenceV2Reconciler with the provided silence service and tenancy helper
-func NewSilenceV2Reconciler(client client.Client, silenceService *service.SilenceService, tenancyHelper *tenancy.Helper) *SilenceV2Reconciler {
+// NewSilenceV2Reconciler creates a new SilenceV2Reconciler with the provided
+// silence service, tenancy helper, enforcer (may be nil) and event recorder
+// (may be nil).
+func NewSilenceV2Reconciler(client client.Client, silenceService *service.SilenceService, tenancyHelper *tenancy.Helper, enforcer *enforce.Enforcer, recorder record.EventRecorder) *SilenceV2Reconciler {
 	return &SilenceV2Reconciler{
 		client:         client,
 		silenceService: silenceService,
 		tenancyHelper:  tenancyHelper,
+		enforcer:       enforcer,
+		recorder:       recorder,
 	}
 }
 
@@ -118,6 +132,12 @@ func (r *SilenceV2Reconciler) reconcileCreate(ctx context.Context, silence *v1al
 		return ctrl.Result{}, errors.WithStack(err)
 	}
 
+	// Apply namespace-scoped enforcement (inject the namespace matcher and any
+	// configured custom matchers) when a rule matches the silence's namespace.
+	if err := r.applyEnforcement(ctx, silence, alertmanagerSilence); err != nil {
+		return ctrl.Result{}, errors.WithStack(err)
+	}
+
 	// Extract tenant information from the silence resource
 	tenant := r.tenancyHelper.ExtractTenant(silence)
 
@@ -155,36 +175,12 @@ func (r *SilenceV2Reconciler) reconcileDelete(ctx context.Context, silence *v1al
 func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*alertmanager.Silence, error) {
 	var matchers []alertmanager.Matcher
 	for _, matcher := range silence.Spec.Matchers {
-		// Convert MatchType enum to boolean fields for alertmanager compatibility
-		var isRegex, isEqual bool
-
-		// Default to exact match if MatchType is not specified
-		matchType := matcher.MatchType
-		if matchType == "" {
-			matchType = v1alpha2.MatchEqual
+		// Convert the CR MatchType enum into alertmanager's boolean fields.
+		amMatcher, err := alertmanager.NewMatcher(matcher.MatchType, matcher.Name, matcher.Value)
+		if err != nil {
+			return nil, errors.WithStack(err)
 		}
-
-		switch matchType {
-		case v1alpha2.MatchEqual:
-			isRegex = false
-			isEqual = true
-		case v1alpha2.MatchNotEqual:
-			isRegex = false
-			isEqual = false
-		case v1alpha2.MatchRegexMatch:
-			isRegex = true
-			isEqual = true
-		case v1alpha2.MatchRegexNotMatch:
-			isRegex = true
-			isEqual = false
-		}
-
-		matchers = append(matchers, alertmanager.Matcher{
-			IsRegex: isRegex,
-			IsEqual: isEqual,
-			Name:    matcher.Name,
-			Value:   matcher.Value,
-		})
+		matchers = append(matchers, amMatcher)
 	}
 
 	endsAt, err := alertmanager.SilenceEndsAt(silence)
@@ -201,6 +197,44 @@ func (r *SilenceV2Reconciler) getSilenceFromCR(silence *v1alpha2.Silence) (*aler
 	}
 
 	return newSilence, nil
+}
+
+// applyEnforcement injects the first matching rule's enforced matchers (and,
+// when a namespaceMatcherLabel is configured, an authoritative namespace
+// matcher) into the Alertmanager silence when the silence's namespace matches an
+// enforcement rule. It is a no-op when no enforcer is configured. When
+// enforcement overrides a user-supplied matcher, a warning is logged and a
+// Kubernetes Event is emitted on the Silence so the owner can see why the
+// silence was modified.
+func (r *SilenceV2Reconciler) applyEnforcement(ctx context.Context, silence *v1alpha2.Silence, alertmanagerSilence *alertmanager.Silence) error {
+	if r.enforcer == nil {
+		return nil
+	}
+
+	logger := log.FromContext(ctx)
+
+	// Fetch the namespace to read its labels for selector matching.
+	namespaceObj := &corev1.Namespace{}
+	if err := r.client.Get(ctx, client.ObjectKey{Name: silence.Namespace}, namespaceObj); err != nil {
+		return errors.Wrapf(err, "failed to get namespace %q for enforcement", silence.Namespace)
+	}
+
+	enforced, matched := r.enforcer.MatchersFor(silence.Namespace, namespaceObj.Labels)
+	if !matched {
+		return nil
+	}
+
+	replaced := enforce.ApplyEnforcedMatchers(alertmanagerSilence, enforced)
+	if len(replaced) > 0 {
+		logger.Info("Enforcement overrode user-supplied matchers",
+			"namespace", silence.Namespace, "name", silence.Name, "overriddenMatchers", replaced)
+		if r.recorder != nil {
+			r.recorder.Eventf(silence, corev1.EventTypeWarning, "MatcherOverridden",
+				"Enforcement overrode matcher(s) %v with enforced values", replaced)
+		}
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
