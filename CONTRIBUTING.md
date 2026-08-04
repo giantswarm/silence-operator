@@ -32,7 +32,7 @@ Thank you for your interest in contributing to the silence-operator! This guide 
 4. **Update documentation** as needed
 5. **Test your changes**:
    ```bash
-   make test
+   make test-ginkgo
    make lint
    ```
 6. **Bump the chart version** for every change (see `helm/silence-operator/Chart.yaml`)
