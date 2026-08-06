@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix various CVEs by updating dependencies:
 - Skip failing CI jobs using private secrets for external contributions from fork
 - Replace deprecated controller-runtime scheme.Builder with apimachinery runtime.NewSchemeBuilder
-- Fix alertmanager_test.go linter errors
+- Fix `gosec`, `goconst` and `errcheck` linter errors in tests
 
 
 ## [0.20.1] - 2026-02-12
