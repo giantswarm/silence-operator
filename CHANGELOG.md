@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Regenerate `.github/workflows/zz_generated.*.yaml` via devctl to use the centralized reusable workflow, removing the Node-20 `mindsers/changelog-reader-action` dependency.
+- Update Go dependencies, which resolves CVE-2026-63209 (`github.com/klauspost/compress`) and CVE-2026-56852 (`golang.org/x/text`) and removes their `.nancy-ignore` entries.
 
 ### Fixed
 
