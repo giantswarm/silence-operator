@@ -67,7 +67,7 @@ This installs:
 
 ```bash
 # Run all tests
-make test
+make test-ginkgo
 
 # Run tests with specific Ginkgo arguments (modify test target as needed)
 $(GINKGO) -focus='Silence Controller' ./...
@@ -95,7 +95,7 @@ bin/ginkgo -focus='Controller' ./...
 bin/ginkgo -skip='Integration' ./...
 
 # Set Kubernetes version for envtest
-make test ENVTEST_K8S_VERSION="1.29"
+make test-ginkgo ENVTEST_K8S_VERSION="1.29"
 
 # Run tests with verbose output
 bin/ginkgo -v ./...
@@ -314,7 +314,7 @@ The test target automatically generates coverage information with Ginkgo:
 
 ```bash
 # Run tests (includes coverage)
-make test
+make test-ginkgo
 
 # Generate HTML coverage report
 go tool cover -html=coverprofile.out -o coverage.html
@@ -326,7 +326,7 @@ go tool cover -func=coverprofile.out
 ### Coverage Output
 
 Coverage reports are saved to:
-- `coverprofile.out` - Default coverage profile from Ginkgo via make test
+- `coverprofile.out` - Default coverage profile from Ginkgo via make test-ginkgo
 - `coverage.html` - HTML visualization (if generated manually)
 
 ## Debugging Tests
@@ -353,7 +353,7 @@ bin/golangci-lint version
 bin/setup-envtest list
 
 # Verify KUBEBUILDER_ASSETS detection
-make test ENVTEST_K8S_VERSION="1.30"
+make test-ginkgo ENVTEST_K8S_VERSION="1.30"
 ```
 
 # Verify tools are installed
@@ -377,7 +377,7 @@ make install-tools
 3. **Test Timeouts**
    ```bash
    # Solution: Increase timeout with Ginkgo args
-   make test GINKGO_ARGS="-timeout=15m"
+   make test-ginkgo GINKGO_ARGS="-timeout=15m"
    ```
 
 ## Continuous Integration
@@ -472,7 +472,7 @@ Tests must pass the following quality gates:
 kubectl get crd --context=envtest
 
 # Check controller logs in tests
-make test GINKGO_ARGS="-v" 2>&1 | grep "controller"
+make test-ginkgo GINKGO_ARGS="-v" 2>&1 | grep "controller"
 ```
 
 For more specific troubleshooting, refer to the individual test files and the Kubebuilder documentation.
