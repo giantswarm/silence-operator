@@ -7,6 +7,9 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+// testLabelEnvironment is the label key used by the selector tests in this file.
+const testLabelEnvironment = "environment"
+
 func TestParseSilenceSelector(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -57,16 +60,16 @@ func TestParseSilenceSelector(t *testing.T) {
 
 		// Test matching labels
 		matchingLabels := labels.Set{
-			"environment": "production",
-			"tier":        "frontend",
-			"app":         "some-app",
+			testLabelEnvironment: "production",
+			"tier":               "frontend",
+			"app":                "some-app",
 		}
 		g.Expect(selector.Matches(matchingLabels)).To(gomega.BeTrue())
 
 		// Test non-matching labels
 		nonMatchingLabels := labels.Set{
-			"environment": "staging", // Different value
-			"tier":        "frontend",
+			testLabelEnvironment: "staging", // Different value
+			"tier":               "frontend",
 		}
 		g.Expect(selector.Matches(nonMatchingLabels)).To(gomega.BeFalse())
 	})
@@ -122,16 +125,16 @@ func TestParseNamespaceSelector(t *testing.T) {
 
 		// Test matching namespace labels
 		matchingLabels := labels.Set{
-			"environment": "production",
-			"team":        "platform",
-			"managed-by":  "argocd",
+			testLabelEnvironment: "production",
+			"team":               "platform",
+			"managed-by":         "argocd",
 		}
 		g.Expect(selector.Matches(matchingLabels)).To(gomega.BeTrue())
 
 		// Test non-matching namespace labels
 		nonMatchingLabels := labels.Set{
-			"environment": "staging", // Different value
-			"team":        "platform",
+			testLabelEnvironment: "staging", // Different value
+			"team":               "platform",
 		}
 		g.Expect(selector.Matches(nonMatchingLabels)).To(gomega.BeFalse())
 	})

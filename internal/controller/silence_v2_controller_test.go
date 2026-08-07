@@ -44,7 +44,7 @@ var _ = Describe("SilenceV2 Controller", func() {
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		}
 		silence := &observabilityv1alpha2.Silence{}
 
@@ -58,12 +58,12 @@ var _ = Describe("SilenceV2 Controller", func() {
 				resource := &observabilityv1alpha2.Silence{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
-						Namespace: "default",
+						Namespace: defaultNamespace,
 					},
 					Spec: observabilityv1alpha2.SilenceSpec{
 						Matchers: []observabilityv1alpha2.SilenceMatcher{
 							{
-								Name:  "alertname",
+								Name:  testMatcherName,
 								Value: "TestAlertV2",
 							},
 						},
@@ -116,19 +116,19 @@ var _ = Describe("SilenceV2 Controller", func() {
 			finalizerTestResourceName := "finalizer-test-resource"
 			finalizerTestNamespacedName := types.NamespacedName{
 				Name:      finalizerTestResourceName,
-				Namespace: "default",
+				Namespace: defaultNamespace,
 			}
 
 			By("Creating a separate resource for finalizer testing")
 			finalizerTestResource := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      finalizerTestResourceName,
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 				Spec: observabilityv1alpha2.SilenceSpec{
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
 						{
-							Name:  "alertname",
+							Name:  testMatcherName,
 							Value: "FinalizerTestAlert",
 						},
 					},
@@ -202,13 +202,13 @@ var _ = Describe("SilenceV2 Controller", func() {
 				silence := &observabilityv1alpha2.Silence{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-silence",
-						Namespace: "default",
+						Namespace: defaultNamespace,
 					},
 					Spec: observabilityv1alpha2.SilenceSpec{
 						Matchers: []observabilityv1alpha2.SilenceMatcher{
 							{
-								Name:      "alertname",
-								Value:     "TestAlert",
+								Name:      testMatcherName,
+								Value:     testMatcherValue,
 								MatchType: tc.matchType,
 							},
 						},
@@ -224,8 +224,8 @@ var _ = Describe("SilenceV2 Controller", func() {
 					"IsRegex mismatch for %s", tc.description)
 				Expect(matcher.IsEqual).To(Equal(tc.expectedIsEqual),
 					"IsEqual mismatch for %s", tc.description)
-				Expect(matcher.Name).To(Equal("alertname"))
-				Expect(matcher.Value).To(Equal("TestAlert"))
+				Expect(matcher.Name).To(Equal(testMatcherName))
+				Expect(matcher.Value).To(Equal(testMatcherValue))
 			}
 		})
 
@@ -235,8 +235,8 @@ var _ = Describe("SilenceV2 Controller", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-namespace",
 					Labels: map[string]string{
-						"environment": "production",
-						"team":        "platform",
+						testLabelEnvironment: testEnvProduction,
+						testLabelTeam:        testTeamPlatform,
 					},
 				},
 			}
@@ -253,8 +253,8 @@ var _ = Describe("SilenceV2 Controller", func() {
 
 			// Test can the namespace selector matches the test namespace labels
 			Expect(namespaceSelectorLabels.Matches(labels.Set{
-				"environment": "production",
-				"team":        "platform",
+				testLabelEnvironment: testEnvProduction,
+				testLabelTeam:        testTeamPlatform,
 			})).To(BeTrue())
 
 			// Test that the namespace selector doesn't match different labels
@@ -264,8 +264,8 @@ var _ = Describe("SilenceV2 Controller", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(nonMatchingNamespaceSelectorLabels.Matches(labels.Set{
-				"environment": "production",
-				"team":        "platform",
+				testLabelEnvironment: testEnvProduction,
+				testLabelTeam:        testTeamPlatform,
 			})).To(BeFalse())
 
 			By("Testing that namespace selector logic works correctly")
