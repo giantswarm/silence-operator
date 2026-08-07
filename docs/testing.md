@@ -7,7 +7,7 @@ This document explains the testing infrastructure and practices for the Silence 
 The Silence Operator uses a comprehensive testing strategy that includes unit tests, integration tests, and end-to-end tests. The testing infrastructure is built on top of Kubebuilder's testing framework with enhancements for better developer experience.
 
 **Key Testing Areas:**
-- **Controller Logic**: Tests for both `SilenceReconciler` (v1alpha1) and `SilenceV2Reconciler` (v1alpha2) 
+- **Controller Logic**: Tests for both `SilenceReconciler` (v1alpha1) and `SilenceV2Reconciler` (v1alpha2)
 - **Service Layer**: Business logic testing with mock Alertmanager clients
 - **API Conversion**: Testing the conversion between different matcher formats (boolean vs enum)
 - **Finalizer Handling**: Proper cleanup and deletion testing
@@ -31,7 +31,7 @@ func getKubeBuilderAssets() string {
 The project includes a sophisticated mock Alertmanager HTTP server for testing:
 
 - **File**: `internal/controller/testutils/mock_alertmanager.go`
-- **Features**: 
+- **Features**:
   - Full CRUD operations for silences
   - Realistic HTTP responses
   - Configurable behavior for error scenarios
@@ -152,7 +152,7 @@ var _ = Describe("SilenceV2 Controller", func() {
         It("should successfully reconcile the resource", func() {
             // Test implementation for v1alpha2 API
         })
-        
+
         It("should handle deletion with finalizer", func() {
             // Test finalizer logic for v1alpha2
         })
@@ -172,12 +172,12 @@ var _ = Describe("SilenceV2 Controller", func() {
                 {observabilityv1alpha2.MatchRegexNotMatch, true, false, "regex non-match (!~)"},
                 {"", false, true, "empty/default should be exact match"},
             }
-            
+
             for _, tc := range testCases {
                 // Test the conversion logic for each match type
                 silence := createTestSilenceWithMatchType(tc.matchType)
                 result, err := reconciler.getSilenceFromCR(silence)
-                
+
                 Expect(err).NotTo(HaveOccurred())
                 Expect(result.Matchers[0].IsRegex).To(Equal(tc.expectedIsRegex))
                 Expect(result.Matchers[0].IsEqual).To(Equal(tc.expectedIsEqual))
@@ -197,11 +197,11 @@ func TestSilenceService_CreateOrUpdateSilence(t *testing.T) {
     // Setup mock Alertmanager client
     mockClient := &MockAlertmanagerClient{}
     service := NewSilenceService(mockClient)
-    
+
     // Test business logic without Kubernetes dependencies
     err := service.CreateOrUpdateSilence(ctx, "test-comment", silence)
     assert.NoError(t, err)
-    
+
     // Verify expected Alertmanager operations
     mockClient.AssertCreateSilenceCalled(t, silence)
 }
@@ -344,7 +344,7 @@ bin/ginkgo -v --trace ./...
 ### Test Environment Debugging
 
 ```bash
-# Check tool versions  
+# Check tool versions
 bin/setup-envtest version
 bin/ginkgo version
 bin/golangci-lint version
@@ -490,7 +490,7 @@ The silence-operator supports two API versions with different matcher field form
 
 **v1alpha2 (Recommended)**:
 - Uses enum field: `matchType: MatchType` with values `=`, `!=`, `=~`, `!~`
-- Namespace-scoped resources  
+- Namespace-scoped resources
 - Tested in `silence_v2_controller_test.go`
 
 ### MatchType Conversion Testing
@@ -512,7 +512,7 @@ Context("MatchType Conversion", func() {
             {observabilityv1alpha2.MatchRegexNotMatch, true, false, "regex non-match (!~)"},
             {"", false, true, "empty/default should be exact match"},
         }
-        
+
         for _, tc := range testCases {
             // Test conversion logic
         }

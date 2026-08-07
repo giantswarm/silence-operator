@@ -6,7 +6,6 @@ set -euo pipefail
 
 # Help function
 show_help() {
-    local bin="$(basename "$0")"
     cat << EOF
 Usage: $0 <target-namespace> [--dry-run|--help]
 
@@ -73,17 +72,17 @@ echo "==========================================================================
 # Function to convert a single matcher from boolean to enum
 convert_matcher_to_enum() {
     local matcher_json="$1"
-    
+
     local name
     local value
     local isRegex
     local isEqual
-    
+
     name="$(echo "$matcher_json" | jq -r '.name')"
     value="$(echo "$matcher_json" | jq -r '.value')"
     isRegex="$(echo "$matcher_json" | jq -r '.isRegex // false')"
     isEqual="$(echo "$matcher_json" | jq -r 'if has("isEqual") then .isEqual else true end')"
-    
+
     # Convert boolean combination to enum
     local matchType
     case "${isRegex}-${isEqual}" in
@@ -93,7 +92,7 @@ convert_matcher_to_enum() {
         "true-false")  matchType="!~" ;;
         *)             matchType="=" ;;  # Default fallback
     esac
-    
+
     # Return new matcher format
     jq -n --arg name "$name" --arg value "$value" --arg matchType "$matchType" \
         '{name: $name, value: $value, matchType: $matchType}'
@@ -141,30 +140,30 @@ echo ""
 # Process each silence
 echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silence; do
     silence="$(echo "$encoded_silence" | base64 --decode)"
-    
+
     name="$(echo "$silence" | jq -r '.metadata.name')"
     echo "🔄 Processing silence: $name"
-    
+
     # Convert all matchers
     converted_matchers="[]"
     echo "$silence" | jq -r '.spec.matchers[] | @base64' | while read -r matcher; do
         original_matcher="$(echo "$matcher" | base64 --decode)"
         converted_matcher="$(convert_matcher_to_enum "$original_matcher")"
         converted_matchers="$(echo "$converted_matchers" | jq ". += [$converted_matcher]")"
-        
+
         # Log conversion
         matcher_name="$(echo "$original_matcher" | jq -r '.name')"
         old_isRegex="$(echo "$original_matcher" | jq -r '.isRegex')"
         old_isEqual="$(echo "$original_matcher" | jq -r '.isEqual')"
         new_matchType="$(echo "$converted_matcher" | jq -r '.matchType')"
-        
+
         echo "   📝 $matcher_name: isRegex=$old_isRegex, isEqual=$old_isEqual → matchType='$new_matchType'"
     done
-    
+
     # Extract annotations and labels, excluding Kubernetes and FluxCD system metadata
     # This regex pattern excludes common system annotations/labels
     annotations="$(echo "$silence" | jq '
-        .metadata.annotations // {} | 
+        .metadata.annotations // {} |
         with_entries(
             select(
                 .key | test("^(kubernetes\\.io|k8s\\.io|config\\.kubernetes\\.io|app\\.kubernetes\\.io|fluxcd\\.io|helm\\.sh|kustomize\\.toolkit\\.fluxcd\\.io|source\\.toolkit\\.fluxcd\\.io|meta\\.helm\\.sh|kubectl\\.kubernetes\\.io|control-plane\\.alpha\\.kubernetes\\.io|node\\.alpha\\.kubernetes\\.io|volume\\.alpha\\.kubernetes\\.io|admission\\.gke\\.io|autopilot\\.gke\\.io|cloud\\.google\\.com|container\\.googleapis\\.com)") | not
@@ -172,43 +171,43 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
         )
     ')"
     labels="$(echo "$silence" | jq '
-        .metadata.labels // {} | 
+        .metadata.labels // {} |
         with_entries(
             select(
                 .key | test("^(kubernetes\\.io|k8s\\.io|app\\.kubernetes\\.io|pod-template-hash|controller-revision-hash|fluxcd\\.io|helm\\.sh|kustomize\\.toolkit\\.fluxcd\\.io|source\\.toolkit\\.fluxcd\\.io|meta\\.helm\\.sh|kubectl\\.kubernetes\\.io|control-plane\\.alpha\\.kubernetes\\.io|node\\.alpha\\.kubernetes\\.io|volume\\.alpha\\.kubernetes\\.io|admission\\.gke\\.io|autopilot\\.gke\\.io|cloud\\.google\\.com|container\\.googleapis\\.com)") | not
             )
         )
     ')"
-    
+
     # Log annotations and labels being copied
     annotation_count="$(echo "$annotations" | jq 'length')"
     label_count="$(echo "$labels" | jq 'length')"
-    
+
     if [[ "$annotation_count" -gt 0 ]]; then
         echo "   📎 Copying $annotation_count user annotation(s): $(echo "$annotations" | jq -r 'keys | join(", ")')"
     fi
-    
+
     if [[ "$label_count" -gt 0 ]]; then
         echo "   🏷️  Copying $label_count user label(s): $(echo "$labels" | jq -r 'keys | join(", ")')"
     fi
-    
+
     # Create the v1alpha2 silence with preserved user annotations and labels
     # Build metadata object with preserved annotations and labels
     metadata_base="$(jq -n --arg name "$name" --arg namespace "$TARGET_NAMESPACE" \
         '{name: $name, namespace: $namespace}')"
-    
+
     # Add annotations if present
     if [[ "$annotation_count" -gt 0 ]]; then
         metadata_base="$(echo "$metadata_base" | jq --argjson annotations "$annotations" \
             '. + {annotations: $annotations}')"
     fi
-    
+
     # Add labels if present
     if [[ "$label_count" -gt 0 ]]; then
         metadata_base="$(echo "$metadata_base" | jq --argjson labels "$labels" \
             '. + {labels: $labels}')"
     fi
-    
+
     # Create the full silence YAML using jq
     silence_yaml="$(jq -n \
         --argjson metadata "$metadata_base" \
@@ -221,7 +220,7 @@ echo "$silences_json" | jq -r '.items[] | @base64' | while read -r encoded_silen
                 matchers: $matchers
             }
         }')"
-    
+
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "   🔍 DRY RUN: Would create v1alpha2 silence in namespace $TARGET_NAMESPACE"
         echo "   📄 Generated YAML:"
