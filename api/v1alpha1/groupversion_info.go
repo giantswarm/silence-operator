@@ -39,6 +39,7 @@ var (
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(GroupVersion,
 		&Silence{},
+		&SilenceList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, GroupVersion)
