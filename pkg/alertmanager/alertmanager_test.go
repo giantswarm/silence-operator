@@ -204,7 +204,7 @@ func TestAlertmanager_ListSilences(t *testing.T) {
 				}
 			}
 		]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -243,7 +243,7 @@ func TestAlertmanager_GetSilenceByComment(t *testing.T) {
 				}
 			}
 		]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -428,7 +428,7 @@ func TestAlertmanager_DeleteSilenceByComment(t *testing.T) {
 					}
 				}
 			]`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		} else {
 			// Second call - delete silence
 			assert.Equal(t, "/api/v2/silence/test-id", r.URL.Path)
@@ -459,7 +459,7 @@ func TestAlertmanager_WithAuthentication(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte(`[]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -485,7 +485,7 @@ func TestAlertmanager_WithTenantID(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte(`[]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -561,7 +561,7 @@ func TestAlertmanager_ListSilences_WithTenant(t *testing.T) {
 				}
 			}
 		]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -599,7 +599,7 @@ func TestAlertmanager_GetSilenceByComment_WithTenant(t *testing.T) {
 				}
 			}
 		]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -644,7 +644,7 @@ func TestAlertmanager_TenantPrecedence(t *testing.T) {
 		assert.Equal(t, "param-tenant", r.Header.Get("X-Scope-OrgID"))
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte(`[]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -665,7 +665,7 @@ func TestAlertmanager_BackwardCompatibilityUsesInstanceTenant(t *testing.T) {
 		assert.Equal(t, "instance-tenant", r.Header.Get("X-Scope-OrgID"))
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte(`[]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
