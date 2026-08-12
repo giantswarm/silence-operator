@@ -25,4 +25,3 @@ resources:
 - silence_admin_role.yaml
 - silence_editor_role.yaml
 - silence_viewer_role.yaml
-

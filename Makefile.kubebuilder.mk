@@ -1,6 +1,6 @@
 # Kubernetes API Code Generation and Manifest Management
 # Enhanced version following modern Kubernetes operator best practices
-# 
+#
 # This file manages:
 # - Custom Resource Definition (CRD) generation
 # - Go code generation (deepcopy, client, etc.)
@@ -21,7 +21,7 @@ CONTROLLER_TOOLS_VERSION ?= v0.18.0
 KUSTOMIZE_VERSION ?= v5.6.0
 # Auto-detect ENVTEST version from controller-runtime dependency
 ENVTEST_VERSION ?= $(shell go list -m -f "{{ .Version }}" sigs.k8s.io/controller-runtime 2>/dev/null | awk -F'[v.]' '{printf "release-%d.%d", $$2, $$3}')
-# Auto-detect Kubernetes version from k8s.io/api dependency  
+# Auto-detect Kubernetes version from k8s.io/api dependency
 ENVTEST_K8S_VERSION ?= $(shell go list -m -f "{{ .Version }}" k8s.io/api 2>/dev/null | awk -F'[v.]' '{printf "1.%d", $$3}')
 
 # Code quality and development tool versions
@@ -84,7 +84,7 @@ MANIFEST_DIRS := $(CRD_DIR) $(RBAC_DIR) $(WEBHOOK_DIR)
 generate: generate-deepcopy generate-manifests ## Generate all code and manifests
 	$(call log_info,"Code generation completed successfully")
 
-.PHONY: manifests  
+.PHONY: manifests
 manifests: generate-crds generate-rbac generate-webhook ## Generate all Kubernetes manifests
 	$(call log_info,"Kubernetes manifest generation completed")
 
@@ -125,7 +125,7 @@ generate-crds: $(CONTROLLER_GEN) | $(CRD_DIR) ## Generate Custom Resource Defini
 		output:crd:artifacts:config="$(CRD_DIR)"
 	@$(call log_info,"CRD generation completed")
 
-.PHONY: generate-rbac  
+.PHONY: generate-rbac
 generate-rbac: $(CONTROLLER_GEN) | $(RBAC_DIR) ## Generate RBAC manifests
 	$(call log_build,"Generating RBAC manifests")
 	@$(CONTROLLER_GEN) rbac:roleName=manager-role \
@@ -158,24 +158,6 @@ manifests-legacy: generate-manifests
 # Code Quality and Development Tools
 # ==================================================================================
 
-.PHONY: fmt
-fmt: ## Run go fmt against code
-	$(call log_build,"Running go fmt")
-	@go fmt ./...
-	@$(call log_info,"Code formatting completed")
-
-.PHONY: vet
-vet: ## Run go vet against code
-	$(call log_build,"Running go vet")
-	@go vet ./...
-	@$(call log_info,"Code vetting completed")
-
-.PHONY: lint
-lint: golangci-lint ## Run golangci-lint linter
-	$(call log_build,"Running golangci-lint")
-	@$(GOLANGCI_LINT) run -E gosec -E goconst --timeout=15m ./...
-	@$(call log_info,"Linting completed")
-
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 	$(call log_build,"Running golangci-lint with auto-fix")
@@ -193,7 +175,7 @@ lint-config: golangci-lint ## Verify golangci-lint linter configuration
 # ==================================================================================
 
 .PHONY: test
-test: ginkgo envtest ## Run tests with Ginkgo and envtest
+test-ginkgo: ginkgo envtest ## Run tests with Ginkgo and envtest
 	$(call log_build,"Running tests with Ginkgo")
 	@KUBEBUILDER_ASSETS="$$($(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" \
 		$(GINKGO) -p --nodes 4 -randomize-all --randomize-suites --cover --skip-package=e2e ./...
@@ -229,7 +211,7 @@ validate-crds: $(KUSTOMIZE) generate-crds ## Validate generated CRDs
 	done
 	@$(call log_info,"CRD validation completed")
 
-.PHONY: validate-manifests  
+.PHONY: validate-manifests
 validate-manifests: validate-crds $(KUSTOMIZE) ## Validate all generated manifests
 	$(call log_build,"Validating Kubernetes manifests")
 	@if [ -d "$(CRD_OPTIONS)" ]; then \
@@ -288,7 +270,7 @@ update-tools: clean-tools install-tools ## Update all tools to latest versions
 	$(call log_info,"Tools updated successfully")
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
-# $1 - target path with name of binary  
+# $1 - target path with name of binary
 # $2 - package url which can be installed
 # $3 - specific version of package
 define go-install-tool
@@ -362,7 +344,7 @@ help-kubebuilder: ## Show help for Kubebuilder targets
 	@echo "    generate-all         Generate everything (code + manifests)"
 	@echo "    generate-deepcopy    Generate deepcopy methods for API types"
 	@echo "    generate-client      Generate Kubernetes client code"
-	@echo "    generate-crds        Generate Custom Resource Definitions" 
+	@echo "    generate-crds        Generate Custom Resource Definitions"
 	@echo "    generate-rbac        Generate RBAC manifests"
 	@echo "    generate-webhook     Generate webhook configurations"
 	@echo "    generate-manifests   Generate all Kubernetes manifests"
