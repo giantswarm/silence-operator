@@ -486,6 +486,34 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("endsAt and duration are mutually exclusive"))
 		})
+
+		DescribeTable("should reject malformed durations",
+			func(value string) {
+				duration := observabilityv1alpha2.SilenceDuration(value)
+
+				silence := &observabilityv1alpha2.Silence{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "invalid-silence-duration",
+						Namespace: "default",
+					},
+					Spec: observabilityv1alpha2.SilenceSpec{
+						Duration: &duration,
+						Matchers: []observabilityv1alpha2.SilenceMatcher{
+							{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+						},
+					},
+				}
+
+				err := k8sClient.Create(ctx, silence)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("spec.duration"))
+			},
+			Entry("units out of order", "1h30d"),
+			Entry("repeated unit", "2d2d"),
+			Entry("empty", ""),
+			Entry("unknown unit", "1y"),
+			Entry("missing unit", "12"),
+		)
 	})
 
 	Context("Matcher Types with CRDs", func() {

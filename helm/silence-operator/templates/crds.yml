@@ -156,7 +156,7 @@ spec:
                   Duration defines how long the silence is active from StartsAt (or creation time when StartsAt is unset).
                   Ignored when EndsAt is set. Takes precedence over the valid-until annotation.
                   Supports weeks (w), days (d), hours (h), minutes (m), and seconds (s): "7d", "2w", "1d12h", "30m".
-                pattern: ^(\d+(w|d|h|m|s))+$
+                pattern: ^(\d+w(\d+d)?(\d+h)?(\d+m)?(\d+s)?|\d+d(\d+h)?(\d+m)?(\d+s)?|\d+h(\d+m)?(\d+s)?|\d+m(\d+s)?|\d+s)$
                 type: string
               endsAt:
                 description: EndsAt defines when the silence expires. Takes precedence

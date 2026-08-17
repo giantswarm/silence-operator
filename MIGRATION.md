@@ -104,7 +104,7 @@ v1alpha2 includes comprehensive validation:
 - **Matcher value**: Required, max 1024 characters
 - **Matchers array**: At least 1 matcher required
 - **MatchType**: Must be one of `=`, `!=`, `=~`, `!~` (defaults to `=`)
-- **Duration**: Pattern `^(\d+(w|d|h|m|s))+$`; `endsAt` and `duration` are mutually exclusive
+- **Duration**: Each of `w`, `d`, `h`, `m`, `s` at most once, ordered largest to smallest (`1d12h`, not `12h1d`); `endsAt` and `duration` are mutually exclusive
 
 ## Migration Strategies
 

@@ -281,7 +281,7 @@ v1alpha2 silences support three ways to control when a silence is active:
 | `endsAt` | RFC 3339 timestamp | When the silence expires. Takes precedence over `duration`. |
 | `duration` | duration string | How long the silence is active from `startsAt`. Mutually exclusive with `endsAt`. |
 
-`duration` accepts weeks (`w`), days (`d`), hours (`h`), minutes (`m`), and seconds (`s`), and units can be combined: `"7d"`, `"2w"`, `"1d12h"`, `"30m"`.
+`duration` accepts weeks (`w`), days (`d`), hours (`h`), minutes (`m`), and seconds (`s`), and units can be combined: `"7d"`, `"2w"`, `"1d12h"`, `"30m"`. Each unit may appear at most once, ordered from largest to smallest.
 
 When neither `endsAt` nor `duration` is set, the operator falls back to the `valid-until` annotation (migration path from v1alpha1), then to a 100-year default.
 

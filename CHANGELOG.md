@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `startsAt`, `endsAt`, and `duration` fields to the v1alpha2 Silence CRD for explicit silence scheduling. `duration` accepts weeks (`w`), days (`d`), hours (`h`), minutes (`m`), and seconds (`s`): `"7d"`, `"2w"`, `"1d12h"`. `endsAt` and `duration` are mutually exclusive. When neither is set, the `valid-until` annotation is used as a fallback.
+- Add `startsAt`, `endsAt`, and `duration` fields to the v1alpha2 Silence CRD for explicit silence scheduling. `duration` accepts weeks (`w`), days (`d`), hours (`h`), minutes (`m`), and seconds (`s`), each at most once and ordered largest to smallest: `"7d"`, `"2w"`, `"1d12h"`. `endsAt` and `duration` are mutually exclusive. When neither is set, the `valid-until` annotation is used as a fallback.
 
 ### Changed
 

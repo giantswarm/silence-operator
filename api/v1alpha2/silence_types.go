@@ -41,7 +41,8 @@ const (
 
 // SilenceDuration is a duration string that extends Go's time.Duration syntax
 // with week (w) and day (d) units: "7d", "2w", "1d12h", "30m".
-// +kubebuilder:validation:Pattern=`^(\d+(w|d|h|m|s))+$`
+// Units must appear at most once, ordered from largest to smallest.
+// +kubebuilder:validation:Pattern=`^(\d+w(\d+d)?(\d+h)?(\d+m)?(\d+s)?|\d+d(\d+h)?(\d+m)?(\d+s)?|\d+h(\d+m)?(\d+s)?|\d+m(\d+s)?|\d+s)$`
 type SilenceDuration string
 
 // Duration parses the value into a time.Duration, where d is 24h and w is 168h.
