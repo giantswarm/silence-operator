@@ -38,7 +38,7 @@ spec:
     isRegex: false    # ❌ Removed in v1alpha2
     isEqual: true     # ❌ Removed in v1alpha2
 
-# v1alpha2 (new enum approach)  
+# v1alpha2 (new enum approach)
 spec:
   matchers:
   - name: "alertname"
@@ -193,14 +193,14 @@ The migration script **automatically preserves user-defined annotations and labe
 #### ✅ **Preserved** (User Metadata):
 - `motivation` - User-defined reasoning for the silence
 - `valid-until` - User-defined expiry date
-- `issue` - User-defined issue tracker links  
+- `issue` - User-defined issue tracker links
 - `app.example.com/*` - Custom application labels
 - `team.company.com/*` - Custom team labels
 - Any other user-defined annotations/labels
 
 #### ❌ **Filtered Out** (System Metadata):
 - `kubernetes.io/*` - Core Kubernetes metadata
-- `k8s.io/*` - Kubernetes ecosystem 
+- `k8s.io/*` - Kubernetes ecosystem
 - `config.kubernetes.io/*` - Kubernetes configuration origin
 - `app.kubernetes.io/*` - Kubernetes app labeling
 - `fluxcd.io/*` - FluxCD system metadata
@@ -234,7 +234,7 @@ metadata:
     kustomize.toolkit.fluxcd.io/namespace: flux-giantswarm  # ❌ FILTERED OUT (FluxCD system label)
     app.example.com/component: monitoring               # ✅ WOULD BE PRESERVED (user label)
 
-# Migrated v1alpha2 metadata  
+# Migrated v1alpha2 metadata
 metadata:
   name: common-jobscrapingfailure
   namespace: production
@@ -372,7 +372,7 @@ subjects:
 - kind: User
   name: alice@company.com
   apiGroup: rbac.authorization.k8s.io
-- kind: User  
+- kind: User
   name: bob@company.com
   apiGroup: rbac.authorization.k8s.io
 roleRef:
@@ -425,7 +425,7 @@ spec:
     isEqual: true
 EOF
 
-# Test v1alpha2 controller  
+# Test v1alpha2 controller
 kubectl apply -f - <<EOF
 apiVersion: observability.giantswarm.io/v1alpha2
 kind: Silence

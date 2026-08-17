@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  architect: giantswarm/architect@8.3.0
+  architect: giantswarm/architect@9.6.0
 
 jobs:
   go-tests:
@@ -11,7 +11,7 @@ jobs:
     - checkout
     - run:
         name: Run unit and integration tests
-        command: CGO_ENABLED=0 make test
+        command: CGO_ENABLED=0 make test-ginkgo
 
   e2e-tests:
     machine:
@@ -72,6 +72,7 @@ workflows:
         context: architect
         name: go-build
         binary: silence-operator
+        sign: << not (pipeline.git.branch matches /^pull\/[0-9]+/) >>
         requires:
         - go-tests
         path: ./cmd
@@ -90,6 +91,7 @@ workflows:
           branches:
             ignore:
             - main
+            - /pull\/[0-9]+/
 
     - architect/push-to-app-catalog:
         context: architect
@@ -106,3 +108,4 @@ workflows:
           branches:
             ignore:
             - main
+            - /pull\/[0-9]+/

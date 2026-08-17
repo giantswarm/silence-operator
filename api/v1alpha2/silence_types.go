@@ -116,7 +116,3 @@ type SilenceList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Silence `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&Silence{}, &SilenceList{})
-}

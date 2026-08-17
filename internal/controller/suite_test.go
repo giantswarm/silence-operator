@@ -49,6 +49,21 @@ var (
 	k8sClient client.Client
 )
 
+// Values shared by the tests in this package.
+const (
+	defaultNamespace = "default"
+
+	testMatcherName  = "alertname"
+	testMatcherValue = "TestAlert"
+	testOwner        = "test-owner"
+	testIssueURL     = "https://github.com/example/test-issue"
+
+	testLabelEnvironment = "environment"
+	testLabelTeam        = "team"
+	testEnvProduction    = "production"
+	testTeamPlatform     = "platform"
+)
+
 // getKubeBuilderAssets attempts to get KUBEBUILDER_ASSETS from environment
 // or find the binaries automatically. Returns empty string if neither is available.
 func getKubeBuilderAssets() string {

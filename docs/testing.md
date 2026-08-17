@@ -7,7 +7,7 @@ This document explains the testing infrastructure and practices for the Silence 
 The Silence Operator uses a comprehensive testing strategy that includes unit tests, integration tests, and end-to-end tests. The testing infrastructure is built on top of Kubebuilder's testing framework with enhancements for better developer experience.
 
 **Key Testing Areas:**
-- **Controller Logic**: Tests for both `SilenceReconciler` (v1alpha1) and `SilenceV2Reconciler` (v1alpha2) 
+- **Controller Logic**: Tests for both `SilenceReconciler` (v1alpha1) and `SilenceV2Reconciler` (v1alpha2)
 - **Service Layer**: Business logic testing with mock Alertmanager clients
 - **API Conversion**: Testing the conversion between different matcher formats (boolean vs enum)
 - **Finalizer Handling**: Proper cleanup and deletion testing
@@ -31,7 +31,7 @@ func getKubeBuilderAssets() string {
 The project includes a sophisticated mock Alertmanager HTTP server for testing:
 
 - **File**: `internal/controller/testutils/mock_alertmanager.go`
-- **Features**: 
+- **Features**:
   - Full CRUD operations for silences
   - Realistic HTTP responses
   - Configurable behavior for error scenarios
@@ -67,7 +67,7 @@ This installs:
 
 ```bash
 # Run all tests
-make test
+make test-ginkgo
 
 # Run tests with specific Ginkgo arguments (modify test target as needed)
 $(GINKGO) -focus='Silence Controller' ./...
@@ -95,7 +95,7 @@ bin/ginkgo -focus='Controller' ./...
 bin/ginkgo -skip='Integration' ./...
 
 # Set Kubernetes version for envtest
-make test ENVTEST_K8S_VERSION="1.29"
+make test-ginkgo ENVTEST_K8S_VERSION="1.29"
 
 # Run tests with verbose output
 bin/ginkgo -v ./...
@@ -152,7 +152,7 @@ var _ = Describe("SilenceV2 Controller", func() {
         It("should successfully reconcile the resource", func() {
             // Test implementation for v1alpha2 API
         })
-        
+
         It("should handle deletion with finalizer", func() {
             // Test finalizer logic for v1alpha2
         })
@@ -172,12 +172,12 @@ var _ = Describe("SilenceV2 Controller", func() {
                 {observabilityv1alpha2.MatchRegexNotMatch, true, false, "regex non-match (!~)"},
                 {"", false, true, "empty/default should be exact match"},
             }
-            
+
             for _, tc := range testCases {
                 // Test the conversion logic for each match type
                 silence := createTestSilenceWithMatchType(tc.matchType)
                 result, err := reconciler.getSilenceFromCR(silence)
-                
+
                 Expect(err).NotTo(HaveOccurred())
                 Expect(result.Matchers[0].IsRegex).To(Equal(tc.expectedIsRegex))
                 Expect(result.Matchers[0].IsEqual).To(Equal(tc.expectedIsEqual))
@@ -197,11 +197,11 @@ func TestSilenceService_CreateOrUpdateSilence(t *testing.T) {
     // Setup mock Alertmanager client
     mockClient := &MockAlertmanagerClient{}
     service := NewSilenceService(mockClient)
-    
+
     // Test business logic without Kubernetes dependencies
     err := service.CreateOrUpdateSilence(ctx, "test-comment", silence)
     assert.NoError(t, err)
-    
+
     // Verify expected Alertmanager operations
     mockClient.AssertCreateSilenceCalled(t, silence)
 }
@@ -314,7 +314,7 @@ The test target automatically generates coverage information with Ginkgo:
 
 ```bash
 # Run tests (includes coverage)
-make test
+make test-ginkgo
 
 # Generate HTML coverage report
 go tool cover -html=coverprofile.out -o coverage.html
@@ -326,7 +326,7 @@ go tool cover -func=coverprofile.out
 ### Coverage Output
 
 Coverage reports are saved to:
-- `coverprofile.out` - Default coverage profile from Ginkgo via make test
+- `coverprofile.out` - Default coverage profile from Ginkgo via make test-ginkgo
 - `coverage.html` - HTML visualization (if generated manually)
 
 ## Debugging Tests
@@ -344,7 +344,7 @@ bin/ginkgo -v --trace ./...
 ### Test Environment Debugging
 
 ```bash
-# Check tool versions  
+# Check tool versions
 bin/setup-envtest version
 bin/ginkgo version
 bin/golangci-lint version
@@ -353,7 +353,7 @@ bin/golangci-lint version
 bin/setup-envtest list
 
 # Verify KUBEBUILDER_ASSETS detection
-make test ENVTEST_K8S_VERSION="1.30"
+make test-ginkgo ENVTEST_K8S_VERSION="1.30"
 ```
 
 # Verify tools are installed
@@ -377,7 +377,7 @@ make install-tools
 3. **Test Timeouts**
    ```bash
    # Solution: Increase timeout with Ginkgo args
-   make test GINKGO_ARGS="-timeout=15m"
+   make test-ginkgo GINKGO_ARGS="-timeout=15m"
    ```
 
 ## Continuous Integration
@@ -472,7 +472,7 @@ Tests must pass the following quality gates:
 kubectl get crd --context=envtest
 
 # Check controller logs in tests
-make test GINKGO_ARGS="-v" 2>&1 | grep "controller"
+make test-ginkgo GINKGO_ARGS="-v" 2>&1 | grep "controller"
 ```
 
 For more specific troubleshooting, refer to the individual test files and the Kubebuilder documentation.
@@ -490,7 +490,7 @@ The silence-operator supports two API versions with different matcher field form
 
 **v1alpha2 (Recommended)**:
 - Uses enum field: `matchType: MatchType` with values `=`, `!=`, `=~`, `!~`
-- Namespace-scoped resources  
+- Namespace-scoped resources
 - Tested in `silence_v2_controller_test.go`
 
 ### MatchType Conversion Testing
@@ -512,7 +512,7 @@ Context("MatchType Conversion", func() {
             {observabilityv1alpha2.MatchRegexNotMatch, true, false, "regex non-match (!~)"},
             {"", false, true, "empty/default should be exact match"},
         }
-        
+
         for _, tc := range testCases {
             // Test conversion logic
         }
