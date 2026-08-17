@@ -18,10 +18,9 @@ package v1alpha2
 
 import (
 	"fmt"
-	"regexp"
-	"strconv"
 	"time"
 
+	str2duration "github.com/xhit/go-str2duration/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -40,26 +39,18 @@ const (
 	MatchRegexNotMatch MatchType = "!~"
 )
 
-var durationExtPattern = regexp.MustCompile(`(\d+)([wd])`)
-var durationMultipliers = map[string]int{"d": 24, "w": 168}
-
 // SilenceDuration is a duration string that extends Go's time.Duration syntax
 // with week (w) and day (d) units: "7d", "2w", "1d12h", "30m".
 // +kubebuilder:validation:Pattern=`^(\d+(w|d|h|m|s))+$`
 type SilenceDuration string
 
-// Duration parses the value into a time.Duration, expanding d→24h and w→168h.
+// Duration parses the value into a time.Duration, where d is 24h and w is 168h.
 func (sd SilenceDuration) Duration() (time.Duration, error) {
-	expanded := durationExtPattern.ReplaceAllStringFunc(string(sd), func(m string) string {
-		parts := durationExtPattern.FindStringSubmatch(m)
-		n, _ := strconv.Atoi(parts[1])
-		return strconv.Itoa(n*durationMultipliers[parts[2]]) + "h"
-	})
-	d, err := time.ParseDuration(expanded)
+	duration, err := str2duration.ParseDuration(string(sd))
 	if err != nil {
-		return 0, fmt.Errorf("invalid duration %q: %v", sd, err)
+		return 0, fmt.Errorf("invalid duration %q: %w", sd, err)
 	}
-	return d, nil
+	return duration, nil
 }
 
 // SilenceMatcher defines an alert matcher to be muted by the Silence.
@@ -95,8 +86,7 @@ type SilenceSpec struct {
 	EndsAt *metav1.Time `json:"endsAt,omitempty"`
 
 	// Duration defines how long the silence is active from StartsAt (or creation time when StartsAt is unset).
-	// Ignored when EndsAt is set. When neither EndsAt nor Duration is set, the valid-until annotation is used,
-	// falling back to 100 years for backward compatibility with v1alpha1.
+	// Ignored when EndsAt is set. Takes precedence over the valid-until annotation.
 	// Supports weeks (w), days (d), hours (h), minutes (m), and seconds (s): "7d", "2w", "1d12h", "30m".
 	// +optional
 	Duration *SilenceDuration `json:"duration,omitempty"`

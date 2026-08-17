@@ -397,7 +397,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			got := findSilenceByComment(listSilences(), comment)
 			Expect(got).NotTo(BeNil(), "silence %q not found in Alertmanager", comment)
 			Expect(got.StartsAt).To(BeTemporally("~", startsAt.Time, time.Second))
-			Expect(got.EndsAt).To(BeTemporally("~", startsAt.Time.Add(3*time.Hour), time.Second))
+			Expect(got.EndsAt).To(BeTemporally("~", startsAt.Add(3*time.Hour), time.Second))
 		})
 
 		It("should use creation timestamp as start when startsAt is unset", func() {
