@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-08-18
+
 ### Added
 
 - Add `startsAt`, `endsAt`, and `duration` fields to the v1alpha2 Silence CRD for explicit silence scheduling. `duration` accepts weeks (`w`), days (`d`), hours (`h`), minutes (`m`), and seconds (`s`), each at most once and ordered largest to smallest: `"7d"`, `"2w"`, `"1d12h"`. `endsAt` and `duration` are mutually exclusive. When neither is set, the `valid-until` annotation is used as a fallback.
@@ -369,7 +371,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.20.1...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.21.0...HEAD
+[0.21.0]: https://github.com/giantswarm/silence-operator/compare/v0.20.1...v0.21.0
 [0.20.1]: https://github.com/giantswarm/silence-operator/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/giantswarm/silence-operator/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/giantswarm/silence-operator/compare/v0.18.0...v0.19.0
