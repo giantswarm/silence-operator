@@ -1,7 +1,15 @@
-[![CircleCI](https://circleci.com/gh/giantswarm/silence-operator.svg?&style=shield)](https://circleci.com/gh/giantswarm/silence-operator)
-[![Docker Repository on Quay](https://quay.io/repository/giantswarm/silence-operator/status "Docker Repository on Quay")](https://quay.io/repository/giantswarm/silence-operator)
+<div align="center">
 
-# silence-operator
+  <img src="assets/silence-operator-logo.svg" alt="silence-operator logo" width="180" height="180">
+
+  # silence-operator
+
+  [![Go Reference](https://pkg.go.dev/badge/github.com/giantswarm/silence-operator.svg)](https://pkg.go.dev/github.com/giantswarm/silence-operator)
+  [![CircleCI](https://circleci.com/gh/giantswarm/silence-operator.svg?&style=shield)](https://circleci.com/gh/giantswarm/silence-operator)
+  [![GitHub stars](https://img.shields.io/github/stars/giantswarm/silence-operator?style=flat&logo=github)](https://github.com/giantswarm/silence-operator/stargazers)
+  [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/giantswarm/silence-operator/badge)](https://scorecard.dev/viewer/?uri=github.com/giantswarm/silence-operator)
+
+</div>
 
 The Silence Operator automates the management of [Alertmanager](https://github.com/prometheus/alertmanager) [silences](https://prometheus.io/docs/alerting/latest/alertmanager/#silences) using Kubernetes Custom Resources. This allows you to define and manage silences declaratively, just like other Kubernetes objects, integrating them into your GitOps workflows.
 
