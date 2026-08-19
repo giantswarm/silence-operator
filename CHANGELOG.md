@@ -7,15 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-08-18
+
+### Added
+
+- Add `startsAt`, `endsAt`, and `duration` fields to the v1alpha2 Silence CRD for explicit silence scheduling. `duration` accepts weeks (`w`), days (`d`), hours (`h`), minutes (`m`), and seconds (`s`), each at most once and ordered largest to smallest: `"7d"`, `"2w"`, `"1d12h"`. `endsAt` and `duration` are mutually exclusive. When neither is set, the `valid-until` annotation is used as a fallback.
+
 ### Changed
 
 - Regenerate `.github/workflows/zz_generated.*.yaml` via devctl to use the centralized reusable workflow, removing the Node-20 `mindsers/changelog-reader-action` dependency.
+- Update Go dependencies, which resolves CVE-2026-63209 (`github.com/klauspost/compress`) and CVE-2026-56852 (`golang.org/x/text`) and removes their `.nancy-ignore` entries.
 
 ### Fixed
 
 - Quote the `=` scalars in the generated `matchType` CRD schema so the rendered chart parses under PyYAML (unblocks the `HelmTemplateValidator` step added in app-build-suite 2.2.0).
 - Fix various CVEs by updating dependencies:
 - Skip failing CI jobs using private secrets for external contributions from fork
+- Replace deprecated controller-runtime scheme.Builder with apimachinery runtime.NewSchemeBuilder
+- Fix `gosec`, `goconst` and `errcheck` linter errors in tests
 
 ## [0.20.1] - 2026-02-12
 
@@ -362,7 +371,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.20.1...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.21.0...HEAD
+[0.21.0]: https://github.com/giantswarm/silence-operator/compare/v0.20.1...v0.21.0
 [0.20.1]: https://github.com/giantswarm/silence-operator/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/giantswarm/silence-operator/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/giantswarm/silence-operator/compare/v0.18.0...v0.19.0

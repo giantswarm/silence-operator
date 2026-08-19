@@ -79,7 +79,7 @@ var _ = Describe("Silence Controller", func() {
 		const resourceName = "test-silence-new"
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		}
 
 		BeforeEach(func() {
@@ -87,13 +87,13 @@ var _ = Describe("Silence Controller", func() {
 			resource := &monitoringv1alpha1.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      resourceName,
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 				Spec: monitoringv1alpha1.SilenceSpec{
 					Matchers: []monitoringv1alpha1.Matcher{
 						{
-							Name:    "alertname",
-							Value:   "TestAlert",
+							Name:    testMatcherName,
+							Value:   testMatcherValue,
 							IsRegex: false,
 						},
 						{
@@ -102,8 +102,8 @@ var _ = Describe("Silence Controller", func() {
 							IsRegex: false,
 						},
 					},
-					Owner:    "test-owner",
-					IssueURL: "https://github.com/example/test-issue",
+					Owner:    testOwner,
+					IssueURL: testIssueURL,
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -144,7 +144,7 @@ var _ = Describe("Silence Controller", func() {
 		const resourceName = "test-silence-existing"
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		}
 
 		BeforeEach(func() {
@@ -152,18 +152,18 @@ var _ = Describe("Silence Controller", func() {
 			resource := &monitoringv1alpha1.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      resourceName,
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 				Spec: monitoringv1alpha1.SilenceSpec{
 					Matchers: []monitoringv1alpha1.Matcher{
 						{
-							Name:    "alertname",
-							Value:   "TestAlert",
+							Name:    testMatcherName,
+							Value:   testMatcherValue,
 							IsRegex: false,
 						},
 					},
-					Owner:    "test-owner",
-					IssueURL: "https://github.com/example/test-issue",
+					Owner:    testOwner,
+					IssueURL: testIssueURL,
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -203,7 +203,7 @@ var _ = Describe("Silence Controller", func() {
 		const resourceName = "test-silence-legacy"
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		}
 
 		BeforeEach(func() {
@@ -211,19 +211,19 @@ var _ = Describe("Silence Controller", func() {
 			resource := &monitoringv1alpha1.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       resourceName,
-					Namespace:  "default",
+					Namespace:  defaultNamespace,
 					Finalizers: []string{legacySilenceFinalizer},
 				},
 				Spec: monitoringv1alpha1.SilenceSpec{
 					Matchers: []monitoringv1alpha1.Matcher{
 						{
-							Name:    "alertname",
-							Value:   "TestAlert",
+							Name:    testMatcherName,
+							Value:   testMatcherValue,
 							IsRegex: false,
 						},
 					},
-					Owner:    "test-owner",
-					IssueURL: "https://github.com/example/test-issue",
+					Owner:    testOwner,
+					IssueURL: testIssueURL,
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -258,7 +258,7 @@ var _ = Describe("Silence Controller", func() {
 		const resourceName = "test-silence-delete"
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		}
 
 		BeforeEach(func() {
@@ -266,18 +266,18 @@ var _ = Describe("Silence Controller", func() {
 			resource := &monitoringv1alpha1.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      resourceName,
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 				Spec: monitoringv1alpha1.SilenceSpec{
 					Matchers: []monitoringv1alpha1.Matcher{
 						{
-							Name:    "alertname",
-							Value:   "TestAlert",
+							Name:    testMatcherName,
+							Value:   testMatcherValue,
 							IsRegex: false,
 						},
 					},
-					Owner:    "test-owner",
-					IssueURL: "https://github.com/example/test-issue",
+					Owner:    testOwner,
+					IssueURL: testIssueURL,
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -314,7 +314,7 @@ var _ = Describe("Silence Controller", func() {
 		const resourceName = "test-silence-delete-legacy"
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		}
 
 		It("should handle deletion with legacy finalizer properly", func() {
@@ -322,19 +322,19 @@ var _ = Describe("Silence Controller", func() {
 			resource := &monitoringv1alpha1.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       resourceName,
-					Namespace:  "default",
+					Namespace:  defaultNamespace,
 					Finalizers: []string{silenceFinalizer, legacySilenceFinalizer},
 				},
 				Spec: monitoringv1alpha1.SilenceSpec{
 					Matchers: []monitoringv1alpha1.Matcher{
 						{
-							Name:    "alertname",
-							Value:   "TestAlert",
+							Name:    testMatcherName,
+							Value:   testMatcherValue,
 							IsRegex: false,
 						},
 					},
-					Owner:    "test-owner",
-					IssueURL: "https://github.com/example/test-issue",
+					Owner:    testOwner,
+					IssueURL: testIssueURL,
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -360,7 +360,7 @@ var _ = Describe("Silence Controller", func() {
 		const resourceName = "test-silence-invalid-date"
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		}
 
 		BeforeEach(func() {
@@ -368,7 +368,7 @@ var _ = Describe("Silence Controller", func() {
 			resource := &monitoringv1alpha1.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      resourceName,
-					Namespace: "default",
+					Namespace: defaultNamespace,
 					Annotations: map[string]string{
 						alertmanager.ValidUntilAnnotationName: "invalid-date-format",
 					},
@@ -376,13 +376,13 @@ var _ = Describe("Silence Controller", func() {
 				Spec: monitoringv1alpha1.SilenceSpec{
 					Matchers: []monitoringv1alpha1.Matcher{
 						{
-							Name:    "alertname",
-							Value:   "TestAlert",
+							Name:    testMatcherName,
+							Value:   testMatcherValue,
 							IsRegex: false,
 						},
 					},
-					Owner:    "test-owner",
-					IssueURL: "https://github.com/example/test-issue",
+					Owner:    testOwner,
+					IssueURL: testIssueURL,
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -411,7 +411,7 @@ var _ = Describe("Silence Controller", func() {
 		const resourceName = "test-silence-rfc3339-date"
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		}
 
 		BeforeEach(func() {
@@ -420,7 +420,7 @@ var _ = Describe("Silence Controller", func() {
 			resource := &monitoringv1alpha1.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      resourceName,
-					Namespace: "default",
+					Namespace: defaultNamespace,
 					Annotations: map[string]string{
 						alertmanager.ValidUntilAnnotationName: futureTime,
 					},
@@ -428,13 +428,13 @@ var _ = Describe("Silence Controller", func() {
 				Spec: monitoringv1alpha1.SilenceSpec{
 					Matchers: []monitoringv1alpha1.Matcher{
 						{
-							Name:    "alertname",
-							Value:   "TestAlert",
+							Name:    testMatcherName,
+							Value:   testMatcherValue,
 							IsRegex: false,
 						},
 					},
-					Owner:    "test-owner",
-					IssueURL: "https://github.com/example/test-issue",
+					Owner:    testOwner,
+					IssueURL: testIssueURL,
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -468,7 +468,7 @@ var _ = Describe("Silence Controller", func() {
 		const resourceName = "test-silence-legacy-date"
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		}
 
 		BeforeEach(func() {
@@ -477,7 +477,7 @@ var _ = Describe("Silence Controller", func() {
 			resource := &monitoringv1alpha1.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      resourceName,
-					Namespace: "default",
+					Namespace: defaultNamespace,
 					Annotations: map[string]string{
 						alertmanager.ValidUntilAnnotationName: futureDate,
 					},
@@ -485,13 +485,13 @@ var _ = Describe("Silence Controller", func() {
 				Spec: monitoringv1alpha1.SilenceSpec{
 					Matchers: []monitoringv1alpha1.Matcher{
 						{
-							Name:    "alertname",
-							Value:   "TestAlert",
+							Name:    testMatcherName,
+							Value:   testMatcherValue,
 							IsRegex: false,
 						},
 					},
-					Owner:    "test-owner",
-					IssueURL: "https://github.com/example/test-issue",
+					Owner:    testOwner,
+					IssueURL: testIssueURL,
 				},
 			}
 			Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -527,7 +527,7 @@ var _ = Describe("Silence Controller", func() {
 			result, err := reconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "non-existent-silence",
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -542,14 +542,14 @@ var _ = Describe("Silence Controller", func() {
 			cr := &monitoringv1alpha1.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:              "test-silence",
-					Namespace:         "default",
+					Namespace:         defaultNamespace,
 					CreationTimestamp: metav1.NewTime(testTime),
 				},
 				Spec: monitoringv1alpha1.SilenceSpec{
 					Matchers: []monitoringv1alpha1.Matcher{
 						{
-							Name:    "alertname",
-							Value:   "TestAlert",
+							Name:    testMatcherName,
+							Value:   testMatcherValue,
 							IsRegex: true,
 							IsEqual: &[]bool{false}[0], // pointer to false
 						},
@@ -575,8 +575,8 @@ var _ = Describe("Silence Controller", func() {
 			Expect(silence.Matchers).To(HaveLen(2))
 
 			// First matcher: IsEqual=false, IsRegex=true
-			Expect(silence.Matchers[0].Name).To(Equal("alertname"))
-			Expect(silence.Matchers[0].Value).To(Equal("TestAlert"))
+			Expect(silence.Matchers[0].Name).To(Equal(testMatcherName))
+			Expect(silence.Matchers[0].Value).To(Equal(testMatcherValue))
 			Expect(silence.Matchers[0].IsRegex).To(BeTrue())
 			Expect(silence.Matchers[0].IsEqual).To(BeFalse())
 

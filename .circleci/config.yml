@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  architect: giantswarm/architect@9.6.0
+  architect: giantswarm/architect@10.0.0
 
 jobs:
   go-tests:
@@ -11,7 +11,7 @@ jobs:
     - checkout
     - run:
         name: Run unit and integration tests
-        command: CGO_ENABLED=0 make test
+        command: CGO_ENABLED=0 make test-ginkgo
 
   e2e-tests:
     machine:

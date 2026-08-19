@@ -123,6 +123,10 @@ func (m *MockAlertmanagerServer) handleCreateSilence(w http.ResponseWriter, r *h
 		silence.ID = "mock-id-" + silence.Comment
 	}
 
+	if silence.Status == nil {
+		silence.Status = &alertmanager.Status{State: "active"}
+	}
+
 	m.silences[silence.ID] = &silence
 
 	w.Header().Set("Content-Type", "application/json")

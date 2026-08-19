@@ -16,6 +16,8 @@ The silence-operator now supports two API versions:
 | **API Group** | `monitoring.giantswarm.io` | `observability.giantswarm.io` |
 | **Scope** | Cluster-scoped | Namespace-scoped |
 | **Matcher Fields** | `isRegex: bool`, `isEqual: bool` | `matchType: string` (enum) |
+| **Silence Duration** | `valid-until` annotation only | `endsAt`, `duration`, or `valid-until` annotation (fallback) |
+| **Duration Units** | n/a | `w` (weeks), `d` (days), `h`, `m`, `s` |
 | **Validation** | Basic validation | Enhanced validation with field size limits |
 | **Deprecated Fields** | Includes `targetTags`, `owner`, `issue_url`, `postmortem_url` | Cleaned up, only essential fields |
 | **Finalizer** | `monitoring.giantswarm.io/silence-protection` | `observability.giantswarm.io/silence-protection` |
@@ -36,7 +38,7 @@ spec:
     isRegex: false    # ❌ Removed in v1alpha2
     isEqual: true     # ❌ Removed in v1alpha2
 
-# v1alpha2 (new enum approach)  
+# v1alpha2 (new enum approach)
 spec:
   matchers:
   - name: "alertname"
@@ -68,14 +70,41 @@ spec:
   issue_url: "..."      # ❌ Removed
 ```
 
+### Scheduling Fields in v1alpha2
+
+v1alpha2 adds explicit scheduling via spec fields, while preserving the `valid-until` annotation as a migration path:
+
+```yaml
+# Option A: explicit window (spec fields)
+spec:
+  startsAt: "2025-07-16T02:00:00Z"
+  endsAt: "2025-07-16T06:00:00Z"
+  matchers: [...]
+
+# Option B: duration from creation (or startsAt)
+spec:
+  duration: "7d"   # also supports: 2w, 1d12h, 30m, 1h
+  matchers: [...]
+
+# Option C: legacy valid-until annotation (still works unchanged)
+metadata:
+  annotations:
+    valid-until: "2025-07-29T00:00:00Z"
+spec:
+  matchers: [...]
+```
+
+Priority when computing end time: `endsAt` > `duration` > `valid-until` annotation > 100-year default.
+
 ### Enhanced Validation in v1alpha2
 
 v1alpha2 includes comprehensive validation:
 
 - **Matcher name**: Required, 1-256 characters
-- **Matcher value**: Required, max 1024 characters  
+- **Matcher value**: Required, max 1024 characters
 - **Matchers array**: At least 1 matcher required
 - **MatchType**: Must be one of `=`, `!=`, `=~`, `!~` (defaults to `=`)
+- **Duration**: Each of `w`, `d`, `h`, `m`, `s` at most once, ordered largest to smallest (`1d12h`, not `12h1d`); `endsAt` and `duration` are mutually exclusive
 
 ## Migration Strategies
 
@@ -164,14 +193,14 @@ The migration script **automatically preserves user-defined annotations and labe
 #### ✅ **Preserved** (User Metadata):
 - `motivation` - User-defined reasoning for the silence
 - `valid-until` - User-defined expiry date
-- `issue` - User-defined issue tracker links  
+- `issue` - User-defined issue tracker links
 - `app.example.com/*` - Custom application labels
 - `team.company.com/*` - Custom team labels
 - Any other user-defined annotations/labels
 
 #### ❌ **Filtered Out** (System Metadata):
 - `kubernetes.io/*` - Core Kubernetes metadata
-- `k8s.io/*` - Kubernetes ecosystem 
+- `k8s.io/*` - Kubernetes ecosystem
 - `config.kubernetes.io/*` - Kubernetes configuration origin
 - `app.kubernetes.io/*` - Kubernetes app labeling
 - `fluxcd.io/*` - FluxCD system metadata
@@ -205,7 +234,7 @@ metadata:
     kustomize.toolkit.fluxcd.io/namespace: flux-giantswarm  # ❌ FILTERED OUT (FluxCD system label)
     app.example.com/component: monitoring               # ✅ WOULD BE PRESERVED (user label)
 
-# Migrated v1alpha2 metadata  
+# Migrated v1alpha2 metadata
 metadata:
   name: common-jobscrapingfailure
   namespace: production
@@ -343,7 +372,7 @@ subjects:
 - kind: User
   name: alice@company.com
   apiGroup: rbac.authorization.k8s.io
-- kind: User  
+- kind: User
   name: bob@company.com
   apiGroup: rbac.authorization.k8s.io
 roleRef:
@@ -396,7 +425,7 @@ spec:
     isEqual: true
 EOF
 
-# Test v1alpha2 controller  
+# Test v1alpha2 controller
 kubectl apply -f - <<EOF
 apiVersion: observability.giantswarm.io/v1alpha2
 kind: Silence

@@ -14,6 +14,15 @@ import (
 	"github.com/giantswarm/silence-operator/pkg/config"
 )
 
+// Values shared by the tests in this file.
+const (
+	testAddress = "http://localhost:9093"
+
+	testComment      = "test-comment"
+	testMatcherName  = "alertname"
+	testMatcherValue = "test-alert"
+)
+
 func TestNew(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -23,7 +32,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "valid config",
 			config: config.Config{
-				Address:        "http://localhost:9093",
+				Address:        testAddress,
 				Authentication: false,
 				BearerToken:    "",
 				TenantId:       "",
@@ -33,7 +42,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "valid config with auth",
 			config: config.Config{
-				Address:        "http://localhost:9093",
+				Address:        testAddress,
 				Authentication: true,
 				BearerToken:    "test-token",
 				TenantId:       "test-tenant",
@@ -195,7 +204,7 @@ func TestAlertmanager_ListSilences(t *testing.T) {
 				}
 			}
 		]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -234,7 +243,7 @@ func TestAlertmanager_GetSilenceByComment(t *testing.T) {
 				}
 			}
 		]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -299,14 +308,14 @@ func TestAlertmanager_CreateSilence(t *testing.T) {
 	require.NoError(t, err)
 
 	silence := &Silence{
-		Comment:   "test-comment",
+		Comment:   testComment,
 		CreatedBy: CreatedBy,
 		StartsAt:  time.Now(),
 		EndsAt:    time.Now().Add(time.Hour),
 		Matchers: []Matcher{
 			{
-				Name:    "alertname",
-				Value:   "test-alert",
+				Name:    testMatcherName,
+				Value:   testMatcherValue,
 				IsRegex: false,
 				IsEqual: true,
 			},
@@ -336,14 +345,14 @@ func TestAlertmanager_UpdateSilence(t *testing.T) {
 
 	silence := &Silence{
 		ID:        "test-id",
-		Comment:   "test-comment",
+		Comment:   testComment,
 		CreatedBy: CreatedBy,
 		StartsAt:  time.Now(),
 		EndsAt:    time.Now().Add(time.Hour),
 		Matchers: []Matcher{
 			{
-				Name:    "alertname",
-				Value:   "test-alert",
+				Name:    testMatcherName,
+				Value:   testMatcherValue,
 				IsRegex: false,
 				IsEqual: true,
 			},
@@ -356,13 +365,13 @@ func TestAlertmanager_UpdateSilence(t *testing.T) {
 
 func TestAlertmanager_UpdateSilence_MissingID(t *testing.T) {
 	config := config.Config{
-		Address: "http://localhost:9093",
+		Address: testAddress,
 	}
 	am, err := New(config)
 	require.NoError(t, err)
 
 	silence := &Silence{
-		Comment:   "test-comment",
+		Comment:   testComment,
 		CreatedBy: CreatedBy,
 		StartsAt:  time.Now(),
 		EndsAt:    time.Now().Add(time.Hour),
@@ -419,7 +428,7 @@ func TestAlertmanager_DeleteSilenceByComment(t *testing.T) {
 					}
 				}
 			]`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		} else {
 			// Second call - delete silence
 			assert.Equal(t, "/api/v2/silence/test-id", r.URL.Path)
@@ -435,7 +444,7 @@ func TestAlertmanager_DeleteSilenceByComment(t *testing.T) {
 	am, err := New(config)
 	require.NoError(t, err)
 
-	err = am.DeleteSilenceByComment("test-comment", "")
+	err = am.DeleteSilenceByComment(testComment, "")
 	assert.NoError(t, err)
 	assert.Equal(t, 2, callCount) // Should have made both calls
 }
@@ -450,7 +459,7 @@ func TestAlertmanager_WithAuthentication(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte(`[]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -476,7 +485,7 @@ func TestAlertmanager_WithTenantID(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte(`[]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -512,14 +521,14 @@ func TestAlertmanager_CreateSilence_WithTenant(t *testing.T) {
 	require.NoError(t, err)
 
 	silence := &Silence{
-		Comment:   "test-comment",
+		Comment:   testComment,
 		CreatedBy: CreatedBy,
 		StartsAt:  time.Now(),
 		EndsAt:    time.Now().Add(time.Hour),
 		Matchers: []Matcher{
 			{
-				Name:    "alertname",
-				Value:   "test-alert",
+				Name:    testMatcherName,
+				Value:   testMatcherValue,
 				IsRegex: false,
 				IsEqual: true,
 			},
@@ -552,7 +561,7 @@ func TestAlertmanager_ListSilences_WithTenant(t *testing.T) {
 				}
 			}
 		]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -590,7 +599,7 @@ func TestAlertmanager_GetSilenceByComment_WithTenant(t *testing.T) {
 				}
 			}
 		]`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -634,7 +643,8 @@ func TestAlertmanager_TenantPrecedence(t *testing.T) {
 		// Should get the parameter tenant, not the instance tenant
 		assert.Equal(t, "param-tenant", r.Header.Get("X-Scope-OrgID"))
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`[]`))
+		_, err := w.Write([]byte(`[]`))
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -654,7 +664,8 @@ func TestAlertmanager_BackwardCompatibilityUsesInstanceTenant(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "instance-tenant", r.Header.Get("X-Scope-OrgID"))
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`[]`))
+		_, err := w.Write([]byte(`[]`))
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
