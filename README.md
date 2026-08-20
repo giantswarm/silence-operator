@@ -149,6 +149,53 @@ namespaceSelector: "environment=production"
 
 **Note:** The namespace selector provides an additional layer of filtering for the v2 controller, allowing you to restrict monitoring to specific namespace subsets. The v1 controller continues to process all cluster-scoped v1alpha1 resources regardless of this setting.
 
+### Silence Enforcement Rules
+
+Enforcement rules let you **inject additional Alertmanager matchers** into silences based on the namespace they are created in. A common use case is lightweight multi-tenancy: by default a `Silence` created in one namespace can mute alerts belonging to _any_ namespace (a silence is just a set of Alertmanager matchers), so you may want to pin silences from certain namespaces to a specific scope.
+
+This applies **only** to the namespace-scoped `observability.giantswarm.io/v1alpha2` API.
+
+```yaml
+# values.yaml
+enforcementRules:
+  # Optional: when set, an authoritative "<label>=<namespace>" matcher is
+  # injected into every silence in a matching namespace, so it can only mute
+  # alerts carrying that namespace label. When empty (the default), no namespace
+  # matcher is added and only each rule's own matchers are injected.
+  namespaceMatcherLabel: "namespace"
+  # Rules are evaluated top-to-bottom; the first matching rule wins.
+  rules:
+    # For any namespace labeled tenant-isolation=enabled, just apply the
+    # namespace scoping above (no extra matchers).
+    - namespaceSelector:
+        matchLabels:
+          tenant-isolation: "enabled"
+    # For platform-team namespaces, also pin a cluster_id matcher.
+    - namespaceSelector:
+        matchExpressions:
+          - key: team
+            operator: In
+            values: [platform]
+      matchers:
+        - name: cluster_id
+          value: prod
+          matchType: "="   # one of =, !=, =~, !~ (default "=")
+```
+
+**How it works:**
+
+- A rule applies if a namespace's labels match its `namespaceSelector` (OR across rules). If `rules` is empty, no enforcement is applied — this is the default.
+- For a matching namespace, the rule's `matchers` are injected. Additionally, **if `namespaceMatcherLabel` is set**, an authoritative `<namespaceMatcherLabel>="<namespace>"` matcher is injected too. If it is empty (the default), no namespace matcher is added — Alertmanager has no notion of "namespace", so namespace scoping is strictly opt-in.
+- Rules are evaluated **top-to-bottom, first-match-wins**: a namespace matching multiple rules gets only the first matching rule's matchers. Order your rules accordingly.
+- Enforcement is **authoritative**: if a user already specified a matcher on an enforced label (e.g. `namespace` or `cluster_id`), the operator's value overrides it, a warning is logged, and a `MatcherOverridden` Kubernetes Event is emitted on the `Silence` resource. Matchers on other labels are preserved.
+- An **empty** `namespaceSelector` (`{}`) matches **all** namespaces (standard Kubernetes semantics). This is the way to apply a rule everywhere, but beware of accidentally leaving a selector empty — the operator logs a startup warning for any match-all rule.
+
+**Caveats:**
+
+- When `namespaceMatcherLabel` is set, alerts that carry **no** matching label (e.g. node- or cluster-level alerts without a `namespace` label) can no longer be silenced from a matching namespace, since the injected equality matcher will never match them. This is usually the desired isolation behavior.
+- Enforcement is evaluated at **`Silence` reconcile time**. If a namespace's labels change so that it starts or stops matching a rule, existing `Silence` resources in that namespace are not re-evaluated until they themselves change (are updated or re-reconciled). Enforcement is therefore eventually consistent with respect to namespace label changes.
+- This feature is orthogonal to [Mimir multi-tenancy](#mimir-multi-tenancy-configuration): enforcement rules scope _which alerts a silence can match_ via injected matchers, while Mimir tenancy routes silences to different Alertmanager tenants. They can be used together.
+
 ### Complete Configuration Example
 
 ```yaml
