@@ -1,9 +1,9 @@
 apiVersion: v2
-appVersion: 0.21.0
+appVersion: 0.21.1
 description: The silence-operator manages alertmanager silences.
 home: https://github.com/giantswarm/silence-operator
 icon: https://s.giantswarm.io/app-icons/giantswarm/1/light.svg
 name: silence-operator
-version: 0.21.0
+version: 0.21.1
 annotations:
   io.giantswarm.application.team: "atlas"
