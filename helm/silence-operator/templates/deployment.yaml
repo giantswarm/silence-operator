@@ -19,8 +19,6 @@ spec:
     metadata:
       labels:
         {{- include "labels.common" . | nindent 8 }}
-      annotations:
-        releaseRevision: {{ .Release.Revision | quote }}
     spec:
       {{- if or .Values.affinity .Values.nodeAffinity }}
       affinity:
