@@ -1,0 +1,13 @@
+{{- if .Values.enforcementRules.rules }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
+  name: {{ template "silence-operator.name" . }}-enforcement
+  namespace: {{ template "silence-operator.namespace" . }}
+data:
+  enforcement.yaml: |
+{{ toYaml .Values.enforcementRules | indent 4 }}
+{{- end }}

@@ -5,6 +5,21 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - monitoring.giantswarm.io
   resources:
   - silences
@@ -18,6 +33,24 @@ rules:
   - watch
 - apiGroups:
   - monitoring.giantswarm.io
+  resources:
+  - silences/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - observability.giantswarm.io
+  resources:
+  - silences
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - observability.giantswarm.io
   resources:
   - silences/finalizers
   verbs:
