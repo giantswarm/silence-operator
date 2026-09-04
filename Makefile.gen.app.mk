@@ -2,13 +2,13 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/6f591879b95d03922e2283781cd0ac9d796d5a71/pkg/gen/input/makefile/internal/file/Makefile.gen.app.mk.template
+#    https://github.com/giantswarm/devctl/blob/3b8c69a16e2ee7bc82d5a282d7585858799f4149/pkg/gen/input/makefile/internal/file/Makefile.gen.app.mk.template
 #
 
 ##@ App
 
 YQ=docker run --rm -u $$(id -u) -v $${PWD}:/workdir mikefarah/yq:4.29.2
-HELM_DOCS=docker run --rm -u $$(id -u) -v $${PWD}:/helm-docs jnorwood/helm-docs:v1.11.0
+HELM_DOCS=docker run --rm -u $$(id -u) -v $${PWD}:/helm-docs jnorwood/helm-docs:v1.14.2 --sort-values-order=file
 
 ifdef APPLICATION
 DEPS := $(shell find helm/$(APPLICATION)/charts -maxdepth 2 -name "Chart.yaml" -printf "%h\n" 2>/dev/null)
