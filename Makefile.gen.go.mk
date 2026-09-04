@@ -2,7 +2,7 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/0ec3e49745962245bdd6d5c282d4272c40faec37/pkg/gen/input/makefile/internal/file/Makefile.gen.go.mk.template
+#    https://github.com/giantswarm/devctl/blob/abc5bac3d3d80f2297debd3f8b12ed79ba948740/pkg/gen/input/makefile/internal/file/Makefile.gen.go.mk.template
 #
 
 APPLICATION    := $(shell go list -m | cut -d '/' -f 3)
@@ -110,10 +110,17 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+# `-deps ./...` lists only the packages actually compiled into this module, so nancy
+# reports vulnerabilities in code we really ship. `-m all` walks the entire module
+# graph instead and flags modules that are never built: on team-stamper it reported 7
+# vulnerable modules of which 5 are not in the build at all, including golang.org/x/crypto
+# and its 13 CVEs. #680 moved to `-deps ./...` for exactly this reason; #1964 moved back
+# to `-m all` only to dodge nancy's 10 MB stdin cap, which nancy made configurable and
+# defaulted to 100 MB in v2.1.0 -- so the workaround costs accuracy for nothing.
 .PHONY: nancy
-nancy: ## Runs nancy (requires v1.0.37 or newer).
+nancy: ## Runs nancy (requires v2.1.0 or newer).
 	@echo "====> $@"
-	CGO_ENABLED=0 go list -json -m all | nancy sleuth --skip-update-check --quiet --exclude-vulnerability-file ./.nancy-ignore --additional-exclude-vulnerability-files ./.nancy-ignore.generated
+	CGO_ENABLED=0 go list -json -deps ./... | nancy sleuth --skip-update-check --quiet --exclude-vulnerability-file ./.nancy-ignore --additional-exclude-vulnerability-files ./.nancy-ignore.generated
 
 # Race detector needs a C toolchain. The architect CI image has none and runs
 # with CGO_ENABLED=0, so degrade to cgo-free there; everywhere a compiler exists
