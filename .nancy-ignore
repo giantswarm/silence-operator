@@ -1,2 +1,4 @@
-# pkg:golang/github.com/yuin/goldmark@v1.4.13
 CVE-2026-5160 until=2026-09-10
+CVE-2026-56854 until=2026-10-09 # golang.org/x/crypto@v0.54.0
+CVE-2026-56855 until=2026-10-09 # golang.org/x/crypto@v0.54.0
+CVE-2026-78662 until=2026-10-09 # golang.org/x/crypto@v0.54.0
