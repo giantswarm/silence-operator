@@ -42,6 +42,7 @@ import (
 	"github.com/giantswarm/silence-operator/internal/controller"
 	"github.com/giantswarm/silence-operator/pkg/alertmanager"
 	"github.com/giantswarm/silence-operator/pkg/config"
+	"github.com/giantswarm/silence-operator/pkg/enforce"
 	"github.com/giantswarm/silence-operator/pkg/service"
 	"github.com/giantswarm/silence-operator/pkg/tenancy"
 	// +kubebuilder:scaffold:imports
@@ -74,6 +75,7 @@ func main() {
 	var cfg config.Config
 	var silenceSelector string
 	var namespaceSelector string
+	var enforcementConfig string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -96,6 +98,7 @@ func main() {
 	flag.BoolVar(&cfg.Authentication, "alertmanager-authentication", false, "Enable Alertmanager authentication using Service Account token.")
 	flag.StringVar(&silenceSelector, "silence-selector", "", "Label selector to filter Silence custom resources (e.g., 'environment=production,tier=frontend').")
 	flag.StringVar(&namespaceSelector, "namespace-selector", "", "Label selector to restrict which namespaces the v2 controller watches (e.g., 'environment=production'). If empty, all namespaces are watched.")
+	flag.StringVar(&enforcementConfig, "enforcement-config", "", "Path to a YAML file configuring silence enforcement rules. If empty, no enforcement is applied.")
 	// Tenancy flags (not wired up yet - for future PRs)
 	flag.BoolVar(&cfg.TenancyEnabled, "tenancy-enabled", false, "Enable tenancy support for multi-tenant Alertmanager setups.")
 	flag.StringVar(&cfg.TenancyLabelKey, "tenancy-label-key", "observability.giantswarm.io/tenant", "Label key to extract tenant information from Silence resources.")
@@ -120,7 +123,26 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Load the enforcement config, if configured. Nil enforcer means enforcement
+	// is disabled.
+	var enforcer *enforce.Enforcer
+	if enforcementConfig != "" {
+		enforcer, err = enforce.LoadFromFile(enforcementConfig)
+		if err != nil {
+			setupLog.Error(err, "failed to load enforcement config", "path", enforcementConfig)
+			os.Exit(1)
+		}
+	}
+
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	// Emit enforcement warnings (e.g. match-all rules) after the logger is set
+	// up so they are not dropped by the delegating logger.
+	if enforcer != nil {
+		for _, w := range enforcer.Warnings() {
+			setupLog.Info("WARNING: " + w)
+		}
+	}
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -259,7 +281,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Silence")
 		os.Exit(1)
 	}
-	if err = controller.NewSilenceV2Reconciler(mgr.GetClient(), silenceService, tenancyHelper).
+	if err = controller.NewSilenceV2Reconciler(mgr.GetClient(), silenceService, tenancyHelper, enforcer, mgr.GetEventRecorderFor("silence-operator")).
 		SetupWithManager(mgr, cfg); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SilenceV2")
 		os.Exit(1)
