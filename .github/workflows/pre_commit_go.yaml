@@ -27,7 +27,7 @@ jobs:
       uses: giantswarm/install-binary-action@c37eb401e5092993fc76d545030b1d1769e61237 # v3.0.0
       with:
         binary: golangci-lint
-        version: "2.13.1"
+        version: "2.13.2"
         download_url: "https://github.com/golangci/golangci-lint/releases/download/v${version}/${binary}-${version}-linux-amd64.tar.gz"
     - name: Execute pre-commit hooks
       uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
