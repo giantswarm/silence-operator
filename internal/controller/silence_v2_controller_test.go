@@ -352,7 +352,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 					StartsAt: &startsAt,
 					EndsAt:   &endsAt,
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 					},
 				},
 			}
@@ -383,7 +383,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 					StartsAt: &startsAt,
 					Duration: &duration,
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 					},
 				},
 			}
@@ -411,7 +411,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 				Spec: observabilityv1alpha2.SilenceSpec{
 					Duration: &duration,
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 					},
 				},
 			}
@@ -447,7 +447,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 				},
 				Spec: observabilityv1alpha2.SilenceSpec{
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 					},
 				},
 			}
@@ -477,7 +477,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 					EndsAt:   &endsAt,
 					Duration: &duration,
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 					},
 				},
 			}
@@ -528,7 +528,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 				Spec: observabilityv1alpha2.SilenceSpec{
 					Duration: &duration,
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 						{Name: "excludeme", Value: "HeartbeatAlert", MatchType: observabilityv1alpha2.MatchNotEqual},
 						{Name: "instance", Value: ".*prod.*", MatchType: observabilityv1alpha2.MatchRegexMatch},
 						{Name: "testenv", Value: ".*test.*", MatchType: observabilityv1alpha2.MatchRegexNotMatch},
@@ -545,7 +545,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			got := findSilenceByComment(listSilences(), comment)
 			Expect(got).NotTo(BeNil(), "silence %q not found in Alertmanager", comment)
 			Expect(got.Matchers).To(HaveLen(4))
-			Expect(got.Matchers[0]).To(Equal(alertmanager.Matcher{Name: "alertname", Value: testMatcherValue, IsRegex: false, IsEqual: true}))
+			Expect(got.Matchers[0]).To(Equal(alertmanager.Matcher{Name: testMatcherName, Value: testMatcherValue, IsRegex: false, IsEqual: true}))
 			Expect(got.Matchers[1]).To(Equal(alertmanager.Matcher{Name: "excludeme", Value: "HeartbeatAlert", IsRegex: false, IsEqual: false}))
 			Expect(got.Matchers[2]).To(Equal(alertmanager.Matcher{Name: "instance", Value: ".*prod.*", IsRegex: true, IsEqual: true}))
 			Expect(got.Matchers[3]).To(Equal(alertmanager.Matcher{Name: "testenv", Value: ".*test.*", IsRegex: true, IsEqual: false}))
