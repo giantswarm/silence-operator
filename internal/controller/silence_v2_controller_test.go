@@ -343,7 +343,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "silence-endsat-priority",
-					Namespace: "default",
+					Namespace: defaultNamespace,
 					Annotations: map[string]string{
 						"valid-until": now.Add(10 * time.Hour).Format(time.RFC3339),
 					},
@@ -352,7 +352,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 					StartsAt: &startsAt,
 					EndsAt:   &endsAt,
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 					},
 				},
 			}
@@ -377,13 +377,13 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "silence-duration-explicit-start",
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 				Spec: observabilityv1alpha2.SilenceSpec{
 					StartsAt: &startsAt,
 					Duration: &duration,
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 					},
 				},
 			}
@@ -406,12 +406,12 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "silence-duration-no-start",
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 				Spec: observabilityv1alpha2.SilenceSpec{
 					Duration: &duration,
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 					},
 				},
 			}
@@ -440,14 +440,14 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "silence-annotation-fallback",
-					Namespace: "default",
+					Namespace: defaultNamespace,
 					Annotations: map[string]string{
 						"valid-until": validUntil.Format(time.RFC3339),
 					},
 				},
 				Spec: observabilityv1alpha2.SilenceSpec{
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 					},
 				},
 			}
@@ -471,13 +471,13 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "invalid-silence-both-fields",
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 				Spec: observabilityv1alpha2.SilenceSpec{
 					EndsAt:   &endsAt,
 					Duration: &duration,
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 					},
 				},
 			}
@@ -523,12 +523,12 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "silence-mixed-matchers",
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 				Spec: observabilityv1alpha2.SilenceSpec{
 					Duration: &duration,
 					Matchers: []observabilityv1alpha2.SilenceMatcher{
-						{Name: "alertname", Value: "TestAlert", MatchType: observabilityv1alpha2.MatchEqual},
+						{Name: testMatcherName, Value: testMatcherValue, MatchType: observabilityv1alpha2.MatchEqual},
 						{Name: "excludeme", Value: "HeartbeatAlert", MatchType: observabilityv1alpha2.MatchNotEqual},
 						{Name: "instance", Value: ".*prod.*", MatchType: observabilityv1alpha2.MatchRegexMatch},
 						{Name: "testenv", Value: ".*test.*", MatchType: observabilityv1alpha2.MatchRegexNotMatch},
@@ -545,7 +545,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			got := findSilenceByComment(listSilences(), comment)
 			Expect(got).NotTo(BeNil(), "silence %q not found in Alertmanager", comment)
 			Expect(got.Matchers).To(HaveLen(4))
-			Expect(got.Matchers[0]).To(Equal(alertmanager.Matcher{Name: "alertname", Value: "TestAlert", IsRegex: false, IsEqual: true}))
+			Expect(got.Matchers[0]).To(Equal(alertmanager.Matcher{Name: testMatcherName, Value: testMatcherValue, IsRegex: false, IsEqual: true}))
 			Expect(got.Matchers[1]).To(Equal(alertmanager.Matcher{Name: "excludeme", Value: "HeartbeatAlert", IsRegex: false, IsEqual: false}))
 			Expect(got.Matchers[2]).To(Equal(alertmanager.Matcher{Name: "instance", Value: ".*prod.*", IsRegex: true, IsEqual: true}))
 			Expect(got.Matchers[3]).To(Equal(alertmanager.Matcher{Name: "testenv", Value: ".*test.*", IsRegex: true, IsEqual: false}))
@@ -559,7 +559,7 @@ var _ = Describe("SilenceV2 CRD Integration Tests", func() {
 			silence := &observabilityv1alpha2.Silence{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "silence-finalizer-test",
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 				Spec: observabilityv1alpha2.SilenceSpec{
 					Duration: &duration,
