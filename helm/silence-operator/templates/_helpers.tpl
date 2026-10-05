@@ -24,7 +24,7 @@ Allow the release namespace to be overridden for multi-namespace deployments in 
 Create chart name and version as used by the chart label.
 */}}
 {{- define "silence-operator.chartref" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimAll "-._" -}}
 {{- end -}}
 
 

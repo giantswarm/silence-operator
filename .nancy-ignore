@@ -1,2 +1,4 @@
-# pkg:golang/github.com/yuin/goldmark@v1.4.13
-CVE-2026-5160 until=2026-09-10
+CVE-2026-5160 until=2026-10-29 # github.com/yuin/goldmark@v1.4.13
+CVE-2026-84445 until=2026-10-29 # google.golang.org/grpc@v1.84.0
+CVE-2026-56864 until=2026-10-29 # golang.org/x/mod@v0.38.0
+CVE-2026-56865 until=2026-10-29 # golang.org/x/mod@v0.38.0
