@@ -2,7 +2,7 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/1e74e9b34eaee80c19dd433c7c298a67ab812605/pkg/gen/input/workflows/internal/file/semantic_pull_request.yaml.template
+#    https://github.com/giantswarm/devctl/blob/6bd76e24b11b67d6d99715b8f484f454e05abbd9/pkg/gen/input/workflows/internal/file/semantic_pull_request.yaml.template
 #
 name: semantic-pull-request
 
@@ -21,3 +21,25 @@ jobs:
     uses: giantswarm/github-workflows/.github/workflows/semantic-pull-request.yaml@main
     permissions:
       pull-requests: read
+    with:
+      # `types` REPLACES the action's default list rather than extending it, so
+      # all eleven defaults from commitizen/conventional-commit-types are
+      # repeated here, plus the additions below. Entries are regexes the action
+      # wraps in `^ $`.
+      #
+      # `security` is not one of the action's defaults and has to be listed to
+      # be accepted at all. cliff.toml maps it to the Security changelog group,
+      # which no title can reach while the type is rejected.
+      types: |
+        feat
+        fix
+        docs
+        style
+        refactor
+        perf
+        test
+        build
+        ci
+        chore
+        revert
+        security
