@@ -1,0 +1,42 @@
+# DO NOT EDIT. Generated with:
+#
+#    devctl
+#
+#    https://github.com/giantswarm/devctl/blob/e642529ff98450dc48c8cbe580f4289af155a026/pkg/gen/input/workflows/internal/file/check_readme_links.yaml.template
+#
+
+name: check-readme-links
+
+# Checks the links in README.md: dead URLs, relative paths that do not exist
+# in the repository, reversed link syntax. A pull request that breaks a link
+# goes red. The weekly run catches links whose target moved without the
+# README changing, and files its findings as one issue instead of failing.
+# The issue is filed, updated and closed from the default branch only; a
+# manual run on another branch keeps its report in the job summary.
+# The checker configuration is maintained centrally in
+# giantswarm/github-workflows under link-check/.
+# Switch the check off for this repository with
+# `devctl gen workflows --check-readme-links=false`, in giantswarm/github
+# `gen.checkReadmeLinks: false` on the repository entry.
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+    paths:
+      - 'README.md'
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  check-readme-links:
+    uses: giantswarm/github-workflows/.github/workflows/check-readme-links.yaml@main
+    with:
+      fail_on_error: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      contents: read
+      issues: write
