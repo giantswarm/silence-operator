@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [Helm] Fixed noisy Helm diffs caused by .Release.Revision changing on every upgrade. The release revision provides no meaningful value in the rendered manifest, as Helm already tracks release revisions in its release metadata.
+- [Helm] Fixed noisy Helm diffs caused by .Release.Revision changing on every upgrade. Release revision is already tracked in Helm release metadata.
 
 ## [0.21.0] - 2026-08-18
 
