@@ -1,0 +1,23 @@
+# DO NOT EDIT. Generated with:
+#
+#    devctl
+#
+#    https://github.com/giantswarm/devctl/blob/04334ff66e688e6562a10436ad17ea55631ac849/pkg/gen/input/workflows/internal/file/chart_tests.yaml.template
+#
+
+name: chart-tests
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+  merge_group: {}
+
+permissions: {}
+
+jobs:
+  chart-tests:
+    uses: giantswarm/github-workflows/.github/workflows/chart-tests.yaml@main
+    permissions:
+      contents: read
