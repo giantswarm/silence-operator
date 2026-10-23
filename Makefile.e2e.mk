@@ -6,6 +6,7 @@ E2E_IMAGE_TAG ?= e2e-test
 E2E_HELM_RELEASE ?= silence-operator
 E2E_HELM_NAMESPACE ?= silence-operator
 E2E_AM_NAMESPACE ?= alertmanager
+E2E_ARCH ?= $(shell go env GOARCH)
 
 .PHONY: e2e-create-cluster
 e2e-create-cluster: ## Create a kind cluster for e2e tests
@@ -13,8 +14,8 @@ e2e-create-cluster: ## Create a kind cluster for e2e tests
 
 .PHONY: e2e-build-image
 e2e-build-image: ## Build the operator image and load it into kind
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o silence-operator ./cmd/
-	docker build -t $(E2E_IMAGE_NAME):$(E2E_IMAGE_TAG) .
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(E2E_ARCH) go build -o silence-operator-linux-$(E2E_ARCH) ./cmd/
+	docker build --platform linux/$(E2E_ARCH) -t $(E2E_IMAGE_NAME):$(E2E_IMAGE_TAG) .
 	kind load docker-image $(E2E_IMAGE_NAME):$(E2E_IMAGE_TAG) --name $(E2E_CLUSTER_NAME)
 
 .PHONY: e2e-deploy-alertmanager
