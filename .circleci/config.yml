@@ -83,6 +83,7 @@ workflows:
     - architect/push-to-registries:
         context: architect
         name: push-to-registries
+        split-china-push: true
         requires:
         - go-build
         filters:
@@ -92,6 +93,17 @@ workflows:
             ignore:
             - main
             - /pull\/[0-9]+/
+
+    - architect/sync-china-registry:
+        context: architect
+        name: sync-china-registry
+        requires:
+        - push-to-registries
+        filters:
+          tags:
+            only: /^v.*/
+          branches:
+            ignore: /.*/
 
     - architect/push-to-app-catalog:
         context: architect
@@ -103,9 +115,25 @@ workflows:
         requires:
         - push-to-registries
         filters:
-          tags:
-            only: /^v.*/
           branches:
             ignore:
             - main
             - /pull\/[0-9]+/
+
+    # Collections follow the latest chart version, China included, so the
+    # release chart waits for the image to be mirrored to Aliyun.
+    - architect/push-to-app-catalog:
+        context: architect
+        executor: app-build-suite
+        name: push-to-app-catalog-release
+        app_catalog: control-plane-catalog
+        app_catalog_test: control-plane-test-catalog
+        chart: silence-operator
+        requires:
+        - push-to-registries
+        - sync-china-registry
+        filters:
+          tags:
+            only: /^v.*/
+          branches:
+            ignore: /.*/
