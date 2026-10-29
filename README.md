@@ -6,7 +6,7 @@
 
   [![Go Reference](https://pkg.go.dev/badge/github.com/giantswarm/silence-operator.svg)](https://pkg.go.dev/github.com/giantswarm/silence-operator)
   [![CircleCI](https://circleci.com/gh/giantswarm/silence-operator.svg?&style=shield)](https://circleci.com/gh/giantswarm/silence-operator)
-  [![GitHub stars](https://img.shields.io/github/stars/giantswarm/silence-operator?style=flat&logo=github)](https://github.com/giantswarm/silence-operator/stargazers)
+  [![GitHub stars](https://img.shields.io/github/stars/giantswarm/silence-operator?style=flat&logo=github)](https://github.com/giantswarm/silence-operator)
   [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/giantswarm/silence-operator/badge)](https://scorecard.dev/viewer/?uri=github.com/giantswarm/silence-operator)
 
 </div>
