@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- [Helm] Add `extraArgs` to pass extra arguments to the operator container.
+
 ### Changed
 
 - Push the image to the China registry from the `sync-china-registry` job, and publish the release chart only after it succeeds.
