@@ -7,3 +7,7 @@ CVE-2026-78669 until=2026-11-13 # golang.org/x/net@v0.57.0
 CVE-2026-56851 until=2026-11-13 # golang.org/x/text@v0.40.0
 CVE-2026-116586 until=2026-11-27 # github.com/go-jose/go-jose/v4@v4.1.4 since=2026-10-28
 CVE-2026-116585 until=2026-11-27 # github.com/go-jose/go-jose/v4@v4.1.4 since=2026-10-28
+
+# pkg:golang/golang.org/x/net@v0.57.0
+CVE-2026-97045 until=2026-11-27
+CVE-2026-78661 until=2026-11-27
