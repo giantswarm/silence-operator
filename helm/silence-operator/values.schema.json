@@ -45,6 +45,14 @@
             "default": "",
             "description": "Label selector to restrict which namespaces the v2 controller watches (e.g., 'environment=production,team=platform')."
         },
+        "extraArgs": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "default": [],
+            "description": "Extra arguments passed to the operator container (e.g., '--zap-encoder=json')."
+        },
         "containerSecurityContext": {
             "type": "object",
             "properties": {
