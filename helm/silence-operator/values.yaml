@@ -48,6 +48,10 @@ silenceSelector: ""
 # Example: 'environment=production' or 'team=platform,tier=monitoring'
 namespaceSelector: ""
 
+# -- Extra arguments passed to the operator container.
+# Example: ["--zap-encoder=json", "--zap-log-level=debug"]
+extraArgs: []
+
 # -- Configures the pod security context
 podSecurityContext:
   runAsNonRoot: true

@@ -71,6 +71,9 @@ spec:
         {{- if .Values.namespaceSelector }}
         - --namespace-selector={{ .Values.namespaceSelector }}
         {{- end }}
+        {{- with .Values.extraArgs }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         livenessProbe:
           {{- with .Values.livenessProbe }}
           {{- toYaml . | nindent 10 }}
