@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-05
+
 ### Added
 
 - [Helm] Add `extraArgs` to pass extra arguments to the operator container.
@@ -386,7 +388,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `sync` command.
 - Push `silence-operator` to app-collections.
 
-[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.21.1...HEAD
+[Unreleased]: https://github.com/giantswarm/silence-operator/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/giantswarm/silence-operator/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/giantswarm/silence-operator/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/giantswarm/silence-operator/compare/v0.20.1...v0.21.0
 [0.20.1]: https://github.com/giantswarm/silence-operator/compare/v0.20.0...v0.20.1
