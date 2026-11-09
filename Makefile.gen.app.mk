@@ -2,7 +2,7 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/055144a5a009e2cc2ccee52d5be12ad1a00cf448/pkg/gen/input/makefile/internal/file/Makefile.gen.app.mk.template
+#    https://github.com/giantswarm/devctl/blob/bbc57913962860b1f2b3524a74a9692931c58034/pkg/gen/input/makefile/internal/file/Makefile.gen.app.mk.template
 #
 
 ##@ App
@@ -134,3 +134,61 @@ install-helm-unittest:
 # repository that has no Go suite behind it. Keep it last: the first target of the first
 # included makefile is make's default goal.
 test: helm-test
+
+# ATS consumes the archive produced by CI's build-chart job. Locally, build it first
+# and put it under build/ or select it with ATS_CHART_FILE. Keep these default image
+# pins aligned with gen circleci; repositories with explicit CI pins override them
+# in Makefile.custom.mk. This target supports ATS 1.x (the generated CI default).
+# renovate: datasource=docker depName=gsoci.azurecr.io/giantswarm/app-test-suite
+ATS_VERSION ?= 1.0.3
+# renovate: datasource=docker depName=gsoci.azurecr.io/giantswarm/kind-node
+ATS_KIND_NODE_IMAGE_VERSION ?= v1.37.0
+ATS_KIND_NODE_IMAGE ?= gsoci.azurecr.io/giantswarm/kind-node:$(ATS_KIND_NODE_IMAGE_VERSION)
+ATS_KIND_CONFIG ?= $(wildcard .ats/kind-config.yaml)
+ATS_CHART_FILE ?=
+ATS_CHART_ARCHIVE_PREFIX ?=
+ATS_FLAGS ?=
+
+.PHONY: ats-test
+
+# Like architect/run-tests-with-ats, create a kind cluster and run the pinned ATS
+# container on the host network, with the checkout mounted at /ats/workdir. Use a
+# unique cluster and a private kubeconfig inside the mount; never use the caller's
+# current context. Cleanup also covers failed cluster creation and failed tests.
+# Cluster tests stay opt-in: `make test` still runs the fast chart unit tests.
+ats-test: ## Run app-test-suite against a built chart in a temporary kind cluster.
+	@echo "====> $@"
+	@set -eu; \
+	suite=$$(find tests/ats -type f \( -name 'test_*.py' -o -name '*_test.py' -o -name '*_test.go' \) -print -quit 2>/dev/null || true); \
+	if [ -z "$$suite" ] && [ ! -f .ats/main.yaml ] && [ ! -f .ats/main.yml ]; then \
+		echo "no ATS suite (tests under tests/ats or .ats/main.yaml)"; exit 0; \
+	fi; \
+	case "$(ATS_VERSION)" in 1.*) ;; *) echo "ats-test requires ATS 1.x; match the repository's CI pin after migrating its suite" >&2; exit 1;; esac; \
+	chart="$(ATS_CHART_FILE)"; \
+	if [ -z "$$chart" ]; then \
+		chart=$$(find build -type f -name '$(ATS_CHART_ARCHIVE_PREFIX)*.tgz' -print 2>/dev/null || true); \
+		[ "$$(printf '%s\n' "$$chart" | grep -c .)" -eq 1 ] || { echo "expected one built chart under build/: build the chart first or set ATS_CHART_FILE" >&2; exit 1; }; \
+	fi; \
+	[ -f "$$chart" ] || { echo "ATS_CHART_FILE '$$chart' does not exist" >&2; exit 1; }; \
+	set --; \
+	if [ -n "$(ATS_KIND_CONFIG)" ]; then \
+		[ -f "$(ATS_KIND_CONFIG)" ] || { echo "ATS_KIND_CONFIG '$(ATS_KIND_CONFIG)' does not exist" >&2; exit 1; }; \
+		set -- --config "$(ATS_KIND_CONFIG)"; \
+	fi; \
+	work=$$(mktemp -d .ats-run.XXXXXX); \
+	trap 'rm -rf "$$work"' EXIT; \
+	cp "$$chart" "$$work/chart.tgz"; \
+	cluster=$$(printf 'ats-%s' "$${work##*.}" | tr '[:upper:]' '[:lower:]'); \
+	clusters=$$(kind get clusters); \
+	if printf '%s\n' "$$clusters" | grep -qxF "$$cluster"; then \
+		echo "kind cluster '$$cluster' already exists; refusing to replace it" >&2; exit 1; \
+	fi; \
+	trap 'status=$$?; trap - EXIT; kind delete cluster --name "$$cluster" --kubeconfig "$$work/kube.config" || { [ "$$status" -ne 0 ] || status=1; }; rm -rf "$$work"; exit "$$status"' EXIT; \
+	trap 'exit 130' INT; trap 'exit 143' TERM; trap 'exit 129' HUP; \
+	kind create cluster --name "$$cluster" --image "$(ATS_KIND_NODE_IMAGE)" "$$@" --kubeconfig "$$work/kube.config" --wait 120s; \
+	node_image="$(ATS_KIND_NODE_IMAGE)"; cluster_version=$${node_image%@*}; cluster_version=$${cluster_version##*:}; cluster_version=$${cluster_version#v}; \
+	docker run --rm -e USE_UID="$$(id -u)" -e USE_GID="$$(id -g)" \
+		-v "$$(pwd):/ats/workdir" --network host \
+		"gsoci.azurecr.io/giantswarm/app-test-suite:$(ATS_VERSION)" \
+		--chart-file "$$work/chart.tgz" --cluster-kubeconfig "$$work/kube.config" \
+		--cluster-type kind --cluster-version "$$cluster_version" $(ATS_FLAGS)
