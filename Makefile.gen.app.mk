@@ -2,7 +2,7 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/bbc57913962860b1f2b3524a74a9692931c58034/pkg/gen/input/makefile/internal/file/Makefile.gen.app.mk.template
+#    https://github.com/giantswarm/devctl/blob/f4db4df4543e762b4ddcc2f7095c6f7c74d2b4ce/pkg/gen/input/makefile/internal/file/Makefile.gen.app.mk.template
 #
 
 ##@ App
@@ -110,19 +110,20 @@ helm-test: install-helm-unittest ## Run the chart unit tests (helm-unittest).
 # network error (a connection reset) fails it; the install runs up to
 # HELM_UNITTEST_ATTEMPTS times, HELM_UNITTEST_RETRY_DELAY seconds apart. A failed attempt
 # can leave a half-installed plugin behind that the next install refuses, so it is
-# uninstalled before each retry.
+# uninstalled after every failure, including the last. A matching version must also
+# run its binary: plugin metadata alone survives an interrupted download.
 install-helm-unittest:
 	@have=$$(helm plugin list 2>/dev/null | awk '$$1 == "unittest" {print $$2}'); \
 	want=$$(echo "$(HELM_UNITTEST_VERSION)" | sed 's/^v//'); \
-	if [ "$$have" != "$$want" ]; then \
+	if [ "$$have" != "$$want" ] || ! helm unittest --version >/dev/null 2>&1; then \
 		[ -z "$$have" ] || helm plugin uninstall unittest >/dev/null 2>&1 || true; \
 		verify=""; \
 		helm plugin install --help 2>&1 | grep -q -e '--verify' && verify="--verify=false"; \
 		attempt=1; \
 		until helm plugin install $$verify https://github.com/helm-unittest/helm-unittest --version $(HELM_UNITTEST_VERSION); do \
+			helm plugin uninstall unittest >/dev/null 2>&1 || true; \
 			[ "$$attempt" -lt "$(HELM_UNITTEST_ATTEMPTS)" ] || exit 1; \
 			echo "helm-unittest install failed (attempt $$attempt of $(HELM_UNITTEST_ATTEMPTS)), retrying in $(HELM_UNITTEST_RETRY_DELAY)s" >&2; \
-			helm plugin uninstall unittest >/dev/null 2>&1 || true; \
 			sleep $(HELM_UNITTEST_RETRY_DELAY); \
 			attempt=$$((attempt + 1)); \
 		done; \
@@ -140,7 +141,7 @@ test: helm-test
 # pins aligned with gen circleci; repositories with explicit CI pins override them
 # in Makefile.custom.mk. This target supports ATS 1.x (the generated CI default).
 # renovate: datasource=docker depName=gsoci.azurecr.io/giantswarm/app-test-suite
-ATS_VERSION ?= 1.0.3
+ATS_VERSION ?= 1.1.1
 # renovate: datasource=docker depName=gsoci.azurecr.io/giantswarm/kind-node
 ATS_KIND_NODE_IMAGE_VERSION ?= v1.37.0
 ATS_KIND_NODE_IMAGE ?= gsoci.azurecr.io/giantswarm/kind-node:$(ATS_KIND_NODE_IMAGE_VERSION)
