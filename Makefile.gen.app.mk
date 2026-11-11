@@ -2,7 +2,7 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/f4db4df4543e762b4ddcc2f7095c6f7c74d2b4ce/pkg/gen/input/makefile/internal/file/Makefile.gen.app.mk.template
+#    https://github.com/giantswarm/devctl/blob/322af9d3c53b7b163c5f162f1f521273b5d723fb/pkg/gen/input/makefile/internal/file/Makefile.gen.app.mk.template
 #
 
 ##@ App
@@ -88,6 +88,10 @@ HELM_UNITTEST_RETRY_DELAY ?= 5
 # repository: its names render only once a repository created from it fills them in, so
 # its suites cannot pass here and run on the rendered copy instead. It is skipped, as a
 # chart reference with a placeholder is no chart for the catalog either.
+# A wrapper chart's suites render its upstream subchart, and most repositories gitignore
+# `charts/*.tgz`, so a fresh clone (CI) has none. A chart with a missing dependency gets
+# `helm dependency update` before its suites run: unlike `helm dependency build`, it needs
+# no `helm repo add`. A chart whose dependencies are present is not touched.
 helm-test: install-helm-unittest ## Run the chart unit tests (helm-unittest).
 	@echo "====> $@"
 	@found=""; \
@@ -97,6 +101,9 @@ helm-test: install-helm-unittest ## Run the chart unit tests (helm-unittest).
 		case "$$c" in *[{}]*) echo "skipping $$c: a template's placeholder chart"; continue;; esac; \
 		ls "$$d"/*_test.yaml >/dev/null 2>&1 || continue; \
 		found=1; \
+		if helm dependency list "$$c" 2>/dev/null | grep -q 'missing$$'; then \
+			helm dependency update "$$c" || exit 1; \
+		fi; \
 		helm unittest -f "$$(basename "$$d")/*_test.yaml" --with-subchart=false "$$c" || exit 1; \
 	done; \
 	[ -n "$$found" ] || echo "no chart unit tests under helm/"
