@@ -17,9 +17,21 @@ jobs:
     - name: Set up Python environment
       uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
     - name: Set up Go environment
+      id: setup-go
       uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
       with:
         go-version: "1.27"
+        cache: false
+    - name: Cache Go modules, Go builds and golangci-lint
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+          ~/.cache/golangci-lint
+        key: pre-commit-go-${{ runner.os }}-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          pre-commit-go-${{ runner.os }}-${{ steps.setup-go.outputs.go-version }}-
     - name: Install goimports
       run: |
         go install golang.org/x/tools/cmd/goimports@v0.42.0
